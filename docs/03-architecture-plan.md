@@ -155,6 +155,41 @@ record NoteEvent(int pitch,            // MIDI note 0–127
 - **Hand = staff:** staff 1 is the right hand, staff 2 the left hand. This matches how MusicXML describes piano parts.
 - The engine flattens a part into a list of **`Target`s**, where each target is the group of notes that start at the same time (a single note or a chord), with tied notes merged.
 
+## 4A. MIDI layer (`pp-midi`, `pp-midi-jdk`)
+
+The rest of the backend only uses the interfaces in `pp-midi`. `javax.sound.midi` appears only in `pp-midi-jdk`.
+
+**`pp-midi` (ports and virtual devices)**
+
+| Package | Contents |
+|---|---|
+| `midi.device` | `DeviceId`, `DeviceDescriptor`, `DeviceUnavailableException` |
+| `midi.value` | `Velocity` (1–127), `MidiChannel` (0–15) |
+| `midi.input` | `MidiInputPort`, `InputConnection`, `InputListener`, `InputEvent` (`NoteOn`, `NoteOff`, `SustainPedal`), `TimestampSource` |
+| `midi.output` | `MidiOutputPort`, `OutputConnection`, `OutputEvent` (`NoteOn`, `NoteOff`, `AllNotesOff`) |
+| `midi.virtual.input` | `VirtualKeyboard`: controller (`press` / `release` / `sustain`) plus its `MidiInputPort`. Used for testing and for on-screen keyboard input (DEV-7). |
+| `midi.virtual.output` | `SilentOutput`: a `MidiOutputPort` that records sent events instead of playing them |
+
+**`pp-midi-jdk` (hardware adapter)**
+
+- **One public entry point:** `JdkMidi.inputPort()` / `JdkMidi.outputPort()`. Every other class is package-private, and the `message` package isn't exported.
+- **Device catalog:**
+  - Re-scans `MidiSystem` on every call, so hot-plugged devices appear.
+  - Leaves out sequencers.
+  - Devices with transmitters are inputs; devices with receivers are outputs, including the built-in synthesizer **Gervill**.
+  - IDs are `jdk:<device name>`, with `#2`, `#3` added when names repeat. On Linux the name includes the ALSA port (for example `[hw:2,0,0]`).
+- **Input:**
+  - `InputMessageDecoder` maps Note On to `NoteOn`, Note On with velocity 0 or Note Off to `NoteOff`, and CC 64 to `SustainPedal` (down at 64 or more). Everything else is dropped.
+  - The MIDI channel is ignored on input.
+  - Each event is timestamped with `TimestampSource` when it arrives (DEV-8). The device's own timestamp isn't used.
+- **Output:**
+  - `OutputMessageEncoder` sends events immediately. Velocity is passed through unchanged.
+  - Closing an output first sends All Notes Off on all 16 channels (DEV-10).
+- **Resource handling:**
+  - If anything fails after `device.open()`, the device is closed again.
+  - Connections close their parts with `try (device; transmitter/receiver; …)`, so every part is released even if one of them throws.
+- **Tests** use `FakeMidiDevice`, `FakeTransmitter` and `FakeReceiver`. A smoke test checks the real `MidiSystem` (listing only, no sound card needed).
+
 ## 5. Engine (`pp-engine`)
 
 ### 5.1 Parts of the engine

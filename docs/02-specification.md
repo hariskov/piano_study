@@ -21,8 +21,10 @@ The keywords **MUST**, **SHOULD** and **MAY** mean: required, recommended, and o
 | DEV-7 | The app MUST offer **virtual keyboard input** (computer keyboard or mouse on the on-screen keyboard) for testing without a piano. |
 | DEV-8 | Key presses MUST be timestamped by the backend when they arrive. All scoring uses the backend clock, so delays in the UI never affect scores. |
 | DEV-9 | The app SHOULD offer a latency offset setting (in milliseconds) for Tempo mode. |
+| DEV-10 | Closing an output device MUST first silence it (All Notes Off on every channel), so no note keeps sounding. |
+| DEV-11 | Key velocity (how hard a key is pressed, 1–127) MUST be kept on every key press, and passed through unchanged when notes are played back. |
 
-MIDI messages handled: Note On, Note Off (including Note On with velocity 0), and Control Change 64 (sustain pedal). Others are ignored in v1.
+MIDI messages handled: Note On, Note Off (including Note On with velocity 0), and Control Change 64 (sustain pedal, down at value 64 or more). Input is accepted on any MIDI channel. Release velocity and all other messages (other controllers, program change, pitch bend, clock, active sensing, SysEx) are ignored in v1.
 
 ---
 
