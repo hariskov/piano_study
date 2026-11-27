@@ -83,6 +83,7 @@ bootstrap     pp-app                          wiring, main()
 
 **Conventions**
 
+- **Naming:** Maven group ID and base Java package are `bg.petarh.piano`. Each module's packages start with its JPMS module name (`bg.petarh.piano.model`, `bg.petarh.piano.midi`, `bg.petarh.piano.midi.jdk`, …).
 - **No comments that repeat the code.** No Javadoc or comments on classes, methods or fields that only restate their name or signature. Names should explain what code does. A comment is only allowed to explain a non-obvious *why* (for example a workaround for a quirk of Java MIDI on Linux).
 - **Value objects with rules** (`Pitch`, `KeyboardRange`, `Velocity`, …) are `final` classes with a private constructor and static factories (`of`, `parse`), so every instance is valid and there is only one way to create one.
 - **Plain data with no rules of its own** (events, descriptors) uses `record`.

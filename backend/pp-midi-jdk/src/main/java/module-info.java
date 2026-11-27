@@ -1,6 +1,6 @@
-module io.github.hariskov.piano.midi.jdk {
-    requires transitive io.github.hariskov.piano.midi;
+module bg.petarh.piano.midi.jdk {
+    requires transitive bg.petarh.piano.midi;
     requires java.desktop;
 
-    exports io.github.hariskov.piano.midi.jdk;
+    exports bg.petarh.piano.midi.jdk;
 }

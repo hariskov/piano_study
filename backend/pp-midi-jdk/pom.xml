@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.github.hariskov.piano</groupId>
+        <groupId>bg.petarh.piano</groupId>
         <artifactId>backend</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
@@ -14,7 +14,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.github.hariskov.piano</groupId>
+            <groupId>bg.petarh.piano</groupId>
             <artifactId>pp-midi</artifactId>
         </dependency>
     </dependencies>

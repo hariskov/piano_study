@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.github.hariskov.piano</groupId>
+        <groupId>bg.petarh.piano</groupId>
         <artifactId>piano-player</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
@@ -32,17 +32,17 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>io.github.hariskov.piano</groupId>
+                <groupId>bg.petarh.piano</groupId>
                 <artifactId>pp-model</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.github.hariskov.piano</groupId>
+                <groupId>bg.petarh.piano</groupId>
                 <artifactId>pp-midi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.github.hariskov.piano</groupId>
+                <groupId>bg.petarh.piano</groupId>
                 <artifactId>pp-midi-jdk</artifactId>
                 <version>${project.version}</version>
             </dependency>
