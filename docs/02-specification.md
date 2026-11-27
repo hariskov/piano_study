@@ -71,7 +71,7 @@ Tempo is set the same way everywhere (random mode and songs).
 | LIB-2 | The app MUST open `.musicxml`, `.xml` (uncompressed MusicXML) and `.mxl` (compressed) files, MusicXML version 3.1 or 4.0. |
 | LIB-3 | Imported songs MUST be copied into the library folder (`~/.local/share/piano-player/library/`) together with a small metadata file (title, source file, import date, original format). |
 | LIB-4 | The library screen MUST list songs with their title, number of parts, length and source format, and SHOULD allow search and delete. |
-| LIB-5 | The supported MusicXML subset (v1) is: parts, staves (1 or 2 per part), measures, notes, rests, chords, ties, voices, time signatures, key signatures, tempo markings, repeats (played straight through in v1), and tuplets. Ornaments, grace notes, dynamics and lyrics are read but ignored. Anything not supported MUST be skipped without crashing and noted in an import report. |
+| LIB-5 | The supported MusicXML subset (v1) is: parts, staves (1 or 2 per part), measures, notes, rests, chords, ties, voices, time signatures, key signatures, tempo markings, repeats (played straight through in v1), and tuplets. Ornaments, grace notes, dynamics and lyrics are read but ignored. Anything not supported MUST be skipped without crashing and noted in an import report. In v0.8 the report lists grace notes, unpitched (percussion) notes, repeats, quarter tones, staves after the second, unsupported time or key signatures, and tempos outside 20–240 BPM. Only partwise MusicXML is read; a timewise file is refused with a message. |
 
 ### 2.2 MIDI import (MIDI → MusicXML)
 

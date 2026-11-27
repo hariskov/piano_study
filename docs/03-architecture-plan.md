@@ -207,6 +207,28 @@ Exported package `generator.chords` (chord practice, spec 4.3):
 - `ChordEvent` record: `Chord`, start, duration, hand; `notes()` turns it into `NoteEvent`s, which `Targets.from` groups back into one target per chord.
 - Package-private `ChordCandidates`: every chord (root in key × type × inversion) whose notes all fit the hand's range.
 
+## 4C. MusicXML (`pp-musicxml`)
+
+Depends only on `pp-model` and the JDK's `java.xml`. Exported package `bg.petarh.piano.musicxml`:
+- `MusicXmlReader.read(path)` reads `.musicxml`/`.xml`, or `.mxl`: the score named in `META-INF/container.xml`, or else the first `.xml`/`.musicxml` entry. `read(stream, fileName)` reads plain XML. The result is an `ImportResult(score, warnings)`. A file that isn't readable `score-partwise` MusicXML (malformed, `score-timewise`, another root element) throws `MusicXmlException` with the file name and the reason.
+- The StAX parser never loads DTDs or external entities (`SUPPORT_DTD` and `IS_SUPPORTING_EXTERNAL_ENTITIES` are off), so a file can't read local files or reach the network.
+- What is read (LIB-5):
+  - Notes and rests: `<duration>` in `<divisions>` gives exact `Fraction`s, so tuplets need no special handling. Chords (`<chord/>`), `<backup>`/`<forward>` between voices and staves, ties (`<tie>`), voices and staves (1–2).
+  - Signatures and tempo: key and time signature changes; tempo from `<sound tempo>` or else from `<metronome>`, kept within 20–240 BPM.
+  - Measures: a measure is as long as the furthest point reached in it, so pickup bars work; `Score.measureStarts` comes from the file.
+  - Title from `work-title`, then `movement-title`, then the file name; the composer from `creator type="composer"`.
+- Skipped and listed once each in the warnings:
+  - grace notes
+  - unpitched (percussion) notes
+  - repeats (played straight through)
+  - quarter tones (played without them)
+  - staves beyond the second
+  - unsupported time or key signatures
+  - tempos outside 20–240 BPM
+
+  Ornaments, dynamics, lyrics and layout are ignored without a warning.
+- Package-private: `Xml` (secure factory and child-element walking), `PartReader` (one part, measure by measure), `ImportReport`.
+
 ## 4A. MIDI layer (`pp-midi`, `pp-midi-jdk`)
 
 The rest of the backend only uses the interfaces in `pp-midi`. `javax.sound.midi` appears only in `pp-midi-jdk`.
