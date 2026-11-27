@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { connectToBackend } from "../api/backend";
+import type { SessionStartParams } from "../api/protocol";
 import { DevicesScreen } from "../devices/DevicesScreen";
+import { SetupScreen } from "../practice/SetupScreen";
 import { BackendContext } from "./backendContext";
 import { HomeScreen } from "./HomeScreen";
 
@@ -15,6 +17,7 @@ const NAVIGATION: readonly { screen: Screen; label: string }[] = [
 export function App() {
   const client = useMemo(() => connectToBackend(), []);
   const [screen, setScreen] = useState<Screen>(screenFromHash);
+  const [started, setStarted] = useState<SessionStartParams>();
   const open = (next: Screen) => {
     window.location.hash = next;
     setScreen(next);
@@ -51,7 +54,12 @@ export function App() {
         <main>
           {screen === "home" && <HomeScreen onOpen={open} />}
           {screen === "devices" && <DevicesScreen />}
-          {screen === "practice" && <p className="muted">Practice setup comes next.</p>}
+          {screen === "practice" &&
+            (started ? (
+              <p className="muted">Starting {started.exercise} practice… (the practice screen comes next)</p>
+            ) : (
+              <SetupScreen onStart={setStarted} onChooseDevice={() => open("devices")} />
+            ))}
         </main>
       </div>
     </BackendContext.Provider>
