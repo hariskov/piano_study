@@ -21,6 +21,15 @@ Optional fields can be left out. Fields without a value are left out of events t
 ### `devices.list`
 No params. Result: `{"inputs":[{"id","name","description"}],"outputs":[…]}`.
 
+### `devices.monitor`
+Params `{"input":"jdk:Piano [hw:3,0,0]"}`. Opens the input outside a session and sends an `input` event for every key and pedal, for the device screen's live keyboard (DEV-6). A second call switches to the new input. Starting a session stops monitoring. Result `null`; -32002 if the device is unavailable.
+
+### `devices.stopMonitor`
+No params. Stops monitoring. Result `null`.
+
+### `keyboard.press`, `keyboard.release`
+Params `{"pitch":"C4","velocity":80}` (`velocity` is optional and defaults to 80; release ignores it). Plays the built-in virtual keyboard, the input `virtual:keyboard`, which `devices.list` always lists. The UI's on-screen keyboard and computer keys use it to practise without a piano (DEV-7). Result `null`; -32602 for an unknown pitch.
+
 ### `settings.get`
 No params. Result: `{"input":"jdk:Piano","output":"jdk:Gervill","keyboards":{"jdk:Piano":"A0-C8"},"tempos":{"wait":72,"tempo":100},"latencyOffsetMs":0}`. Fields that were never set are left out.
 

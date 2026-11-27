@@ -10,4 +10,8 @@ public interface MidiInputPort {
     List<DeviceDescriptor> devices();
 
     InputConnection open(DeviceId id, InputListener listener);
+
+    static MidiInputPort combining(List<MidiInputPort> ports) {
+        return new CombinedInputPort(ports);
+    }
 }

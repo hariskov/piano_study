@@ -4,12 +4,15 @@ import bg.petarh.piano.api.PianoApi;
 import bg.petarh.piano.api.rpc.RpcServer;
 import bg.petarh.piano.api.stdio.StdioTransport;
 import bg.petarh.piano.library.settings.JsonSettingsFile;
+import bg.petarh.piano.midi.input.MidiInputPort;
+import bg.petarh.piano.midi.virtual.input.VirtualKeyboard;
 import bg.petarh.piano.library.settings.SettingsLocation;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
@@ -35,8 +38,11 @@ final class ApiCommand implements Callable<Integer> {
     public Integer call() {
         RpcServer server = new RpcServer();
         StdioTransport transport = new StdioTransport(server);
-        try (PianoApi api = PianoApi.create(server, environment.inputs(), environment.outputs(), environment.clock(),
-                transport.events(), new JsonSettingsFile(settingsFile.orElseGet(SettingsLocation::defaultSettingsFile)))) {
+        VirtualKeyboard keyboard = VirtualKeyboard.withClock(environment.clock());
+        MidiInputPort inputs = MidiInputPort.combining(List.of(environment.inputs(), keyboard.port()));
+        try (PianoApi api = PianoApi.create(server, inputs, environment.outputs(), environment.clock(),
+                transport.events(), new JsonSettingsFile(settingsFile.orElseGet(SettingsLocation::defaultSettingsFile)),
+                keyboard)) {
             transport.onEndOfInput(api::close);
             api.startWatchingDevices(DEVICE_CHECK_INTERVAL);
             transport.run(environment.stdin(), environment.stdout());

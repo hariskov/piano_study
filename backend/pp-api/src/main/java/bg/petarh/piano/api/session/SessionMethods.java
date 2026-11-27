@@ -1,11 +1,12 @@
 package bg.petarh.piano.api.session;
 
+import bg.petarh.piano.api.devices.DeviceMonitor;
+import bg.petarh.piano.api.devices.InputMessage;
 import bg.petarh.piano.api.rpc.EventSink;
 import bg.petarh.piano.api.rpc.RpcException;
 import bg.petarh.piano.api.rpc.RpcServer;
 import bg.petarh.piano.api.session.Messages.BeatEvent;
 import bg.petarh.piano.api.session.Messages.InputDeviceEvent;
-import bg.petarh.piano.api.session.Messages.InputMessage;
 import bg.petarh.piano.api.session.Messages.SessionStarted;
 import bg.petarh.piano.api.session.Messages.SummaryEvent;
 import bg.petarh.piano.api.session.Messages.TempoParams;
@@ -59,10 +60,12 @@ public final class SessionMethods implements AutoCloseable {
     private final TimestampSource clock;
     private final EventSink events;
     private final SettingsService settings;
+    private final DeviceMonitor monitor;
     private Active active;
 
     private SessionMethods(MidiInputPort inputs, MidiOutputPort outputs, TimestampSource clock, EventSink events,
-                           SettingsService settings) {
+                           SettingsService settings, DeviceMonitor monitor) {
+        this.monitor = monitor;
         this.inputs = inputs;
         this.outputs = outputs;
         this.clock = clock;
@@ -71,8 +74,9 @@ public final class SessionMethods implements AutoCloseable {
     }
 
     public static SessionMethods register(RpcServer server, MidiInputPort inputs, MidiOutputPort outputs,
-                                          TimestampSource clock, EventSink events, SettingsService settings) {
-        SessionMethods methods = new SessionMethods(inputs, outputs, clock, events, settings);
+                                          TimestampSource clock, EventSink events, SettingsService settings,
+                                          DeviceMonitor monitor) {
+        SessionMethods methods = new SessionMethods(inputs, outputs, clock, events, settings, monitor);
         server.register("session.start", SessionStartParams.class, SessionStarted.class, methods::start);
         server.register("session.pause", Void.class, Void.class, ignored -> methods.control(Practice::pause));
         server.register("session.resume", Void.class, Void.class, ignored -> methods.control(Practice::resume));
@@ -92,6 +96,7 @@ public final class SessionMethods implements AutoCloseable {
         }
         Settings saved = settings.current();
         PracticePlan plan = PracticePlan.from(params, saved);
+        monitor.stop();
         LatencyOffset latency = LatencyOffset.ofMillis(saved.latencyOffsetMs());
         Optional<OutputConnection> metronome = Optional.ofNullable(params.metronome()).map(this::openOutput);
         Optional<MidiClicks> clicks = metronome.map(MidiClicks::new);
@@ -103,7 +108,7 @@ public final class SessionMethods implements AutoCloseable {
                     clicks.ifPresent(output -> output.click(accent));
                 }));
         InputListener listener = event -> {
-            Messages.INPUT.send(events, InputMessage.of(event));
+            InputMessage.EVENT.send(events, InputMessage.of(event));
             practice.input().onEvent(latency.apply(event));
         };
         Active session = new Active(practice, params.input(), metronome, plan.modeKey(), listener);

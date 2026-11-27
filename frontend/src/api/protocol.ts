@@ -36,6 +36,15 @@ export interface InputMessage {
   t: number;
 }
 
+export interface KeyParams {
+  pitch?: string;
+  velocity?: number;
+}
+
+export interface MonitorParams {
+  input?: string;
+}
+
 export interface NoteInfo {
   pitch: string;
   midi: number;
@@ -114,6 +123,10 @@ export interface TempoParams {
 
 export interface ApiMethods {
   "devices.list": { params: Record<string, never>; result: DeviceList };
+  "devices.monitor": { params: MonitorParams; result: null };
+  "devices.stopMonitor": { params: Record<string, never>; result: null };
+  "keyboard.press": { params: KeyParams; result: null };
+  "keyboard.release": { params: KeyParams; result: null };
   "session.changeTempo": { params: TempoParams; result: null };
   "session.pause": { params: Record<string, never>; result: null };
   "session.resume": { params: Record<string, never>; result: null };
