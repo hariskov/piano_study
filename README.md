@@ -14,6 +14,15 @@ Requires JDK 25. Maven is provided by the wrapper.
 
 The frontend (`frontend/`, React + TypeScript + Vite) is built and tested by the same `./mvnw verify`; Maven downloads its own Node for it.
 
+Run the desktop app:
+
+```
+./mvnw -q package -DskipTests
+bin/ui
+```
+
+The first start downloads the Electron binary (about 100 MB, once). The app starts the backend (`bin/pp api`) itself and stops it when the window closes.
+
 ## Command-line tools
 
 ```

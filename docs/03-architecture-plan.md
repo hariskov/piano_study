@@ -305,7 +305,12 @@ The conversion is tested with **golden files**: known MIDI files whose expected 
 
 **Transport: stdin/stdout pipes.** Electron's main process starts the backend (`java … --api`) as a child process. Every message is one line of JSON (UTF-8, ending with `\n`): Electron writes requests to the backend's stdin and reads responses and events from its stdout. stderr is for logs only, and nothing else may be written to stdout. When stdin reaches end-of-file (Electron exited or closed it), the backend stops the session, closes the MIDI devices and exits. The backend opens no network port, so no other program can talk to it and no token is needed.
 
-The renderer never talks to the backend directly. A small preload script exposes `request(method, params)` and `onEvent(listener)` through Electron's `contextBridge`, and the main process passes messages through.
+The renderer never talks to the backend directly:
+- **Main process** (`frontend/electron/main.cts`): starts `bin/pp api`, or `$PP_BACKEND`. It passes each stdout line to the window (`backend:line`) and each line from the window to the backend's stdin, writes the backend's stderr to its own, and reports the backend's exit (`backend:exit`). When the last window closes it ends the backend's stdin and quits.
+- **Preload** (`preload.cts`): exposes `window.backend = { send, onLine, onExit }` through `contextBridge`. The window runs with context isolation, the sandbox and no Node integration.
+- **Renderer** (`src/api/rpcClient.ts`): JSON-RPC is handled here. `RpcClient.request(method, params)` is typed from `protocol.ts` and resolves with the result or rejects with `RpcError(code, message)`. `on(event, listener)` returns an unsubscribe function. `disconnect(reason)`, called on `backend:exit`, fails every pending request. `connectToBackend()` returns nothing outside Electron, for example in a plain browser during development.
+
+The main and preload sources are `.cts` files, compiled by `tsconfig.electron.json` to CommonJS `.cjs` (Electron's sandboxed preload needs CommonJS). The renderer is built by Vite. Electron 45 downloads its binary on first start, not at `npm install`. `bin/ui` starts the app with Maven's Node.
 
 **Protocol: JSON-RPC 2.0.**
 - A **request** has an `id`, a `method` and `params`, and gets exactly one **response** with the same `id`: either `result` or `error` (`code`, `message`).

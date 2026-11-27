@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+root="$(cd "$(dirname "$0")/.." && pwd)"
+if [ ! -f "$root/frontend/dist/electron/main.cjs" ] || [ ! -x "$root/frontend/target/node/node" ]; then
+    echo "Build first: ./mvnw -q package -DskipTests" >&2
+    exit 1
+fi
+cd "$root/frontend"
+PATH="$root/frontend/target/node:$PATH" exec npx --no-install electron . "$@"
