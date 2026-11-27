@@ -19,7 +19,7 @@ class RpcServerTest {
 
     @Test
     void answersARequestWithTheSameId() {
-        server.register("greet", Greeting.class, greeting -> new Reply("Hello " + greeting.name(), greeting.name().length()));
+        server.register("greet", Greeting.class, Object.class, greeting -> new Reply("Hello " + greeting.name(), greeting.name().length()));
 
         assertThat(server.handle("{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"greet\",\"params\":{\"name\":\"Ana\"}}"))
                 .contains("{\"jsonrpc\":\"2.0\",\"id\":7,\"result\":{\"text\":\"Hello Ana\",\"length\":3}}");
@@ -27,7 +27,7 @@ class RpcServerTest {
 
     @Test
     void keepsStringIds() {
-        server.register("ping", Void.class, ignored -> "pong");
+        server.register("ping", Void.class, Object.class, ignored -> "pong");
 
         assertThat(server.handle("{\"jsonrpc\":\"2.0\",\"id\":\"a1\",\"method\":\"ping\"}"))
                 .contains("{\"jsonrpc\":\"2.0\",\"id\":\"a1\",\"result\":\"pong\"}");
@@ -35,7 +35,7 @@ class RpcServerTest {
 
     @Test
     void answersNullForHandlersWithoutResult() {
-        server.register("stop", Void.class, ignored -> null);
+        server.register("stop", Void.class, Object.class, ignored -> null);
 
         assertThat(server.handle("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"stop\"}"))
                 .contains("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":null}");
@@ -44,7 +44,7 @@ class RpcServerTest {
     @Test
     void runsNotificationsWithoutAnswering() {
         List<String> seen = new ArrayList<>();
-        server.register("log", Greeting.class, greeting -> {
+        server.register("log", Greeting.class, Object.class, greeting -> {
             seen.add(greeting.name());
             return null;
         });
@@ -74,7 +74,7 @@ class RpcServerTest {
 
     @Test
     void reportsParamsOfTheWrongShape() {
-        server.register("greet", Greeting.class, greeting -> greeting.name());
+        server.register("greet", Greeting.class, Object.class, greeting -> greeting.name());
 
         assertThat(server.handle("{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"greet\",\"params\":{\"name\":[1]}}"))
                 .hasValueSatisfying(response -> assertThat(response).contains("\"id\":5", "\"code\":-32602"));
@@ -82,7 +82,7 @@ class RpcServerTest {
 
     @Test
     void reportsRejectedValuesAsInvalidParams() {
-        server.register("greet", Greeting.class, greeting -> {
+        server.register("greet", Greeting.class, Object.class, greeting -> {
             throw new IllegalArgumentException("Name too short: " + greeting.name());
         });
 
@@ -92,7 +92,7 @@ class RpcServerTest {
 
     @Test
     void reportsErrorsRaisedByHandlers() {
-        server.register("start", Void.class, ignored -> {
+        server.register("start", Void.class, Object.class, ignored -> {
             throw new RpcException(RpcException.SESSION_ERROR, "A session is already running");
         });
 
@@ -102,7 +102,7 @@ class RpcServerTest {
 
     @Test
     void reportsUnexpectedFailuresAsInternalErrors() {
-        server.register("crash", Void.class, ignored -> {
+        server.register("crash", Void.class, Object.class, ignored -> {
             throw new IllegalStateException("boom");
         });
 

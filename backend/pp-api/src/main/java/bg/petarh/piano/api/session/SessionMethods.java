@@ -4,6 +4,7 @@ import bg.petarh.piano.api.rpc.EventSink;
 import bg.petarh.piano.api.rpc.RpcException;
 import bg.petarh.piano.api.rpc.RpcServer;
 import bg.petarh.piano.api.session.Messages.BeatEvent;
+import bg.petarh.piano.api.session.Messages.InputDeviceEvent;
 import bg.petarh.piano.api.session.Messages.InputMessage;
 import bg.petarh.piano.api.session.Messages.SessionStarted;
 import bg.petarh.piano.api.session.Messages.SummaryEvent;
@@ -51,8 +52,7 @@ public final class SessionMethods implements AutoCloseable {
         }
     }
 
-    private record InputLost(String input) {
-    }
+
 
     private final MidiInputPort inputs;
     private final MidiOutputPort outputs;
@@ -73,11 +73,11 @@ public final class SessionMethods implements AutoCloseable {
     public static SessionMethods register(RpcServer server, MidiInputPort inputs, MidiOutputPort outputs,
                                           TimestampSource clock, EventSink events, SettingsService settings) {
         SessionMethods methods = new SessionMethods(inputs, outputs, clock, events, settings);
-        server.register("session.start", SessionStartParams.class, methods::start);
-        server.register("session.pause", Void.class, ignored -> methods.control(Practice::pause));
-        server.register("session.resume", Void.class, ignored -> methods.control(Practice::resume));
-        server.register("session.changeTempo", TempoParams.class, methods::changeTempo);
-        server.register("session.stop", Void.class, ignored -> methods.control(Practice::stop));
+        server.register("session.start", SessionStartParams.class, SessionStarted.class, methods::start);
+        server.register("session.pause", Void.class, Void.class, ignored -> methods.control(Practice::pause));
+        server.register("session.resume", Void.class, Void.class, ignored -> methods.control(Practice::resume));
+        server.register("session.changeTempo", TempoParams.class, Void.class, methods::changeTempo);
+        server.register("session.stop", Void.class, Void.class, ignored -> methods.control(Practice::stop));
         return methods;
     }
 
@@ -99,11 +99,11 @@ public final class SessionMethods implements AutoCloseable {
         Practice practice = Practice.prepare(plan.targets(), plan.timing(), plan.mode(), clock::nanos,
                 SessionListener.all(List.of(new SessionEvents(events, plan.names()), results)),
                 Optional.of(accent -> {
-                    events.emit("beat", new BeatEvent(accent));
+                    Messages.BEAT.send(events, new BeatEvent(accent));
                     clicks.ifPresent(output -> output.click(accent));
                 }));
         InputListener listener = event -> {
-            events.emit("input", InputMessage.of(event));
+            Messages.INPUT.send(events, InputMessage.of(event));
             practice.input().onEvent(latency.apply(event));
         };
         Active session = new Active(practice, params.input(), metronome, plan.modeKey(), listener);
@@ -139,12 +139,12 @@ public final class SessionMethods implements AutoCloseable {
             active.inputLost = true;
             active.practice.pause();
             closeQuietly(active.input);
-            events.emit("session.inputLost", new InputLost(active.inputId));
+            Messages.INPUT_LOST.send(events, new InputDeviceEvent(active.inputId));
         } else if (active.inputLost && present) {
             try {
                 active.input = inputs.open(DeviceId.of(active.inputId), active.listener);
                 active.inputLost = false;
-                events.emit("session.inputRestored", new InputLost(active.inputId));
+                Messages.INPUT_RESTORED.send(events, new InputDeviceEvent(active.inputId));
             } catch (DeviceUnavailableException e) {
                 // Listed but not openable yet; the next change in the device list tries again.
             }
@@ -169,7 +169,7 @@ public final class SessionMethods implements AutoCloseable {
             }
         }
         session.metronome.ifPresent(OutputConnection::close);
-        events.emit("session.summary", SummaryEvent.of(results.summary(), session.practice.elapsedNanos()));
+        Messages.SUMMARY.send(events, SummaryEvent.of(results.summary(), session.practice.elapsedNanos()));
     }
 
     private static void closeQuietly(InputConnection input) {

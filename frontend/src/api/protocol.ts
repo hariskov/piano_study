@@ -1,0 +1,136 @@
+// Generated from the Java API records (pp-api). Do not edit by hand: change the records, then run
+// ./mvnw -pl backend/pp-api -am test -Dprotocol.write=true to write this file again.
+
+export interface BeatEvent {
+  accent: boolean;
+}
+
+export interface DeviceInfo {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface DeviceList {
+  inputs: DeviceInfo[];
+  outputs: DeviceInfo[];
+}
+
+export interface EvalEvent {
+  result: string;
+  pitch?: string;
+  grade?: string;
+  offsetMs?: number;
+}
+
+export interface InputDeviceEvent {
+  input: string;
+}
+
+export interface InputMessage {
+  type: string;
+  pitch?: string;
+  midi?: number;
+  velocity?: number;
+  down?: boolean;
+  t: number;
+}
+
+export interface NoteInfo {
+  pitch: string;
+  midi: number;
+  hand: string;
+}
+
+export interface SessionStartParams {
+  input?: string;
+  exercise?: string;
+  mode?: string;
+  tempo?: number;
+  key?: string;
+  hands?: string;
+  range?: string;
+  keyboard?: string;
+  noteValue?: string;
+  time?: string;
+  notes?: number;
+  countIn?: number;
+  seed?: number;
+  metronome?: string;
+  level?: number;
+  accidentals?: boolean;
+  mixed?: boolean;
+  chordTypes?: string[];
+  inversions?: number[];
+}
+
+export interface SessionStarted {
+  seed: number;
+  tempo: number;
+}
+
+export interface SettingsUpdate {
+  input?: string;
+  output?: string;
+  keyboards?: Record<string, string>;
+  tempos?: Record<string, number>;
+  latencyOffsetMs?: number;
+}
+
+export interface SettingsView {
+  input?: string;
+  output?: string;
+  keyboards: Record<string, string>;
+  tempos: Record<string, number>;
+  latencyOffsetMs: number;
+}
+
+export interface StateEvent {
+  state: string;
+}
+
+export interface SummaryEvent {
+  timed: boolean;
+  completedTargets: number;
+  correctNotes: number;
+  wrongKeys: number;
+  perfect: number;
+  good: number;
+  ok: number;
+  missed: number;
+  accuracyPercent: number;
+  elapsedMs: number;
+}
+
+export interface TargetEvent {
+  start: string;
+  name?: string;
+  notes: NoteInfo[];
+}
+
+export interface TempoParams {
+  bpm?: number;
+}
+
+export interface ApiMethods {
+  "devices.list": { params: Record<string, never>; result: DeviceList };
+  "session.changeTempo": { params: TempoParams; result: null };
+  "session.pause": { params: Record<string, never>; result: null };
+  "session.resume": { params: Record<string, never>; result: null };
+  "session.start": { params: SessionStartParams; result: SessionStarted };
+  "session.stop": { params: Record<string, never>; result: null };
+  "settings.get": { params: Record<string, never>; result: SettingsView };
+  "settings.update": { params: SettingsUpdate; result: SettingsView };
+}
+
+export interface ApiEvents {
+  "beat": BeatEvent;
+  "devices.changed": DeviceList;
+  "eval": EvalEvent;
+  "input": InputMessage;
+  "session.inputLost": InputDeviceEvent;
+  "session.inputRestored": InputDeviceEvent;
+  "session.state": StateEvent;
+  "session.summary": SummaryEvent;
+  "session.target": TargetEvent;
+}

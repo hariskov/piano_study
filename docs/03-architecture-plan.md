@@ -325,7 +325,11 @@ Sample messages:
 - **Messages and dispatcher:** the request and event types and a dispatcher that routes a request to its handler. This part doesn't know how bytes travel.
 - **Transport adapter:** reads lines from an `InputStream` and writes lines to an `OutputStream`. In production these are `System.in` / `System.out`; in tests they are in-memory streams, so contract tests run a whole session without a process. Another adapter (for example a Unix socket for a debug tool) could be added later without changing the rest.
 
-The message types are written once in Java, and the matching TypeScript types are generated from them, so the two sides can't drift apart.
+The message types are written once in Java, and the matching TypeScript types are generated from them, so the two sides can't drift apart:
+- Every method is registered with its params and result record (`RpcServer.register(name, Params.class, Result.class, handler)`), and `RpcServer.methods()` lists them.
+- Every event is an `ApiEvent<P>` constant declared next to its record (`Messages.STATE`, `DeviceList.CHANGED`, …) and sent with `event.send(sink, params)`. `PianoApi.EVENTS` lists them all.
+- `api.contract.TypeScriptContract` turns them into `frontend/src/api/protocol.ts`: one interface per record, plus an `ApiMethods` map (method → `{ params; result }`) and an `ApiEvents` map (event → params). Params fields are all optional (the backend fills in defaults). Result and event fields are required unless the record component is marked `@MayBeAbsent`.
+- The file is committed. `ProtocolFileTest` regenerates it on every build and fails if the committed copy is out of date; `-Dprotocol.write=true` writes it again.
 
 Implemented so far (`pp-api`, using Jackson 3):
 - `api.rpc.RpcServer`: `register(method, ParamsType.class, handler)` turns `params` into the handler's record (`Void.class` for none) and its return value into `result`.
