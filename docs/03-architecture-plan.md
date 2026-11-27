@@ -93,11 +93,13 @@ bootstrap     pp-app                          wiring, main()
 - Small classes and methods.
 - Every port (interface) has a test double, so the engine and generator are tested without any I/O.
 
-## 3. Backend modules (Maven)
+## 3. Project structure (Maven)
+
+One root parent POM with two sub-projects, `backend` and `frontend`. The backend is itself a parent POM whose modules keep the layers apart: a module can only use what it declares as a dependency.
 
 ```
-piano-player/                      (parent pom)
-├── backend/
+piano-player/                      root parent pom: shared coordinates, Maven version check
+├── backend/                       backend parent pom: Java 25, test libraries, plugins, internal versions
 │   ├── pp-model/                  shared song model, no dependencies
 │   ├── pp-musicxml/               MusicXML ⇄ model
 │   ├── pp-midi/                   MIDI port interfaces, events, virtual devices
@@ -109,7 +111,7 @@ piano-player/                      (parent pom)
 │   ├── pp-api/                    Javalin REST + WebSocket, JSON message types
 │   ├── pp-app/                    main(): wires everything together, CLI options
 │   └── pp-import-pdf/             (v2) Audiveris integration
-└── ui/                            Electron + React + TypeScript (npm)
+└── frontend/                      Electron + React + TypeScript; Maven runs npm via frontend-maven-plugin
 ```
 
 Allowed dependencies (arrows point to what a module may use):
