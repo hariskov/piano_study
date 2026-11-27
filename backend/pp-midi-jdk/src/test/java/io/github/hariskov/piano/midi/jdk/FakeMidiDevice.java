@@ -13,10 +13,13 @@ final class FakeMidiDevice implements MidiDevice {
     private final int maxReceivers;
     private final int maxTransmitters;
     private final List<FakeTransmitter> transmitters = new ArrayList<>();
+    private final List<FakeReceiver> receivers = new ArrayList<>();
     private boolean open;
     private boolean failOnOpen;
     private boolean failOnTransmitter;
     private boolean transmittersFailOnClose;
+    private boolean failOnReceiver;
+    private boolean receiversFailOnClose;
 
     private FakeMidiDevice(String name, String description, int maxReceivers, int maxTransmitters) {
         this.info = new Info(name, "Fake vendor", description, "1.0") {
@@ -46,6 +49,20 @@ final class FakeMidiDevice implements MidiDevice {
     FakeMidiDevice withTransmittersFailingOnClose() {
         transmittersFailOnClose = true;
         return this;
+    }
+
+    FakeMidiDevice failingOnReceiver() {
+        failOnReceiver = true;
+        return this;
+    }
+
+    FakeMidiDevice withReceiversFailingOnClose() {
+        receiversFailOnClose = true;
+        return this;
+    }
+
+    FakeReceiver lastReceiver() {
+        return receivers.getLast();
     }
 
     FakeTransmitter lastTransmitter() {
@@ -92,12 +109,17 @@ final class FakeMidiDevice implements MidiDevice {
 
     @Override
     public Receiver getReceiver() throws MidiUnavailableException {
-        throw new MidiUnavailableException("no receivers");
+        if (maxReceivers == 0 || failOnReceiver) {
+            throw new MidiUnavailableException("no receivers");
+        }
+        FakeReceiver receiver = new FakeReceiver(receiversFailOnClose);
+        receivers.add(receiver);
+        return receiver;
     }
 
     @Override
     public List<Receiver> getReceivers() {
-        return List.of();
+        return List.copyOf(receivers);
     }
 
     @Override
