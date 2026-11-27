@@ -5,8 +5,9 @@ import { TempoControl } from "../tempo/TempoControl";
 import { defaultSetup, savedTempo, toStartParams, type Mode, type Setup } from "./setupForm";
 
 interface Props {
-  onStart: (params: SessionStartParams) => void;
+  onStart: (params: SessionStartParams, setup: Setup) => void;
   onChooseDevice: () => void;
+  previous?: Setup;
 }
 
 const KEYS = ["C", "G", "D", "A", "E", "B", "F#", "F", "Bb", "Eb", "Ab", "Db", "Am", "Em", "Bm", "Dm", "Gm", "Cm"];
@@ -28,7 +29,7 @@ const LEVELS = [
   "5 · both hands together",
 ];
 
-export function SetupScreen({ onStart, onChooseDevice }: Props) {
+export function SetupScreen({ onStart, onChooseDevice, previous }: Props) {
   const client = useBackend();
   const [settings, setSettings] = useState<SettingsView>();
   const [setup, setSetup] = useState<Setup>();
@@ -36,9 +37,9 @@ export function SetupScreen({ onStart, onChooseDevice }: Props) {
   useEffect(() => {
     void client.request("settings.get", {}).then((saved) => {
       setSettings(saved);
-      setSetup(defaultSetup(saved));
+      setSetup(previous ?? defaultSetup(saved));
     });
-  }, [client]);
+  }, [client, previous]);
 
   if (!settings || !setup) {
     return <p className="muted">Loading…</p>;
@@ -227,7 +228,7 @@ export function SetupScreen({ onStart, onChooseDevice }: Props) {
           type="button"
           className="primary big"
           disabled={!random && (setup.chordTypes.length === 0 || setup.inversions.length === 0)}
-          onClick={() => onStart(toStartParams(setup, settings.input!, settings.output))}
+          onClick={() => onStart(toStartParams(setup, settings.input!, settings.output), setup)}
         >
           Start
         </button>

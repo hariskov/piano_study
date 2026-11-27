@@ -14,4 +14,5 @@ module bg.petarh.piano.api {
     opens bg.petarh.piano.api.devices to tools.jackson.databind;
     opens bg.petarh.piano.api.session to tools.jackson.databind;
     opens bg.petarh.piano.api.settings to tools.jackson.databind;
+    opens bg.petarh.piano.api.keyboard to tools.jackson.databind;
 }

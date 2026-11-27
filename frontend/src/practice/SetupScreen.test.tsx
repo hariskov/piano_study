@@ -3,11 +3,12 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { SetupScreen } from "./SetupScreen";
 import { BackendContext } from "../app/backendContext";
 import { FakeBackend } from "../testing/fakeBackend";
+import { defaultSetup, type Setup } from "./setupForm";
 
-function show(fake: FakeBackend, onStart = vi.fn(), onChooseDevice = vi.fn()) {
+function show(fake: FakeBackend, onStart = vi.fn(), onChooseDevice = vi.fn(), previous?: Setup) {
   render(
     <BackendContext.Provider value={fake.client}>
-      <SetupScreen onStart={onStart} onChooseDevice={onChooseDevice} />
+      <SetupScreen onStart={onStart} onChooseDevice={onChooseDevice} previous={previous} />
     </BackendContext.Provider>,
   );
   return { onStart, onChooseDevice };
@@ -63,6 +64,15 @@ describe("SetupScreen", () => {
 
     expect(onStart).toHaveBeenCalledWith(
       expect.objectContaining({ input: "jdk:Piano", level: 3, hands: "both", tempo: 70, metronome: "jdk:Gervill" }),
+      expect.objectContaining({ level: 3, hands: "both" }),
     );
+  });
+
+  it("starts from the previous setup when there is one", async () => {
+    const previous = { ...defaultSetup({ keyboards: {}, tempos: {}, latencyOffsetMs: 0 }), countIn: 0, notes: 7 };
+    show(backend("jdk:Piano"), vi.fn(), vi.fn(), previous);
+
+    expect(((await screen.findByLabelText("Count-in")) as HTMLSelectElement).value).toBe("0");
+    expect((screen.getByLabelText("Number of notes") as HTMLInputElement).value).toBe("7");
   });
 });

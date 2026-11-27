@@ -4,6 +4,7 @@ import type { SessionStartParams } from "../api/protocol";
 import { DevicesScreen } from "../devices/DevicesScreen";
 import { PracticeScreen } from "../practice/PracticeScreen";
 import { SetupScreen } from "../practice/SetupScreen";
+import type { Setup } from "../practice/setupForm";
 import { BackendContext } from "./backendContext";
 import { HomeScreen } from "./HomeScreen";
 
@@ -19,6 +20,7 @@ export function App() {
   const client = useMemo(() => connectToBackend(), []);
   const [screen, setScreen] = useState<Screen>(screenFromHash);
   const [started, setStarted] = useState<SessionStartParams>();
+  const [lastSetup, setLastSetup] = useState<Setup>();
   const open = (next: Screen) => {
     window.location.hash = next;
     setScreen(next);
@@ -62,7 +64,14 @@ export function App() {
             (started ? (
               <PracticeScreen params={started} onChangeSettings={() => setStarted(undefined)} />
             ) : (
-              <SetupScreen onStart={setStarted} onChooseDevice={() => open("devices")} />
+              <SetupScreen
+                previous={lastSetup}
+                onStart={(params, setup) => {
+                  setLastSetup(setup);
+                  setStarted(params);
+                }}
+                onChooseDevice={() => open("devices")}
+              />
             ))}
         </main>
       </div>
