@@ -17,15 +17,10 @@ public final class PracticePrinter implements SessionListener {
 
     private final PrintWriter out;
     private final Function<Target, String> names;
-    private final PracticeTally tally = new PracticeTally();
 
     public PracticePrinter(PrintWriter out, Function<Target, String> names) {
         this.out = out;
         this.names = names;
-    }
-
-    public PracticeTally tally() {
-        return tally;
     }
 
     @Override
@@ -47,7 +42,6 @@ public final class PracticePrinter implements SessionListener {
 
     @Override
     public void onEvaluation(Evaluation evaluation) {
-        tally.add(evaluation);
         switch (evaluation) {
             case Evaluation.CorrectNote correct -> print("ok", correct.pitch());
             case Evaluation.WrongNote wrong -> print("wrong", wrong.pitch());

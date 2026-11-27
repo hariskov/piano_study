@@ -64,11 +64,4 @@ class PracticePrinterTest {
 
         assertThat(out.toString().lines()).containsExactly("Count-in...", "Go!", "Paused.", "Go!", "Finished.");
     }
-
-    @Test
-    void keepsATallyForTheSummary() {
-        printer.onEvaluation(new WrongNote(Pitch.parse("D4"), 0));
-
-        assertThat(printer.tally().summary(java.time.Duration.ZERO)).contains("1 wrong key");
-    }
 }
