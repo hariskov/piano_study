@@ -1,5 +1,6 @@
 package bg.petarh.piano.app.cli;
 
+import bg.petarh.piano.model.chord.ChordType;
 import bg.petarh.piano.model.key.KeySignature;
 import bg.petarh.piano.model.keyboard.KeyboardPreset;
 import bg.petarh.piano.model.keyboard.KeyboardRange;
@@ -66,6 +67,14 @@ final class PracticeConverters {
         @Override
         public TimeSignature convert(String value) {
             return TimeSignature.parse(value);
+        }
+    }
+
+    static final class ChordTypeConverter implements ITypeConverter<ChordType> {
+
+        @Override
+        public ChordType convert(String value) {
+            return ChordType.forCode(value);
         }
     }
 }
