@@ -23,6 +23,7 @@ The keywords **MUST**, **SHOULD** and **MAY** mean: required, recommended, and o
 | DEV-9 | The app SHOULD offer a latency offset setting (in milliseconds) for Tempo mode. |
 | DEV-10 | Closing an output device MUST first silence it (All Notes Off on every channel), so no note keeps sounding. |
 | DEV-11 | Key velocity (how hard a key is pressed, 1–127) MUST be kept on every key press, and passed through unchanged when notes are played back. |
+| DEV-12 | (v1) Some pianos send the keys used to change settings (for example FUNCTION + key on the Yamaha P-45) as ordinary notes. A session MUST offer a way to avoid these counting as wrong notes, for example by pausing the session. |
 
 MIDI messages handled: Note On, Note Off (including Note On with velocity 0), and Control Change 64 (sustain pedal, down at value 64 or more). Input is accepted on any MIDI channel. Release velocity and all other messages (other controllers, program change, pitch bend, clock, active sensing, SysEx) are ignored in v1.
 

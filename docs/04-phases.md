@@ -13,7 +13,7 @@ v2.0:             P11 PDF/OMR
 
 | Phase | Status |
 |---|---|
-| P0 Skeleton and MIDI devices | **In progress.** Done: Maven build, `pp-model` (`Pitch`, `KeyboardRange`, presets), `pp-midi` (ports, events, virtual devices), `pp-midi-jdk` (input, output, device catalog). Remaining: `pp echo`, `pp detect-range`, `snd-virmidi` integration test, manual test with the piano. Done in `pp-app`: `pp devices`, `pp monitor`, the `bin/pp` launcher. |
+| P0 Skeleton and MIDI devices | **In progress.** Done: Maven build, `pp-model` (`Pitch`, `KeyboardRange`, presets), `pp-midi` (ports, events, virtual devices), `pp-midi-jdk` (input, output, device catalog). Remaining: `pp echo`, `pp detect-range`, `snd-virmidi` integration test, manual tests of echo and range detection. Manual input test with the Yamaha P-45 passed (see `docs/testing/phase0-manual.md`). Done in `pp-app`: `pp devices`, `pp monitor`, the `bin/pp` launcher. |
 | P1–P11 | Not started |
 
 This table is updated in every PR that completes a deliverable.
