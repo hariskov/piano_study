@@ -1,6 +1,6 @@
 package io.github.hariskov.piano.midi;
 
-import io.github.hariskov.piano.model.Pitch;
+import io.github.hariskov.piano.model.pitch.Pitch;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
