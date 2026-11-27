@@ -46,4 +46,22 @@ class OutputMessageEncoderTest {
         assertThat(message.getData1()).isEqualTo(123);
         assertThat(message.getData2()).isZero();
     }
+
+    @Test
+    void encodesSustainPedalDownAsController64AtFullValue() {
+        ShortMessage message = encoder.encode(new OutputEvent.SustainPedal(true, CHANNEL_3));
+
+        assertThat(message.getCommand()).isEqualTo(ShortMessage.CONTROL_CHANGE);
+        assertThat(message.getChannel()).isEqualTo(2);
+        assertThat(message.getData1()).isEqualTo(64);
+        assertThat(message.getData2()).isEqualTo(127);
+    }
+
+    @Test
+    void encodesSustainPedalUpAsController64AtZero() {
+        ShortMessage message = encoder.encode(new OutputEvent.SustainPedal(false, CHANNEL_3));
+
+        assertThat(message.getData1()).isEqualTo(64);
+        assertThat(message.getData2()).isZero();
+    }
 }

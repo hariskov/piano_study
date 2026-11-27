@@ -167,7 +167,7 @@ The rest of the backend only uses the interfaces in `pp-midi`. `javax.sound.midi
 | `midi.device` | `DeviceId`, `DeviceDescriptor`, `DeviceUnavailableException` |
 | `midi.value` | `Velocity` (1–127), `MidiChannel` (0–15) |
 | `midi.input` | `MidiInputPort`, `InputConnection`, `InputListener`, `InputEvent` (`NoteOn`, `NoteOff`, `SustainPedal`), `TimestampSource` |
-| `midi.output` | `MidiOutputPort`, `OutputConnection`, `OutputEvent` (`NoteOn`, `NoteOff`, `AllNotesOff`) |
+| `midi.output` | `MidiOutputPort`, `OutputConnection`, `OutputEvent` (`NoteOn`, `NoteOff`, `SustainPedal`, `AllNotesOff`) |
 | `midi.virtual.input` | `VirtualKeyboard`: controller (`press` / `release` / `sustain`) plus its `MidiInputPort`. Used for testing and for on-screen keyboard input (DEV-7). |
 | `midi.virtual.output` | `SilentOutput`: a `MidiOutputPort` that records sent events instead of playing them |
 
@@ -184,7 +184,7 @@ The rest of the backend only uses the interfaces in `pp-midi`. `javax.sound.midi
   - The MIDI channel is ignored on input.
   - Each event is timestamped with `TimestampSource` when it arrives (DEV-8). The device's own timestamp isn't used.
 - **Output:**
-  - `OutputMessageEncoder` sends events immediately. Velocity is passed through unchanged.
+  - `OutputMessageEncoder` sends events immediately. Velocity is passed through unchanged. `SustainPedal` becomes CC 64 with value 127 (down) or 0 (up).
   - Closing an output first sends All Notes Off on all 16 channels (DEV-10).
 - **Resource handling:**
   - If anything fails after `device.open()`, the device is closed again.

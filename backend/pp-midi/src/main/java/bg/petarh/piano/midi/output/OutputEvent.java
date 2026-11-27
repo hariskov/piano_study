@@ -14,6 +14,9 @@ public sealed interface OutputEvent {
     record NoteOff(Pitch pitch, MidiChannel channel) implements OutputEvent {
     }
 
+    record SustainPedal(boolean down, MidiChannel channel) implements OutputEvent {
+    }
+
     record AllNotesOff(MidiChannel channel) implements OutputEvent {
     }
 }

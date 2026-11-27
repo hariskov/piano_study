@@ -7,7 +7,10 @@ import javax.sound.midi.ShortMessage;
 
 public final class OutputMessageEncoder {
 
+    private static final int SUSTAIN_CONTROLLER = 64;
     private static final int ALL_NOTES_OFF_CONTROLLER = 123;
+    private static final int CONTROLLER_ON = 127;
+    private static final int CONTROLLER_OFF = 0;
 
     public ShortMessage encode(OutputEvent event) {
         return switch (event) {
@@ -15,8 +18,11 @@ public final class OutputMessageEncoder {
                     ShortMessage.NOTE_ON, on.channel().index(), on.pitch().midiNumber(), on.velocity().value());
             case OutputEvent.NoteOff off -> message(
                     ShortMessage.NOTE_OFF, off.channel().index(), off.pitch().midiNumber(), 0);
+            case OutputEvent.SustainPedal pedal -> message(
+                    ShortMessage.CONTROL_CHANGE, pedal.channel().index(), SUSTAIN_CONTROLLER,
+                    pedal.down() ? CONTROLLER_ON : CONTROLLER_OFF);
             case OutputEvent.AllNotesOff allOff -> message(
-                    ShortMessage.CONTROL_CHANGE, allOff.channel().index(), ALL_NOTES_OFF_CONTROLLER, 0);
+                    ShortMessage.CONTROL_CHANGE, allOff.channel().index(), ALL_NOTES_OFF_CONTROLLER, CONTROLLER_OFF);
         };
     }
 
