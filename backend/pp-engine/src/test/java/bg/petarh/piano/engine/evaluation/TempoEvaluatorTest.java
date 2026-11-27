@@ -138,6 +138,19 @@ class TempoEvaluatorTest {
     }
 
     @Test
+    void followsATempoChange() {
+        Session session = running(120, 0, targets());
+        TempoEvaluator evaluator = new TempoEvaluator(session);
+        clock.advance(Duration.ofMillis(100));
+        session.changeTempo(Tempo.of(60));
+
+        assertThat(evaluator.onInput(press("D4", 500))).extracting(r -> ((TimedNote) r).grade())
+                .containsExactly(TimingGrade.PERFECT);
+        assertThat(evaluator.onInput(press("E4", 1500))).extracting(r -> ((TimedNote) r).grade())
+                .containsExactly(TimingGrade.PERFECT);
+    }
+
+    @Test
     void ignoresKeysWhenNotRunning() {
         Session session = running(120, 1, targets());
         TempoEvaluator evaluator = new TempoEvaluator(session);

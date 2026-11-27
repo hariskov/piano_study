@@ -121,6 +121,6 @@ public final class TempoEvaluator implements Evaluator {
     }
 
     private long expectedNanos(Fraction start) {
-        return session.timing().tempo().nanosFor(start);
+        return session.nanosAt(start);
     }
 }

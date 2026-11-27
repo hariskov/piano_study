@@ -55,7 +55,7 @@ final class PracticeRunner {
         Optional<OutputConnection> metronomeOutput = options.metronomeOutputId
                 .map(id -> environment.outputs().open(DeviceId.of(id)));
         List<SessionListener> listeners = new ArrayList<>(List.of(printer));
-        metronomeOutput.ifPresent(output -> listeners.add(new Metronome(timing, new MidiClicks(output))));
+        metronomeOutput.ifPresent(output -> listeners.add(new Metronome(session, new MidiClicks(output))));
         SessionThread thread = new SessionThread(
                 new SessionDriver(session, evaluator(options, session), clock, SessionListener.all(listeners)), TICK);
         AutoCloseable metronome = () -> metronomeOutput.ifPresent(OutputConnection::close);
