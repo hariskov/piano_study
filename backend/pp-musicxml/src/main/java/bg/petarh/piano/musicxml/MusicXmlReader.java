@@ -9,6 +9,7 @@ import bg.petarh.piano.model.time.TimeSignature;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -30,12 +31,16 @@ public final class MusicXmlReader {
     }
 
     public ImportResult read(Path file) throws IOException {
+        return read(new ByteArrayInputStream(scoreXml(file)), file.getFileName().toString());
+    }
+
+    public byte[] scoreXml(Path file) throws IOException {
         String fileName = file.getFileName().toString();
-        if (fileName.toLowerCase(Locale.ROOT).endsWith(".mxl")) {
-            return readCompressed(file, fileName);
+        if (!fileName.toLowerCase(Locale.ROOT).endsWith(".mxl")) {
+            return Files.readAllBytes(file);
         }
-        try (InputStream in = Files.newInputStream(file)) {
-            return read(in, fileName);
+        try (ZipFile zip = new ZipFile(file.toFile()); InputStream in = zip.getInputStream(rootFile(zip, fileName))) {
+            return in.readAllBytes();
         }
     }
 
@@ -56,15 +61,6 @@ public final class MusicXmlReader {
                 throw musicXml;
             }
             throw new MusicXmlException(fileName + ": not a readable MusicXML file (" + e.getMessage() + ")", e);
-        }
-    }
-
-    private ImportResult readCompressed(Path file, String fileName) throws IOException {
-        try (ZipFile zip = new ZipFile(file.toFile())) {
-            ZipEntry score = rootFile(zip, fileName);
-            try (InputStream in = zip.getInputStream(score)) {
-                return read(in, fileName);
-            }
         }
     }
 
