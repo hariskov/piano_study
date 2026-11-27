@@ -11,6 +11,7 @@
 
     <modules>
         <module>backend/pp-model</module>
+        <module>backend/pp-midi</module>
     </modules>
 
     <properties>
