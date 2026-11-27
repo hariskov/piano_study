@@ -227,7 +227,15 @@ Depends only on `pp-model` and the JDK's `java.xml`. Exported package `bg.petarh
   - tempos outside 20–240 BPM
 
   Ornaments, dynamics, lyrics and layout are ignored without a warning.
-- Package-private: `Xml` (secure factory and child-element walking), `PartReader` (one part, measure by measure), `ImportReport`.
+- `MusicXmlWriter.write(score, out)` writes MusicXML 4.0 partwise:
+  - Header: work title, composer and part list.
+  - Divisions: the least common multiple of all denominators, so every duration is a whole number.
+  - First measure: divisions, key, time and clefs (treble and bass for two staves; bass for a one-staff part that is mostly below middle C). Later measures add key or time changes. A pickup is written as measure 0 with `implicit="yes"`.
+  - Tempos: a `<direction>` with a metronome mark (plus `<sound tempo>` when the beat is a quarter note) and `<offset>` inside the measure.
+  - Notes, one voice after another (separated by `<backup>`): rests fill the gaps, an empty measure gets a whole-measure rest, `<chord/>` groups notes that start together, and a note crossing a barline is split into tied pieces. `<type>`, dots and 3:2 triplets are written when the duration has one.
+  - Notes within one voice must not overlap, apart from chords; whoever builds the `Score` (the reader, MIDI import) keeps it that way.
+- Round trip: reading what the writer wrote gives the same `Score` (`MusicXmlWriterTest` for every golden file).
+- Package-private: `Xml` (secure factory and child-element walking), `PartReader` (one part, measure by measure), `ImportReport`, `XmlBuilder` (indented output with escaping), `NoteType` (duration to type, dots and triplets).
 
 ## 4A. MIDI layer (`pp-midi`, `pp-midi-jdk`)
 
