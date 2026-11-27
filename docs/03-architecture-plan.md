@@ -237,7 +237,7 @@ The rest of the backend only uses the interfaces in `pp-midi`. `javax.sound.midi
 The `pp-engine` module exists now, with a first use case: `engine.keyboard.KeyboardRangeDetection`. It's a small state machine (`AwaitingLowest` → `AwaitingHighest` → `Detected`) that is fed `InputEvent`s and only reacts to key presses. Pressing the first key again is ignored, and the order of the two keys doesn't matter. The CLI uses it now, and the device setup screen will later (KEY-3). It recognises a preset with `KeyboardPreset.matching(range)`.
 
 Also implemented:
-- `engine.time`: `Clock` (`nowNanos()`), `SystemClock` (`System.nanoTime`), `ManualClock` (moved forward by tests, never back) and `Stopwatch` (start, pause, resume; paused time isn't counted). Every engine test uses `ManualClock`, so none of them depends on real time.
+- `engine.time`: `Clock` (`nowNanos()`), `SystemClock` (`System.nanoTime`), `ManualClock` (moved forward by tests, never back) and `Stopwatch` (start, pause, resume; paused time isn't counted; `elapsedAt(timestamp)` for a moment in the past, such as a key press). Every engine test uses `ManualClock`, so none of them depends on real time.
 - `engine.targets`: `TargetSource` (`next()`, `peek(count)`, `limitedTo(count)` for a session of N notes).
   - `TargetSource.of(list)` serves a fixed list (songs, tests).
   - `TargetSource.fromMeasures(supplier)` wraps a generator's `nextMeasure` and turns each measure into targets with `Targets.from`. It always holds the current measure plus 4 more (spec 4.4 look-ahead), so endless sessions never wait for the generator. The engine takes a plain `Supplier`, so it doesn't depend on `pp-generator`; `pp-app` connects them.
@@ -249,6 +249,8 @@ Also implemented:
 - `engine.evaluation`: `Evaluator.onInput(InputEvent)` returns `Evaluation`s (sealed: `CorrectNote`, `WrongNote`, `TargetCompleted`).
   - `WaitEvaluator` implements Wait mode (spec 3.2). It tracks the keys held down and the press time of each target key counted so far. A target is complete when all its keys are counted and they are either all held or were pressed within the chord window (default 300 ms). It then calls `session.advance()`.
   - It counts `completedTargets()` and `wrongKeys()` for the results.
+  - `TempoEvaluator` implements Tempo mode. A note is expected at `tempo.nanosFor(note.start())` of session running time (`Session.runningNanosAt(timestamp)`, so the count-in and pauses are left out). A press is matched to the nearest unmatched note of the same pitch whose `TimingWindows` (default ±50/±100/±150 ms) contain it, and graded `PERFECT`/`GOOD`/`OK` as `TimedNote` with its offset; otherwise it is a `WrongNote`. `onTick(now)` moves the session past each target whose widest window has closed, reporting unmatched notes as `MissedNote`, so the session finishes only after the last window. It counts `gradeCount(grade)`, `misses()` and `wrongKeys()`.
+  - Changing the tempo during a session (TMP-3) isn't supported yet. It needs a tempo map from the change point, and comes with the session thread.
 
 The rest of this section is still planned.
 
