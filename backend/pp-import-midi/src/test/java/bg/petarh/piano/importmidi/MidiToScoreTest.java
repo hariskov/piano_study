@@ -60,7 +60,7 @@ class MidiToScoreTest {
         assertThat(score.parts()).extracting(Part::id, Part::name).containsExactly(
                 tuple("P1", "Melody"),
                 tuple("P2", "Violin"),
-                tuple("P3", "Track 3"));
+                tuple("P3", "Acoustic Grand Piano"));
     }
 
     @Test

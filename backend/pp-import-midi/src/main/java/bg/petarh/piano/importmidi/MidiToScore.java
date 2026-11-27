@@ -165,7 +165,7 @@ public final class MidiToScore {
 
     private static String name(RawMidi raw, RawMidi.TrackChannel part) {
         return raw.trackName(part.track()).filter(name -> !name.isBlank())
-                .or(() -> raw.program(part.track(), part.channel()).map(GeneralMidi::instrument))
-                .orElse("Track " + part.track());
+                .orElseGet(() -> GeneralMidi.instrument(raw.program(part.track(), part.channel())
+                        .orElse(GeneralMidi.DEFAULT_PROGRAM)));
     }
 }
