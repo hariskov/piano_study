@@ -2,6 +2,7 @@ package bg.petarh.piano.engine.run;
 
 import bg.petarh.piano.midi.input.InputEvent;
 import bg.petarh.piano.midi.input.InputListener;
+import bg.petarh.piano.model.time.Tempo;
 
 import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
@@ -42,6 +43,10 @@ public final class SessionThread implements InputListener, AutoCloseable {
 
     public void resume() {
         actions.add(driver::resume);
+    }
+
+    public void changeTempo(Tempo tempo) {
+        actions.add(() -> driver.changeTempo(tempo));
     }
 
     @Override

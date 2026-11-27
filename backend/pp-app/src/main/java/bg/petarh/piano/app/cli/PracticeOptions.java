@@ -1,5 +1,6 @@
 package bg.petarh.piano.app.cli;
 
+import bg.petarh.piano.engine.evaluation.FollowMode;
 import bg.petarh.piano.model.key.KeySignature;
 import bg.petarh.piano.model.keyboard.KeyboardRange;
 import bg.petarh.piano.model.note.Hand;
@@ -17,8 +18,6 @@ final class PracticeOptions {
 
     enum Hands { RIGHT, LEFT, BOTH }
 
-    enum Mode { WAIT, TEMPO }
-
     @Parameters(index = "0", paramLabel = "INPUT", description = "Input device id, as shown by 'pp devices'.")
     String inputId;
 
@@ -26,7 +25,7 @@ final class PracticeOptions {
     Hands hands;
 
     @Option(names = "--mode", defaultValue = "wait", description = "wait or tempo (default: ${DEFAULT-VALUE}).")
-    Mode mode;
+    FollowMode mode;
 
     @Option(names = "--tempo", defaultValue = "90", description = "Beats per minute, 20-240 (default: ${DEFAULT-VALUE}).")
     int bpm;
