@@ -1,6 +1,8 @@
 package bg.petarh.piano.app.cli;
 
+import bg.petarh.piano.importmidi.MidiImportException;
 import bg.petarh.piano.midi.device.DeviceUnavailableException;
+import bg.petarh.piano.musicxml.MusicXmlException;
 import picocli.CommandLine;
 
 import java.io.PrintWriter;
@@ -8,6 +10,7 @@ import java.io.PrintWriter;
 public final class PianoCli {
 
     private static final int DEVICE_ERROR = 1;
+    private static final int FILE_ERROR = 1;
 
     private PianoCli() {
     }
@@ -21,6 +24,8 @@ public final class PianoCli {
         commandLine.addSubcommand(new RandomCommand(environment));
         commandLine.addSubcommand(new ChordsCommand(environment));
         commandLine.addSubcommand(new ApiCommand(environment));
+        commandLine.addSubcommand(new ImportCommand());
+        commandLine.addSubcommand(new SongsCommand());
         commandLine.setCaseInsensitiveEnumValuesAllowed(true);
         commandLine.setOut(out);
         commandLine.setErr(err);
@@ -28,6 +33,10 @@ public final class PianoCli {
             if (exception instanceof DeviceUnavailableException) {
                 err.println("Error: " + exception.getMessage() + ". Run 'pp devices' to see the available devices.");
                 return DEVICE_ERROR;
+            }
+            if (exception instanceof MidiImportException || exception instanceof MusicXmlException) {
+                err.println("Error: " + exception.getMessage());
+                return FILE_ERROR;
             }
             throw exception;
         });

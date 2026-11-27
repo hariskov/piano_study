@@ -5,6 +5,7 @@ import java.util.List;
 final class GeneralMidi {
 
     static final int PERCUSSION_CHANNEL = 9;
+    static final int DEFAULT_PROGRAM = 0;
 
     private static final List<String> INSTRUMENTS = List.of(
             "Acoustic Grand Piano", "Bright Acoustic Piano", "Electric Grand Piano", "Honky-tonk Piano",

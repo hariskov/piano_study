@@ -4,6 +4,7 @@ module bg.petarh.piano.app {
     requires bg.petarh.piano.generator;
     requires bg.petarh.piano.api;
     requires bg.petarh.piano.library;
+    requires bg.petarh.piano.importmidi;
     requires info.picocli;
 
     opens bg.petarh.piano.app.cli to info.picocli;
