@@ -7,6 +7,7 @@ Docs: `docs/01-vision.md`, `docs/02-specification.md`, `docs/03-architecture-pla
 ## Build
 
 - `./mvnw verify` builds and runs all tests (JDK 25, Maven 3.10 via the wrapper).
+- `./mvnw -q package -DskipTests && bin/pp <command>` runs the CLI (`pp-app`) against the real MIDI system.
 
 ## Rules
 

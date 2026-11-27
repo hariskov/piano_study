@@ -246,7 +246,7 @@ Sample events:
 
 Security: the backend only listens on `127.0.0.1`, on a random port. It requires a one-time token, which Electron passes to it when starting it.
 
-`pp-app` also has a **headless CLI** (for example `--list-devices`, `--monitor`, `--random --hands=right`). It can be used to test the backend before the UI exists, and it is what Phase 1–3 testing relies on.
+`pp-app` also has a **headless CLI** built with picocli subcommands (for example `pp devices`, `pp monitor <device>`, `pp random --hands=right`). `bin/pp` runs it on the module path. `PianoCli.create(inputPort, outputPort, out, err)` builds it with injected ports, so CLI tests run against the virtual devices. It can be used to test the backend before the UI exists, and it is what Phase 1–3 testing relies on.
 
 ## 8. Storage
 
