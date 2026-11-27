@@ -37,6 +37,15 @@ public final class RandomChordGenerator {
         return new RandomChordGenerator(settings, seed);
     }
 
+    public static RandomChordGenerator withSeed(ChordSettings settings, long seed, long firstMeasure) {
+        if (firstMeasure < 0) {
+            throw new IllegalArgumentException("First measure cannot be negative: " + firstMeasure);
+        }
+        RandomChordGenerator generator = new RandomChordGenerator(settings, seed);
+        generator.measureIndex = firstMeasure;
+        return generator;
+    }
+
     public static RandomChordGenerator withRandomSeed(ChordSettings settings) {
         return new RandomChordGenerator(settings, ThreadLocalRandom.current().nextLong());
     }

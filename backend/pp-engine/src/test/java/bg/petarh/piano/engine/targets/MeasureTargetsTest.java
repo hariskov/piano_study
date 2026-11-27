@@ -56,6 +56,17 @@ class MeasureTargetsTest {
     }
 
     @Test
+    void readsNewMeasuresAfterDiscardingTheLookAhead() {
+        TargetSource source = TargetSource.fromMeasures(measures);
+        source.next();
+
+        source.discardLookAhead();
+
+        assertThat(source.next()).get().extracting(Target::start).isEqualTo(Fraction.whole(5));
+        assertThat(source.peek(1)).extracting(Target::start).containsExactly(Fraction.of(21, 4));
+    }
+
+    @Test
     void neverRunsOut() {
         TargetSource source = TargetSource.fromMeasures(measures);
 

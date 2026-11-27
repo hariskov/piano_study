@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Timeout;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -74,6 +75,17 @@ class PracticeTest {
         }
         assertThat(listener.states).containsExactly(
                 SessionState.RUNNING, SessionState.PAUSED, SessionState.RUNNING, SessionState.FINISHED);
+    }
+
+    @Test
+    void runsChangesOnTheSessionThread() throws Exception {
+        CompletableFuture<String> thread = new CompletableFuture<>();
+        try (Practice practice = practice(FollowMode.WAIT, 0, Optional.empty())) {
+            practice.start();
+            practice.onSessionThread(() -> thread.complete(Thread.currentThread().getName()));
+
+            assertThat(thread.get(2, TimeUnit.SECONDS)).isEqualTo("session");
+        }
     }
 
     private Practice practice(FollowMode mode, int countInBars, Optional<ClickOutput> output) {

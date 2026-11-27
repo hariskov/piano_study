@@ -43,6 +43,14 @@ class RandomChordGeneratorTest {
     }
 
     @Test
+    void canStartAtALaterMeasure() {
+        RandomChordGenerator generator = RandomChordGenerator.withSeed(
+                rightHand(Set.of(ChordType.MAJOR), Set.of(Inversion.ROOT_POSITION)), 3, 4);
+
+        assertThat(generator.nextMeasure().getFirst().start()).isEqualTo(Fraction.whole(4));
+    }
+
+    @Test
     void randomSeedIsReportedSoTheExerciseCanBeReplayed() {
         ChordSettings settings = rightHand(EnumSet.allOf(ChordType.class), EnumSet.allOf(Inversion.class));
         RandomChordGenerator generator = RandomChordGenerator.withRandomSeed(settings);
