@@ -17,7 +17,9 @@ v2.0:             P11 PDF/OMR
 | P1 Model, engine and generator | **Code complete.** Done: musical time and tempo, time and key signatures, notes and targets, chords, `pp-generator` (random notes levels 1–5, chord generator), engine clocks, target sources, `Session`, `WaitEvaluator`, `TempoEvaluator`, session driver and thread, `pp random` and `pp chords`. Remaining: manual test with the piano (`docs/testing/phase1-manual.md`). Tempo changes during a session (TMP-3) are in the engine. |
 | P2 Backend API, metronome and settings | **Code complete.** Done: metronome and tempo changes during a session; `pp-api` (JSON-RPC over stdin/stdout, `pp api`): devices, sessions with live events, settings, device hot-plugging (reference in `docs/05-api.md`). A scripted client runs random and chord sessions from start to summary. `pp-library` settings store. Moved to P3: generated TypeScript types (they need the frontend project). Remaining: manual metronome check and unplug/replug test with the piano. |
 | P3 UI proof of concept | **In progress.** Done: `frontend/` skeleton (React + TypeScript + Vite + Vitest, built by Maven with its own Node), tempo marking logic, `src/api/protocol.ts` generated from the Java API records and checked on every build, Electron shell (starts `pp api`, line bridge, typed `RpcClient`), `bin/ui`, API for live device input and the on-screen keyboard (DEV-6/7), app shell with navigation and the Devices screen (inputs, output, keyboard size, live and clickable keyboard), practice setup screen with the tempo control, practice screen (lanes, now line, live tempo, beat light, keyboard hints and feedback, computer-key input) and results, Playwright + Electron smoke test (`npm run e2e`). Remaining: latency check (NF-1), manual sessions with the piano. |
-| P4–P11 | Not started |
+| P4 Packaging | Not started (after P5–P6, as decided) |
+| P5 MusicXML reading | **In progress.** Done: song model (`Score`, `Part`, `ScoreNote`, `Spelling`, ties joined for playing). |
+| P6–P11 | Not started |
 
 This table is updated in every PR that completes a deliverable.
 
