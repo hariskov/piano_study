@@ -22,8 +22,12 @@ final class ApiCommand implements Callable<Integer> {
     @Override
     public Integer call() {
         RpcServer server = new RpcServer();
-        PianoApi.register(server, environment.inputs(), environment.outputs());
-        new StdioTransport(server).run(environment.stdin(), environment.stdout());
+        StdioTransport transport = new StdioTransport(server);
+        try (PianoApi api = PianoApi.create(server, environment.inputs(), environment.outputs(), environment.clock(),
+                transport.events())) {
+            transport.onEndOfInput(api::close);
+            transport.run(environment.stdin(), environment.stdout());
+        }
         return 0;
     }
 }

@@ -18,6 +18,14 @@
             <artifactId>pp-midi</artifactId>
         </dependency>
         <dependency>
+            <groupId>bg.petarh.piano</groupId>
+            <artifactId>pp-engine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>bg.petarh.piano</groupId>
+            <artifactId>pp-generator</artifactId>
+        </dependency>
+        <dependency>
             <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>

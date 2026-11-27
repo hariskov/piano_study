@@ -1,5 +1,6 @@
 package bg.petarh.piano.api.rpc;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -16,7 +17,9 @@ public final class RpcServer {
     private record Registered<P>(Class<P> paramsType, RpcMethod<P> method) {
     }
 
-    private final JsonMapper mapper = JsonMapper.builder().build();
+    private final JsonMapper mapper = JsonMapper.builder()
+            .changeDefaultPropertyInclusion(inclusion -> inclusion.withValueInclusion(JsonInclude.Include.NON_NULL))
+            .build();
     private final Map<String, Registered<?>> methods = new ConcurrentHashMap<>();
 
     public RpcServer() {
