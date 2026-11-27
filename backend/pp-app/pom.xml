@@ -26,6 +26,10 @@
             <artifactId>pp-generator</artifactId>
         </dependency>
         <dependency>
+            <groupId>bg.petarh.piano</groupId>
+            <artifactId>pp-api</artifactId>
+        </dependency>
+        <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
         </dependency>

@@ -23,6 +23,9 @@ bin/pp echo <in> <out>  # play what you press through an output, e.g. jdk:Gervil
 bin/pp detect-range <id> # press the lowest, then the highest key to find the keyboard's range
 bin/pp random <id>      # practise random notes; see --help for hands, level, key, tempo, mode
 bin/pp chords <id>      # practise chords; --types maj,min,dom7 --inversions 0,1 --show both|name|notes
+bin/pp api              # JSON-RPC on stdin/stdout, one message per line (what the UI uses)
 ```
 
 For example, `bin/pp random "jdk:Piano [hw:3,0,0]" --level 2 --hands both --mode tempo --tempo 70` prints each note to play and the result of each key press, then a summary. Every session prints its seed, and `--seed` replays the same exercise. Add `--metronome jdk:Gervill` to hear a click on every beat, starting with the count-in.
+
+Try the API by hand: `echo '{"jsonrpc":"2.0","id":1,"method":"devices.list"}' | bin/pp api`.
