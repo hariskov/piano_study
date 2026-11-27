@@ -428,6 +428,17 @@ Implemented so far (`pp-library`, settings part):
   - **A corrupt file** is moved to `settings.json.bad`, and loading returns the defaults, so a broken file never stops the app from starting.
 - `SettingsLocation.defaultSettingsFile()` follows XDG: `$XDG_CONFIG_HOME/piano-player/settings.json`, otherwise `~/.config/piano-player/settings.json` (NF-7).
 
+Implemented so far (`pp-library`, song part, `library.songs`):
+- `SongLibrary(folder, clock)` stores each song in `<folder>/<id>/`:
+  - `score.musicxml`: the original MusicXML, copied as is; for `.mxl`, the score XML from inside it, through `MusicXmlReader.scoreXml`. Nothing the reader skips is lost for the later sheet-music display.
+  - `meta.json`: title, number of parts and measures, source file, format, import time and import warnings.
+- Methods:
+  - `importMusicXml(file)` reads the file first, so a broken file stores nothing and throws `MusicXmlException`.
+  - `add(score, sourceFile, format, warnings)` writes a `Score` with `MusicXmlWriter`, for MIDI imports.
+  - `list()` (sorted by title, skipping folders without valid metadata), `load(id)` (entry plus `Score`) and `delete(id)`.
+- Ids come from the title, made plain (`Für Elise / WoO 59!` → `fur-elise-woo-59`) and numbered when taken (`-2`, `-3`). Anything else, such as `../`, is refused.
+- `SongLibrary.defaultFolder()` is `$XDG_DATA_HOME/piano-player/library`, or else `~/.local/share/piano-player/library` (LIB-3, NF-7).
+
 ## 9. Testing strategy
 
 | Level | What | How |

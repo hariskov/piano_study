@@ -18,6 +18,10 @@
             <artifactId>pp-model</artifactId>
         </dependency>
         <dependency>
+            <groupId>bg.petarh.piano</groupId>
+            <artifactId>pp-musicxml</artifactId>
+        </dependency>
+        <dependency>
             <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
