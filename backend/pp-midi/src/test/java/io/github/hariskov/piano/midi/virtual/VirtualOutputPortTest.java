@@ -4,7 +4,7 @@ import io.github.hariskov.piano.midi.DeviceId;
 import io.github.hariskov.piano.midi.DeviceUnavailableException;
 import io.github.hariskov.piano.midi.OutputConnection;
 import io.github.hariskov.piano.midi.OutputEvent;
-import io.github.hariskov.piano.model.Pitch;
+import io.github.hariskov.piano.model.pitch.Pitch;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

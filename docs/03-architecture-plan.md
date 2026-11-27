@@ -84,9 +84,13 @@ bootstrap     pp-app                          wiring, main()
 **Conventions**
 
 - **No comments that repeat the code.** No Javadoc or comments on classes, methods or fields that only restate their name or signature. Names should explain what code does. A comment is only allowed to explain a non-obvious *why* (for example a workaround for a quirk of Java MIDI on Linux).
-- Immutable value types (`record`) for the model; `final` fields; no setters in the domain.
+- **Value objects with rules** (`Pitch`, `KeyboardRange`, `Velocity`, …) are `final` classes with a private constructor and static factories (`of`, `parse`), so every instance is valid and there is only one way to create one.
+- **Plain data with no rules of its own** (events, descriptors) uses `record`.
+- Everything is immutable: `final` fields, no setters, read-only collections returned.
+- **Packages by feature** (`model.pitch`, `model.keyboard`, `midi.input`, …). Implementation classes are package-private, and only the interfaces and value types are `public`.
+- **Each Maven module has a `module-info.java`** that exports only its API packages.
 - No `null` in public APIs: use `Optional` for return values, and empty collections instead of null.
-- Small classes and methods; packages organised by feature, not by technical layer.
+- Small classes and methods.
 - Every port (interface) has a test double, so the engine and generator are tested without any I/O.
 
 ## 3. Backend modules (Maven)

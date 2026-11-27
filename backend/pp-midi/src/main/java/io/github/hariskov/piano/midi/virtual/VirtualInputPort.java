@@ -8,7 +8,7 @@ import io.github.hariskov.piano.midi.InputEvent;
 import io.github.hariskov.piano.midi.InputListener;
 import io.github.hariskov.piano.midi.MidiInputPort;
 import io.github.hariskov.piano.midi.TimestampSource;
-import io.github.hariskov.piano.model.Pitch;
+import io.github.hariskov.piano.model.pitch.Pitch;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
