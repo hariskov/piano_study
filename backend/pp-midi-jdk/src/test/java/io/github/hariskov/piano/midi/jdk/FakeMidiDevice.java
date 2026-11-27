@@ -15,6 +15,8 @@ final class FakeMidiDevice implements MidiDevice {
     private final List<FakeTransmitter> transmitters = new ArrayList<>();
     private boolean open;
     private boolean failOnOpen;
+    private boolean failOnTransmitter;
+    private boolean transmittersFailOnClose;
 
     private FakeMidiDevice(String name, String description, int maxReceivers, int maxTransmitters) {
         this.info = new Info(name, "Fake vendor", description, "1.0") {
@@ -33,6 +35,16 @@ final class FakeMidiDevice implements MidiDevice {
 
     FakeMidiDevice failingOnOpen() {
         failOnOpen = true;
+        return this;
+    }
+
+    FakeMidiDevice failingOnTransmitter() {
+        failOnTransmitter = true;
+        return this;
+    }
+
+    FakeMidiDevice withTransmittersFailingOnClose() {
+        transmittersFailOnClose = true;
         return this;
     }
 
@@ -90,10 +102,10 @@ final class FakeMidiDevice implements MidiDevice {
 
     @Override
     public Transmitter getTransmitter() throws MidiUnavailableException {
-        if (maxTransmitters == 0) {
+        if (maxTransmitters == 0 || failOnTransmitter) {
             throw new MidiUnavailableException("no transmitters");
         }
-        FakeTransmitter transmitter = new FakeTransmitter();
+        FakeTransmitter transmitter = new FakeTransmitter(transmittersFailOnClose);
         transmitters.add(transmitter);
         return transmitter;
     }

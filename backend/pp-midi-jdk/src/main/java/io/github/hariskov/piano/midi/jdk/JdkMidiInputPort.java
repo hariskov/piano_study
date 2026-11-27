@@ -36,13 +36,21 @@ final class JdkMidiInputPort implements MidiInputPort {
         MidiDevice device = entry.device();
         try {
             device.open();
-            Transmitter transmitter = device.getTransmitter();
-            DecodingReceiver receiver = new DecodingReceiver(decoder, clock, listener);
-            transmitter.setReceiver(receiver);
-            return new JdkInputConnection(entry.descriptor(), device, transmitter, receiver);
+            return connect(entry.descriptor(), device, listener);
         } catch (MidiUnavailableException e) {
             device.close();
             throw new DeviceUnavailableException(id, e);
+        } catch (RuntimeException e) {
+            device.close();
+            throw e;
         }
+    }
+
+    private InputConnection connect(DeviceDescriptor descriptor, MidiDevice device, InputListener listener)
+            throws MidiUnavailableException {
+        Transmitter transmitter = device.getTransmitter();
+        DecodingReceiver receiver = new DecodingReceiver(decoder, clock, listener);
+        transmitter.setReceiver(receiver);
+        return new JdkInputConnection(descriptor, device, transmitter, receiver);
     }
 }
