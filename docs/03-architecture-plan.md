@@ -193,6 +193,8 @@ The rest of the backend only uses the interfaces in `pp-midi`. `javax.sound.midi
 
 ## 5. Engine (`pp-engine`)
 
+The `pp-engine` module exists now, with a first use case: `engine.keyboard.KeyboardRangeDetection`. It's a small state machine (`AwaitingLowest` → `AwaitingHighest` → `Detected`) that is fed `InputEvent`s and only reacts to key presses. Pressing the first key again is ignored, and the order of the two keys doesn't matter. The CLI uses it now, and the device setup screen will later (KEY-3). It recognises a preset with `KeyboardPreset.matching(range)`. The rest of this section is still planned.
+
 ### 5.1 Parts of the engine
 
 - **`Clock`**: a monotonic clock (`System.nanoTime`) that can be paused, plus tempo scaling. Tests use a manually controlled clock, which makes every engine test deterministic.
