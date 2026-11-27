@@ -1,5 +1,7 @@
 package bg.petarh.piano.app.cli;
 
+import bg.petarh.piano.midi.output.OutputEvent;
+import bg.petarh.piano.midi.value.MidiChannel;
 import bg.petarh.piano.midi.value.Velocity;
 import bg.petarh.piano.midi.virtual.input.VirtualKeyboard;
 import bg.petarh.piano.midi.virtual.output.SilentOutput;
@@ -17,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RandomCommandTest {
 
     private final VirtualKeyboard keyboard = VirtualKeyboard.withClock(System::nanoTime);
+    private final SilentOutput silent = SilentOutput.create();
     private final ScriptedLifetime lifetime = new ScriptedLifetime();
     private final StringWriter out = new StringWriter();
     private final StringWriter err = new StringWriter();
@@ -64,6 +67,18 @@ class RandomCommandTest {
     }
 
     @Test
+    void playsTheMetronomeOnTheChosenOutput() {
+        lifetime.whileOpen(() -> awaitLine("Finished.", 1));
+
+        run("random", "virtual:keyboard", "--mode", "tempo", "--tempo", "240", "--notes", "1", "--count-in", "1",
+                "--metronome", "virtual:silent");
+
+        assertThat(silent.sentEvents()).filteredOn(event -> event instanceof OutputEvent.NoteOn)
+                .hasSizeGreaterThanOrEqualTo(4)
+                .allMatch(event -> event.channel().equals(MidiChannel.of(9)));
+    }
+
+    @Test
     void rejectsSettingsThatCannotBePlayed() {
         int exitCode = run("random", "virtual:keyboard", "--range", "C#4-D#4");
 
@@ -89,7 +104,7 @@ class RandomCommandTest {
 
     private int run(String... args) {
         CliEnvironment environment = new CliEnvironment(
-                keyboard.port(), SilentOutput.create().port(), System::nanoTime, lifetime);
+                keyboard.port(), silent.port(), System::nanoTime, lifetime);
         return PianoCli.create(environment, new PrintWriter(out, true), new PrintWriter(err, true)).execute(args);
     }
 

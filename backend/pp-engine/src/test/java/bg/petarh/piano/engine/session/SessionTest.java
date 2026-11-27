@@ -88,6 +88,30 @@ class SessionTest {
     }
 
     @Test
+    void positionIsNegativeDuringTheCountInAndZeroAtTheFirstDownbeat() {
+        Session session = session(1);
+        session.start();
+
+        clock.advance(Duration.ofMillis(500));
+        assertThat(session.positionNanosAt(clock.nowNanos())).isEqualTo(-Duration.ofMillis(1500).toNanos());
+
+        clock.advance(Duration.ofMillis(1500));
+        session.tick();
+        assertThat(session.positionNanosAt(clock.nowNanos())).isZero();
+    }
+
+    @Test
+    void positionStandsStillWhilePaused() {
+        Session session = session(0);
+        session.start();
+        clock.advance(Duration.ofMillis(300));
+        session.pause();
+        clock.advance(Duration.ofSeconds(4));
+
+        assertThat(session.positionNanosAt(clock.nowNanos())).isEqualTo(Duration.ofMillis(300).toNanos());
+    }
+
+    @Test
     void movesThroughTheTargetsAndFinishesAfterTheLast() {
         Session session = session(0);
         session.start();

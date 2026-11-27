@@ -7,4 +7,5 @@ module bg.petarh.piano.engine {
     exports bg.petarh.piano.engine.session;
     exports bg.petarh.piano.engine.evaluation;
     exports bg.petarh.piano.engine.run;
+    exports bg.petarh.piano.engine.metronome;
 }

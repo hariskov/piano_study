@@ -31,6 +31,7 @@ public final class SessionDriver {
     public void start() {
         session.start();
         announceChanges();
+        announcePosition();
     }
 
     public void handle(InputEvent event) {
@@ -40,6 +41,7 @@ public final class SessionDriver {
     public void tick() {
         session.tick();
         report(evaluator.onTick(clock.nowNanos()));
+        announcePosition();
     }
 
     public void pause() {
@@ -68,6 +70,12 @@ public final class SessionDriver {
     private void report(List<Evaluation> evaluations) {
         evaluations.forEach(listener::onEvaluation);
         announceChanges();
+    }
+
+    private void announcePosition() {
+        if (session.state() == SessionState.COUNT_IN || session.state() == SessionState.RUNNING) {
+            listener.onPosition(session.positionNanosAt(clock.nowNanos()));
+        }
     }
 
     private void announceChanges() {

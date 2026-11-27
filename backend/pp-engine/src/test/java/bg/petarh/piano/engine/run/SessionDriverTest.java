@@ -117,6 +117,34 @@ class SessionDriverTest {
         assertThat(listener.targets).containsExactly(Optional.of(c));
     }
 
+    @Test
+    void reportsThePositionOnEveryTickWhileCountingInOrRunning() {
+        SessionDriver driver = waitDriver(1);
+        driver.start();
+
+        clock.advance(Duration.ofMillis(500));
+        driver.tick();
+        clock.advance(Duration.ofMillis(1600));
+        driver.tick();
+        driver.pause();
+        driver.tick();
+
+        assertThat(listener.positions).containsExactly(-2_000_000_000L, -1_500_000_000L, 100_000_000L);
+    }
+
+    @Test
+    void tellsEveryListener() {
+        RecordingListener second = new RecordingListener();
+        Session session = session(0);
+        SessionDriver driver = new SessionDriver(session, new WaitEvaluator(session), clock,
+                SessionListener.all(List.of(listener, second)));
+
+        driver.start();
+
+        assertThat(second.states).containsExactly(SessionState.RUNNING);
+        assertThat(listener.states).containsExactly(SessionState.RUNNING);
+    }
+
     private SessionDriver waitDriver(int countInBars) {
         Session session = session(countInBars);
         return new SessionDriver(session, new WaitEvaluator(session), clock, listener);

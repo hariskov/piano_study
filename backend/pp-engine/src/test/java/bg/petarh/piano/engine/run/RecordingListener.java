@@ -13,6 +13,7 @@ final class RecordingListener implements SessionListener {
     final List<SessionState> states = new CopyOnWriteArrayList<>();
     final List<Optional<Target>> targets = new CopyOnWriteArrayList<>();
     final List<Evaluation> evaluations = new CopyOnWriteArrayList<>();
+    final List<Long> positions = new CopyOnWriteArrayList<>();
 
     @Override
     public void onStateChanged(SessionState state) {
@@ -27,5 +28,10 @@ final class RecordingListener implements SessionListener {
     @Override
     public void onEvaluation(Evaluation evaluation) {
         evaluations.add(evaluation);
+    }
+
+    @Override
+    public void onPosition(long positionNanos) {
+        positions.add(positionNanos);
     }
 }
