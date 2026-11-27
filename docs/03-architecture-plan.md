@@ -241,6 +241,11 @@ Also implemented:
 - `engine.targets`: `TargetSource` (`next()`, `peek(count)`, `limitedTo(count)` for a session of N notes).
   - `TargetSource.of(list)` serves a fixed list (songs, tests).
   - `TargetSource.fromMeasures(supplier)` wraps a generator's `nextMeasure` and turns each measure into targets with `Targets.from`. It always holds the current measure plus 4 more (spec 4.4 look-ahead), so endless sessions never wait for the generator. The engine takes a plain `Supplier`, so it doesn't depend on `pp-generator`; `pp-app` connects them.
+- `engine.session`: `Session` is the state machine `READY → COUNT_IN → RUNNING ⇄ PAUSED → FINISHED`.
+  - `start()` takes the first target and runs the count-in from `SessionTiming` (tempo, time signature, 0–2 bars). `tick()` ends the count-in once its time has passed.
+  - `advance()` moves to the next target (the evaluators will call it) and finishes after the last one. `stop()` finishes from any state.
+  - `elapsedNanos()` counts running time only, without the count-in or pauses.
+  - An action that doesn't fit the state throws `IllegalStateException`. The session isn't thread-safe, by design: it is only used from the session thread (§5.3).
 
 The rest of this section is still planned.
 
