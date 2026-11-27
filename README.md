@@ -21,4 +21,7 @@ bin/pp devices          # list MIDI inputs and outputs with their ids
 bin/pp monitor <id>     # print key presses, releases and pedal changes (Ctrl+C to stop)
 bin/pp echo <in> <out>  # play what you press through an output, e.g. jdk:Gervill
 bin/pp detect-range <id> # press the lowest, then the highest key to find the keyboard's range
+bin/pp random <id>      # practise random notes; see --help for hands, level, key, tempo, mode
 ```
+
+For example, `bin/pp random "jdk:Piano [hw:3,0,0]" --level 2 --hands both --mode tempo --tempo 70` prints each note to play and the result of each key press, then a summary. Every session prints its seed, and `--seed` replays the same exercise.

@@ -18,6 +18,8 @@ public final class PianoCli {
         commandLine.addSubcommand(new MonitorCommand(environment));
         commandLine.addSubcommand(new EchoCommand(environment));
         commandLine.addSubcommand(new DetectRangeCommand(environment));
+        commandLine.addSubcommand(new RandomCommand(environment));
+        commandLine.setCaseInsensitiveEnumValuesAllowed(true);
         commandLine.setOut(out);
         commandLine.setErr(err);
         commandLine.setExecutionExceptionHandler((exception, command, parseResult) -> {
