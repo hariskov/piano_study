@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+app="$root/backend/pp-app/target"
+
+if [[ ! -f "$app/pp-app.jar" ]]; then
+    echo "pp is not built yet. Run: ./mvnw -q package -DskipTests" >&2
+    exit 1
+fi
+
+exec java --module-path "$app/pp-app.jar:$app/lib" --module bg.petarh.piano.app/bg.petarh.piano.app.Main "$@"

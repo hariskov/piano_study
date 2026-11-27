@@ -13,7 +13,7 @@ v2.0:             P11 PDF/OMR
 
 | Phase | Status |
 |---|---|
-| P0 Skeleton and MIDI devices | **In progress.** Done: Maven build, `pp-model` (`Pitch`, `KeyboardRange`, presets), `pp-midi` (ports, events, virtual devices), `pp-midi-jdk` (input, output, device catalog). Remaining: `pp-app` CLI (`--list-devices`, `--monitor`, `--detect-range`, `--echo`), `snd-virmidi` integration test, manual test with the piano. |
+| P0 Skeleton and MIDI devices | **In progress.** Done: Maven build, `pp-model` (`Pitch`, `KeyboardRange`, presets), `pp-midi` (ports, events, virtual devices), `pp-midi-jdk` (input, output, device catalog). Remaining: `pp monitor`, `pp echo`, `pp detect-range`, `snd-virmidi` integration test, manual test with the piano. Done in `pp-app`: `pp devices` and the `bin/pp` launcher. |
 | P1–P11 | Not started |
 
 This table is updated in every PR that completes a deliverable.
@@ -30,18 +30,18 @@ Deliverables:
 - `pp-midi`: `MidiInputPort` / `MidiOutputPort` interfaces, `InputEvent` / `OutputEvent`, virtual input and output devices (testable with no hardware).
 - `pp-midi-jdk`: `javax.sound.midi` implementation: list devices, open an input, timestamped `InputEvent` stream, open an output or the built-in synth.
 - `KeyboardRange` with the presets (88/76/73/61/49/37/25) and custom ranges (spec 1A).
-- CLI:
-  - `pp --list-devices`
-  - `pp --monitor <device>`: prints note on/off with timestamps and note names
-  - `pp --detect-range <device>`: "press your lowest key, then your highest key" (KEY-3)
-  - `pp --echo <in> <out>`: plays what you press through the synth
+- CLI (picocli subcommands, run with `bin/pp`):
+  - `pp devices`: lists inputs and outputs with the ids to pass to the other commands
+  - `pp monitor <device>`: prints note on/off with timestamps and note names
+  - `pp detect-range <device>`: "press your lowest key, then your highest key" (KEY-3)
+  - `pp echo <in> <out>`: plays what you press through the synth
 
 Testing:
 - Unit: converting MIDI messages to `InputEvent` (including Note On with velocity 0 counting as Note Off, and the sustain pedal); presets and limits of `KeyboardRange`.
 - Integration: a virtual MIDI port (`snd-virmidi`) with a recorded MIDI file sent in, checking that the events come out in the right order.
-- **Manual:** connect your 88-key piano. Check that `--monitor` shows every key including A0 and C8, chords and fast repeated notes, and that `--detect-range` reports A0–C8.
+- **Manual:** connect your 88-key piano. Check that `pp monitor` shows every key including A0 and C8, chords and fast repeated notes, and that `pp detect-range` reports A0–C8.
 
-Done when: `mvn verify` passes, and your piano's key presses show up in `--monitor` with plausible timestamps.
+Done when: `mvn verify` passes, and your piano's key presses show up in `pp monitor` with plausible timestamps.
 
 ---
 
@@ -55,7 +55,7 @@ Deliverables:
   - **chord practice** (chord types, inversions, show or hide chord names)
   - look-ahead stream for endless sessions
 - `pp-engine`: `Clock` (real and manual), tempo handling (BPM, beat unit, changing tempo mid-session), `Session` state machine, `WaitEvaluator`, `TempoEvaluator`, `NoScoreEvaluator`, results summary.
-- CLI: `pp --random --hands=right --mode=wait --level=2 --tempo=90` and `pp --chords --types=maj,min --inversions=0,1 --mode=wait`. They print the target ("C4", "Dm/F") and the result of each press in the terminal.
+- CLI: `pp random --hands=right --mode=wait --level=2 --tempo=90` and `pp chords --types=maj,min --inversions=0,1 --mode=wait`. They print the target ("C4", "Dm/F") and the result of each press in the terminal.
 
 Testing:
 - Unit: generator is repeatable with a seed, **never produces a note outside the keyboard range** (property tests over all presets and random ranges), respects key and range, produces the right notes for each chord and inversion, and drops chords that don't fit in the range.
@@ -131,7 +131,7 @@ Testing:
 
 ### Phase 6: MIDI → MusicXML conversion
 - `pp-import-midi`: architecture section 6, steps 1–6 (quantisation, tempo/time/key signatures, grouping into parts, hand splitting, ties).
-- CLI: `pp --import song.mid --out song.musicxml`.
+- CLI: `pp import song.mid --out song.musicxml`.
 - Testing: 5–10 golden MIDI files (type 0 and 1, several instruments, a piano piece in one track, a piano piece with separate hand tracks); the same input always gives the same output; **manual** check of the converted files in MuseScore.
 
 ### Phase 7: Song sessions and playback (backend + UI)
