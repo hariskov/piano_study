@@ -60,6 +60,10 @@ final class PracticeOptions {
     @Option(names = "--seed", description = "Seed to replay an exercise (default: random).")
     Optional<Long> seed;
 
+    @Option(names = "--metronome", paramLabel = "OUTPUT",
+            description = "Play a metronome on this output, e.g. jdk:Gervill (default: no metronome).")
+    Optional<String> metronomeOutputId;
+
     PracticeOptions() {
     }
 

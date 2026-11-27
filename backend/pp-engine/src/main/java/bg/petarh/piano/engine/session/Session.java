@@ -49,6 +49,14 @@ public final class Session {
         return stopwatch.elapsedAt(timestampNanos);
     }
 
+    public long positionNanosAt(long timestampNanos) {
+        return switch (state) {
+            case READY -> -timing.countInNanos();
+            case COUNT_IN -> timestampNanos - countInStartNanos - timing.countInNanos();
+            case RUNNING, PAUSED, FINISHED -> stopwatch.elapsedAt(timestampNanos);
+        };
+    }
+
     public void start() {
         require(SessionState.READY, "start");
         current = targets.next();
@@ -58,13 +66,14 @@ public final class Session {
             countInStartNanos = clock.nowNanos();
             state = SessionState.COUNT_IN;
         } else {
-            run();
+            run(clock.nowNanos());
         }
     }
 
     public void tick() {
-        if (state == SessionState.COUNT_IN && clock.nowNanos() - countInStartNanos >= timing.countInNanos()) {
-            run();
+        long countInEnd = countInStartNanos + timing.countInNanos();
+        if (state == SessionState.COUNT_IN && clock.nowNanos() >= countInEnd) {
+            run(countInEnd);
         }
     }
 
@@ -94,8 +103,8 @@ public final class Session {
         }
     }
 
-    private void run() {
-        stopwatch.start();
+    private void run(long fromNanos) {
+        stopwatch.startAt(fromNanos);
         state = SessionState.RUNNING;
     }
 

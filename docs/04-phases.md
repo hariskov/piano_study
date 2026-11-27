@@ -15,7 +15,8 @@ v2.0:             P11 PDF/OMR
 |---|---|
 | P0 Skeleton and MIDI devices | **Code complete.** Done: Maven build (root → `backend` → modules), `pp-model` (`Pitch`, `KeyboardRange`, presets), `pp-midi` (ports, events, virtual devices), `pp-midi-jdk` (input, output, device catalog), `pp-engine` (keyboard range detection), `pp-app` CLI (`pp devices`, `pp monitor`, `pp echo`, `pp detect-range`, `bin/pp` launcher). Manual input test with the Yamaha P-45 passed, and Gervill output was heard on the laptop (see `docs/testing/phase0-manual.md`). Remaining: manual test of `pp echo` and `pp detect-range` with the piano, and the `snd-virmidi` integration test. |
 | P1 Model, engine and generator | **Code complete.** Done: musical time and tempo, time and key signatures, notes and targets, chords, `pp-generator` (random notes levels 1–5, chord generator), engine clocks, target sources, `Session`, `WaitEvaluator`, `TempoEvaluator`, session driver and thread, `pp random` and `pp chords`. Remaining: manual test with the piano (`docs/testing/phase1-manual.md`). Not yet: changing the tempo during a session (TMP-3). |
-| P2–P11 | Not started |
+| P2 Backend API, metronome and settings | **In progress.** Done: metronome (`Metronome`, `MidiClicks`, `--metronome` in the CLI). |
+| P3–P11 | Not started |
 
 This table is updated in every PR that completes a deliverable.
 

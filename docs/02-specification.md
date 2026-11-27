@@ -56,7 +56,7 @@ Tempo is set the same way everywhere (random mode and songs).
 | TMP-3 | The tempo MUST be changeable during a session (while paused, and SHOULD also work while playing). The change takes effect from the next beat. |
 | TMP-4 | The beat unit SHOULD be selectable (quarter note by default; half or dotted-quarter for some time signatures). |
 | TMP-5 | (v0.8) For songs, the song's own tempo is the default. The UI MUST show both the absolute BPM and the percentage of the original (for example "84 BPM · 70%"). When the song changes tempo, all its tempos are scaled by the same factor. |
-| TMP-6 | The metronome and count-in follow the current tempo. |
+| TMP-6 | The metronome and count-in follow the current tempo. The metronome clicks on every counted beat (in compound meters such as 6/8, on each dotted beat) and accents the first beat of each bar. |
 | TMP-7 | The last tempo used MUST be remembered for each mode (and, from v0.8, for each song). |
 
 ---

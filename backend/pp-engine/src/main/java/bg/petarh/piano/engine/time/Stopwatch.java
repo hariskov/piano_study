@@ -14,8 +14,12 @@ public final class Stopwatch {
     }
 
     public void start() {
+        startAt(clock.nowNanos());
+    }
+
+    public void startAt(long timestampNanos) {
         require(State.NOT_STARTED, "start");
-        run();
+        runFrom(timestampNanos);
     }
 
     public void pause() {
@@ -26,7 +30,7 @@ public final class Stopwatch {
 
     public void resume() {
         require(State.PAUSED, "resume");
-        run();
+        runFrom(clock.nowNanos());
     }
 
     public boolean isRunning() {
@@ -43,8 +47,8 @@ public final class Stopwatch {
                 : elapsedBeforeLastStart;
     }
 
-    private void run() {
-        lastStartNanos = clock.nowNanos();
+    private void runFrom(long timestampNanos) {
+        lastStartNanos = timestampNanos;
         state = State.RUNNING;
     }
 

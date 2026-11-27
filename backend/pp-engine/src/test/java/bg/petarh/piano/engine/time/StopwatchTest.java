@@ -87,4 +87,13 @@ class StopwatchTest {
 
         assertThat(stopwatch.elapsedAt(clock.nowNanos())).isEqualTo(100);
     }
+
+    @Test
+    void canStartAtAMomentThatHasAlreadyPassed() {
+        clock.advanceNanos(1000);
+
+        stopwatch.startAt(900);
+
+        assertThat(stopwatch.elapsedNanos()).isEqualTo(100);
+    }
 }
