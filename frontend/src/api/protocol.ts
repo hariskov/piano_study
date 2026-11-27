@@ -1,6 +1,15 @@
 // Generated from the Java API records (pp-api). Do not edit by hand: change the records, then run
 // ./mvnw -pl backend/pp-api -am test -Dprotocol.write=true to write this file again.
 
+export interface AdjustParams {
+  hands?: string;
+  level?: number;
+  accidentals?: boolean;
+  mixed?: boolean;
+  chordTypes?: string[];
+  inversions?: number[];
+}
+
 export interface BeatEvent {
   accent: boolean;
 }
@@ -127,6 +136,7 @@ export interface ApiMethods {
   "devices.stopMonitor": { params: Record<string, never>; result: null };
   "keyboard.press": { params: KeyParams; result: null };
   "keyboard.release": { params: KeyParams; result: null };
+  "session.adjust": { params: AdjustParams; result: null };
   "session.changeTempo": { params: TempoParams; result: null };
   "session.pause": { params: Record<string, never>; result: null };
   "session.resume": { params: Record<string, never>; result: null };

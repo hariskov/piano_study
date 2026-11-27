@@ -8,6 +8,7 @@ import bg.petarh.piano.engine.session.SessionTiming;
 import bg.petarh.piano.engine.targets.TargetSource;
 import bg.petarh.piano.engine.time.Clock;
 import bg.petarh.piano.midi.input.InputListener;
+import bg.petarh.piano.model.note.Target;
 import bg.petarh.piano.model.time.Tempo;
 
 import java.time.Duration;
@@ -60,6 +61,10 @@ public final class Practice implements AutoCloseable {
 
     public void onSessionThread(Runnable action) {
         thread.submit(action);
+    }
+
+    public Optional<Target> currentTarget() {
+        return session.currentTarget();
     }
 
     public void stop() {
