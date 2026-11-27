@@ -148,7 +148,7 @@ Before starting, the user chooses:
 
 ### 3.4 Results (at the end of a session)
 
-- Accuracy % (correct ÷ expected), number of wrong keys, time taken (Wait mode) or grade counts (Tempo mode).
+- Accuracy %, number of wrong keys, time taken (Wait mode) or grade counts (Tempo mode). In Tempo mode accuracy is matched notes ÷ expected notes. In Wait mode every expected note is played eventually, so accuracy is correct presses ÷ all presses (correct + wrong).
 - (v1) The measures with the most mistakes, to show which sections need work.
 - (v1) Results are saved per song so progress can be compared over time.
 
