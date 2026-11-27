@@ -17,6 +17,7 @@ import bg.petarh.piano.library.settings.Settings;
 import bg.petarh.piano.midi.device.DeviceId;
 import bg.petarh.piano.midi.device.DeviceUnavailableException;
 import bg.petarh.piano.midi.input.InputConnection;
+import bg.petarh.piano.midi.input.InputListener;
 import bg.petarh.piano.midi.input.MidiInputPort;
 import bg.petarh.piano.midi.input.TimestampSource;
 import bg.petarh.piano.midi.output.MidiOutputPort;
@@ -25,12 +26,32 @@ import bg.petarh.piano.model.time.Tempo;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public final class SessionMethods implements AutoCloseable {
 
-    private record Active(Practice practice, InputConnection input, Optional<OutputConnection> metronome,
-                          String modeKey) {
+    private static final class Active {
+
+        private final Practice practice;
+        private final String inputId;
+        private final Optional<OutputConnection> metronome;
+        private final String modeKey;
+        private final InputListener listener;
+        private InputConnection input;
+        private boolean inputLost;
+
+        private Active(Practice practice, String inputId, Optional<OutputConnection> metronome, String modeKey,
+                       InputListener listener) {
+            this.practice = practice;
+            this.inputId = inputId;
+            this.metronome = metronome;
+            this.modeKey = modeKey;
+            this.listener = listener;
+        }
+    }
+
+    private record InputLost(String input) {
     }
 
     private final MidiInputPort inputs;
@@ -81,8 +102,12 @@ public final class SessionMethods implements AutoCloseable {
                     events.emit("beat", new BeatEvent(accent));
                     clicks.ifPresent(output -> output.click(accent));
                 }));
-        InputConnection input = openInput(params.input(), practice, metronome, latency);
-        Active session = new Active(practice, input, metronome, plan.modeKey());
+        InputListener listener = event -> {
+            events.emit("input", InputMessage.of(event));
+            practice.input().onEvent(latency.apply(event));
+        };
+        Active session = new Active(practice, params.input(), metronome, plan.modeKey(), listener);
+        session.input = openInput(params.input(), listener, metronome);
         active = session;
         int bpm = plan.timing().tempo().bpm();
         settings.update(current -> current.withInput(params.input()).withTempo(plan.modeKey(), bpm));
@@ -94,8 +119,8 @@ public final class SessionMethods implements AutoCloseable {
         Tempo tempo = Tempo.of(params.bpm());
         Active session = currentSession().orElseThrow(
                 () -> new RpcException(RpcException.SESSION_ERROR, "No session is running"));
-        session.practice().changeTempo(tempo);
-        settings.update(current -> current.withTempo(session.modeKey(), tempo.bpm()));
+        session.practice.changeTempo(tempo);
+        settings.update(current -> current.withTempo(session.modeKey, tempo.bpm()));
         return null;
     }
 
@@ -105,8 +130,29 @@ public final class SessionMethods implements AutoCloseable {
         return null;
     }
 
+    public synchronized void inputsChanged(Set<String> available) {
+        if (active == null) {
+            return;
+        }
+        boolean present = available.contains(active.inputId);
+        if (!active.inputLost && !present) {
+            active.inputLost = true;
+            active.practice.pause();
+            closeQuietly(active.input);
+            events.emit("session.inputLost", new InputLost(active.inputId));
+        } else if (active.inputLost && present) {
+            try {
+                active.input = inputs.open(DeviceId.of(active.inputId), active.listener);
+                active.inputLost = false;
+                events.emit("session.inputRestored", new InputLost(active.inputId));
+            } catch (DeviceUnavailableException e) {
+                // Listed but not openable yet; the next change in the device list tries again.
+            }
+        }
+    }
+
     private Optional<Practice> current() {
-        return currentSession().map(Active::practice);
+        return currentSession().map(session -> session.practice);
     }
 
     private synchronized Optional<Active> currentSession() {
@@ -114,23 +160,29 @@ public final class SessionMethods implements AutoCloseable {
     }
 
     private void finished(Active session, Results results) {
-        session.input().close();
-        session.metronome().ifPresent(OutputConnection::close);
-        events.emit("session.summary", SummaryEvent.of(results.summary(), session.practice().elapsedNanos()));
         synchronized (this) {
+            if (!session.inputLost) {
+                closeQuietly(session.input);
+            }
             if (active == session) {
                 active = null;
             }
         }
+        session.metronome.ifPresent(OutputConnection::close);
+        events.emit("session.summary", SummaryEvent.of(results.summary(), session.practice.elapsedNanos()));
     }
 
-    private InputConnection openInput(String id, Practice practice, Optional<OutputConnection> metronome,
-                                      LatencyOffset latency) {
+    private static void closeQuietly(InputConnection input) {
         try {
-            return inputs.open(DeviceId.of(id), event -> {
-                events.emit("input", InputMessage.of(event));
-                practice.input().onEvent(latency.apply(event));
-            });
+            input.close();
+        } catch (RuntimeException e) {
+            // An unplugged device can fail to close; it is gone either way.
+        }
+    }
+
+    private InputConnection openInput(String id, InputListener listener, Optional<OutputConnection> metronome) {
+        try {
+            return inputs.open(DeviceId.of(id), listener);
         } catch (DeviceUnavailableException e) {
             metronome.ifPresent(OutputConnection::close);
             throw new RpcException(RpcException.DEVICE_ERROR, e.getMessage());

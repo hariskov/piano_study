@@ -1,6 +1,7 @@
 package bg.petarh.piano.api;
 
 import bg.petarh.piano.api.devices.DeviceMethods;
+import bg.petarh.piano.api.devices.DeviceWatcher;
 import bg.petarh.piano.api.rpc.EventSink;
 import bg.petarh.piano.api.rpc.RpcServer;
 import bg.petarh.piano.api.session.SessionMethods;
@@ -11,12 +12,16 @@ import bg.petarh.piano.midi.input.MidiInputPort;
 import bg.petarh.piano.midi.input.TimestampSource;
 import bg.petarh.piano.midi.output.MidiOutputPort;
 
+import java.time.Duration;
+
 public final class PianoApi implements AutoCloseable {
 
     private final SessionMethods sessions;
+    private final DeviceWatcher watcher;
 
-    private PianoApi(SessionMethods sessions) {
+    private PianoApi(SessionMethods sessions, DeviceWatcher watcher) {
         this.sessions = sessions;
+        this.watcher = watcher;
     }
 
     public static PianoApi create(RpcServer server, MidiInputPort inputs, MidiOutputPort outputs,
@@ -24,11 +29,17 @@ public final class PianoApi implements AutoCloseable {
         SettingsService settings = new SettingsService(store);
         DeviceMethods.register(server, inputs, outputs);
         SettingsMethods.register(server, settings);
-        return new PianoApi(SessionMethods.register(server, inputs, outputs, clock, events, settings));
+        SessionMethods sessions = SessionMethods.register(server, inputs, outputs, clock, events, settings);
+        return new PianoApi(sessions, new DeviceWatcher(inputs, outputs, events, sessions::inputsChanged));
+    }
+
+    public void startWatchingDevices(Duration interval) {
+        watcher.start(interval);
     }
 
     @Override
     public void close() {
+        watcher.close();
         sessions.close();
     }
 }
