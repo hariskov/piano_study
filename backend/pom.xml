@@ -20,6 +20,7 @@
         <module>pp-generator</module>
         <module>pp-engine</module>
         <module>pp-musicxml</module>
+        <module>pp-import-midi</module>
         <module>pp-library</module>
         <module>pp-api</module>
         <module>pp-app</module>
@@ -68,6 +69,11 @@
             <dependency>
                 <groupId>bg.petarh.piano</groupId>
                 <artifactId>pp-musicxml</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>bg.petarh.piano</groupId>
+                <artifactId>pp-import-midi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

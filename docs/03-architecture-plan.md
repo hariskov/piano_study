@@ -337,6 +337,16 @@ Every input event carries the backend timestamp from when it arrived (spec DEV-8
 
 The conversion is tested with **golden files**: known MIDI files whose expected MusicXML output is stored and compared.
 
+Implemented so far (`pp-import-midi`, step 1):
+- `MidiFileReader.read(path)` returns `RawMidi`:
+  - the file type (0 or 1) and ticks per quarter
+  - `RawNote`s (track, channel, pitch, velocity, start and end tick) sorted by start, track and pitch
+  - track names, the first program of each track/channel, and tempo, time signature and key signature events
+  - the end tick and warnings
+- Notes are paired first in, first out per track, channel and pitch, with Note On at velocity 0 counting as Note Off. A note that is never released ends at the end of the file, with a warning.
+- SMPTE-timed files and files that aren't MIDI throw `MidiImportException`, naming the file.
+- This module uses `javax.sound.midi` only to parse the file (`MidiSystem.getSequence`), never to open devices; device access stays in `pp-midi-jdk`.
+
 ## 7. API (backend ↔ UI)
 
 **Transport: stdin/stdout pipes.** Electron's main process starts the backend (`java … --api`) as a child process. Every message is one line of JSON (UTF-8, ending with `\n`): Electron writes requests to the backend's stdin and reads responses and events from its stdout. stderr is for logs only, and nothing else may be written to stdout. When stdin reaches end-of-file (Electron exited or closed it), the backend stops the session, closes the MIDI devices and exits. The backend opens no network port, so no other program can talk to it and no token is needed.
