@@ -171,6 +171,8 @@ Before starting, the user chooses:
 | Length | number of notes, a time limit, or endless | 50 notes |
 | **Chord practice** | on/off, plus chord types and inversions | off |
 
+While playing, random notes can change their hands, level, sharps and flats and mixed note values, and chords can change their hands and chord types. The note or chord being played stays, and the change applies from the next bar.
+
 ### 4.2 Complexity levels
 
 | Level | What gets generated |

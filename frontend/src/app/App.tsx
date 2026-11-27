@@ -62,7 +62,12 @@ export function App() {
           {screen === "devices" && <DevicesScreen />}
           {screen === "practice" &&
             (started ? (
-              <PracticeScreen params={started} onChangeSettings={() => setStarted(undefined)} />
+              <PracticeScreen
+                params={started}
+                setup={lastSetup!}
+                onSetupChange={setLastSetup}
+                onChangeSettings={() => setStarted(undefined)}
+              />
             ) : (
               <SetupScreen
                 previous={lastSetup}

@@ -4,6 +4,7 @@ import { PracticeScreen } from "./PracticeScreen";
 import { BackendContext } from "../app/backendContext";
 import { FakeBackend } from "../testing/fakeBackend";
 import type { SessionStartParams } from "../api/protocol";
+import { defaultSetup, type Setup } from "./setupForm";
 
 const PARAMS: SessionStartParams = { input: "virtual:keyboard", exercise: "random", mode: "wait", tempo: 80 };
 
@@ -13,13 +14,15 @@ function backend(): FakeBackend {
     .answer("settings.get", () => ({ input: "virtual:keyboard", keyboards: {}, tempos: {}, latencyOffsetMs: 0 }));
 }
 
-function show(fake: FakeBackend, onSettings = vi.fn()) {
+const SETUP = { ...defaultSetup({ keyboards: {}, tempos: {}, latencyOffsetMs: 0 }), tempo: 80 };
+
+function show(fake: FakeBackend, onSettings = vi.fn(), setup: Setup = SETUP, onSetupChange = vi.fn()) {
   const view = render(
     <BackendContext.Provider value={fake.client}>
-      <PracticeScreen params={PARAMS} onChangeSettings={onSettings} />
+      <PracticeScreen params={PARAMS} setup={setup} onSetupChange={onSetupChange} onChangeSettings={onSettings} />
     </BackendContext.Provider>,
   );
-  return { ...view, onSettings };
+  return { ...view, onSettings, onSetupChange };
 }
 
 describe("PracticeScreen", () => {
@@ -117,6 +120,49 @@ describe("PracticeScreen", () => {
     expect(screen.getByText("Perfect")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Change settings" }));
     expect(onSettings).toHaveBeenCalled();
+  });
+
+  it("adjusts a random-notes session while playing", async () => {
+    const fake = backend();
+    const { onSetupChange } = show(fake);
+    await waitFor(() => expect(fake.callsOf("session.start")).toHaveLength(1));
+
+    fireEvent.change(screen.getByLabelText("Hands"), { target: { value: "left" } });
+    fireEvent.change(screen.getByLabelText("Level"), { target: { value: "2" } });
+    fireEvent.click(screen.getByLabelText("Sharps and flats"));
+    fireEvent.click(screen.getByLabelText("Mixed note values"));
+
+    expect(fake.callsOf("session.adjust")).toEqual([
+      { hands: "left" },
+      { level: 2 },
+      { accidentals: true },
+      { mixed: true },
+    ]);
+    expect(onSetupChange).toHaveBeenLastCalledWith(expect.objectContaining({ hands: "left", level: 2, mixed: true }));
+    expect(screen.queryByLabelText("Dominant 7th")).toBeNull();
+  });
+
+  it("adjusts the hands and chord types of a chord session", async () => {
+    const fake = backend();
+    show(fake, vi.fn(), { ...SETUP, exercise: "chords", chordTypes: ["maj"] });
+    await waitFor(() => expect(fake.callsOf("session.start")).toHaveLength(1));
+    expect(screen.queryByLabelText("Level")).toBeNull();
+
+    fireEvent.click(screen.getByLabelText("Dominant 7th"));
+    fireEvent.change(screen.getByLabelText("Hands"), { target: { value: "both" } });
+
+    expect(fake.callsOf("session.adjust")).toEqual([{ chordTypes: ["maj", "dom7"] }, { hands: "both" }]);
+  });
+
+  it("keeps at least one chord type", async () => {
+    const fake = backend();
+    show(fake, vi.fn(), { ...SETUP, exercise: "chords", chordTypes: ["maj"] });
+    await waitFor(() => expect(fake.callsOf("session.start")).toHaveLength(1));
+
+    fireEvent.click(screen.getByLabelText("Major"));
+
+    expect(fake.callsOf("session.adjust")).toEqual([]);
+    expect((screen.getByLabelText("Major") as HTMLInputElement).checked).toBe(true);
   });
 
   it("explains a failed start", async () => {

@@ -1,17 +1,21 @@
 import { useEffect, useReducer, useState } from "react";
 import { useBackend } from "../app/backendContext";
-import type { ApiEvents, SessionStartParams } from "../api/protocol";
+import type { AdjustParams, ApiEvents, SessionStartParams } from "../api/protocol";
 import { PianoKeyboard } from "../keyboard/PianoKeyboard";
 import { keyboardRange, type KeyRange } from "../keyboard/presets";
 import { pitchName } from "../music/pitch";
 import { TempoControl } from "../tempo/TempoControl";
 import { midiForKey } from "./computerKeys";
+import { AccidentalsCheck, ChordTypeChecks, HandsSelect, LevelSelect, MixedCheck } from "./exerciseControls";
 import { NoteLanes } from "./NoteLanes";
 import { initialPractice, practiceReducer, type PracticeAction } from "./practiceState";
 import { ResultsView } from "./ResultsView";
+import type { Setup } from "./setupForm";
 
 interface Props {
   params: SessionStartParams;
+  setup: Setup;
+  onSetupChange: (setup: Setup) => void;
   onChangeSettings: () => void;
 }
 
@@ -27,7 +31,7 @@ const EVENTS: readonly (keyof ApiEvents)[] = [
   "session.inputRestored",
 ];
 
-export function PracticeScreen({ params, onChangeSettings }: Props) {
+export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings }: Props) {
   const client = useBackend();
   const [run, setRun] = useState(0);
   const [practice, dispatch] = useReducer(
@@ -36,6 +40,7 @@ export function PracticeScreen({ params, onChangeSettings }: Props) {
     initialPractice,
   );
   const [tempo, setTempo] = useState(params.tempo ?? 90);
+  const [current, setCurrent] = useState(setup);
   const [problem, setProblem] = useState<string>();
   const [range, setRange] = useState<KeyRange>(keyboardRange(undefined));
   const virtual = params.input === VIRTUAL_KEYBOARD;
@@ -115,6 +120,12 @@ export function PracticeScreen({ params, onChangeSettings }: Props) {
     return <ResultsView summary={practice.summary} onAgain={() => setRun(run + 1)} onChangeSettings={onChangeSettings} />;
   }
 
+  const adjust = (change: Partial<Setup> & AdjustParams) => {
+    const next = { ...current, ...change };
+    setCurrent(next);
+    onSetupChange(next);
+    void client.request("session.adjust", change).catch((error: Error) => setProblem(error.message));
+  };
   const changeTempo = (bpm: number) => {
     setTempo(bpm);
     void client.request("session.changeTempo", { bpm }).catch(() => undefined);
@@ -145,6 +156,7 @@ export function PracticeScreen({ params, onChangeSettings }: Props) {
           </button>
         </div>
       </div>
+      <div className="practice-main">
       <div className="stage card">
         <div className="now-playing" aria-label="Now playing">
           {nowPlaying || "…"}
@@ -165,6 +177,21 @@ export function PracticeScreen({ params, onChangeSettings }: Props) {
         {practice.inputLost && (
           <div className="overlay problem">The piano was disconnected. Plug it back in, then resume.</div>
         )}
+      </div>
+      <aside className="card adjust" aria-label="Adjust while playing">
+        <h3>Adjust while playing</h3>
+        <HandsSelect value={current.hands} onChange={(hands) => adjust({ hands })} />
+        {current.exercise === "random" ? (
+          <>
+            <LevelSelect value={current.level} onChange={(level) => adjust({ level })} />
+            <AccidentalsCheck checked={current.accidentals} onChange={(accidentals) => adjust({ accidentals })} />
+            <MixedCheck checked={current.mixed} onChange={(mixed) => adjust({ mixed })} />
+          </>
+        ) : (
+          <ChordTypeChecks value={current.chordTypes} onChange={(chordTypes) => adjust({ chordTypes })} />
+        )}
+        <p className="muted small">Changes apply from the next bar.</p>
+      </aside>
       </div>
       <div className="card keyboard-card">
         <PianoKeyboard
