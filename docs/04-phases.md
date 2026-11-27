@@ -81,7 +81,7 @@ Done when: a scripted WebSocket client can run a complete random or chord sessio
 **Goal:** the full loop works with a window: piano → backend → feedback.
 
 Deliverables:
-- `ui/`: Electron + React + TypeScript + Vite; Electron starts the backend as a hidden process.
+- `frontend/`: Electron + React + TypeScript + Vite as a Maven sub-project (frontend-maven-plugin runs npm); Electron starts the backend as a hidden process.
 - Screens: Home, Devices (input/output, live keyboard, **keyboard size presets, custom range, range detection**), Random-session setup (all settings in spec 4.1, including chord practice), Practice, Results.
 - **Tempo control** used throughout (TMP-1/2): preset buttons, slider, number field, −/+ buttons, the matching marking name shown for the current value.
 - **Simple note display** (no staff notation): lanes for right and left hand, a "now" line, note and chord names, green/red/grey feedback.
