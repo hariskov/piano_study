@@ -1,7 +1,7 @@
 package bg.petarh.piano.app.lifetime;
 
 import java.io.PrintWriter;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletionStage;
 
 public final class UntilShutdown implements Lifetime {
 
@@ -12,9 +12,15 @@ public final class UntilShutdown implements Lifetime {
     }
 
     @Override
-    public void keepOpenUntilStopped(AutoCloseable resource) throws InterruptedException {
-        Runtime.getRuntime().addShutdownHook(Thread.ofPlatform().unstarted(() -> close(resource)));
-        new CountDownLatch(1).await();
+    public void keepOpenUntil(AutoCloseable resource, CompletionStage<?> done) throws Exception {
+        Thread closeOnShutdown = Thread.ofPlatform().unstarted(() -> close(resource));
+        Runtime.getRuntime().addShutdownHook(closeOnShutdown);
+        try {
+            done.toCompletableFuture().get();
+        } finally {
+            Runtime.getRuntime().removeShutdownHook(closeOnShutdown);
+            resource.close();
+        }
     }
 
     private void close(AutoCloseable resource) {

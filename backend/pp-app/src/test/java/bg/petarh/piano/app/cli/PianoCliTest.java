@@ -134,11 +134,48 @@ class PianoCliTest {
     }
 
     @Test
+    void detectRangeGuidesThroughLowestAndHighestKey() {
+        lifetime.whileOpen(() -> {
+            keyboard.press(Pitch.parse("A0"), Velocity.of(64));
+            keyboard.press(Pitch.parse("A0"), Velocity.of(64));
+            keyboard.press(Pitch.parse("C8"), Velocity.of(64));
+        });
+
+        int exitCode = run("detect-range", "virtual:keyboard");
+
+        assertThat(exitCode).isZero();
+        assertThat(out.toString().lines()).containsExactly(
+                "Press the lowest key on your keyboard.",
+                "Lowest key: A0. Now press the highest key.",
+                "Detected range: A0-C8, 88 keys (matches the 88-key preset).");
+    }
+
+    @Test
+    void detectRangeReportsCustomRanges() {
+        lifetime.whileOpen(() -> {
+            keyboard.press(Pitch.parse("F7"), Velocity.of(64));
+            keyboard.press(Pitch.parse("F1"), Velocity.of(64));
+        });
+
+        run("detect-range", "virtual:keyboard");
+
+        assertThat(out.toString()).contains("Detected range: F1-F7, 73 keys (custom range).");
+    }
+
+    @Test
+    void detectRangeReportsUnknownDevice() {
+        int exitCode = run("detect-range", "jdk:Missing");
+
+        assertThat(exitCode).isEqualTo(1);
+        assertThat(err.toString()).contains("MIDI device unavailable: jdk:Missing");
+    }
+
+    @Test
     void requiresASubcommand() {
         int exitCode = run();
 
         assertThat(exitCode).isEqualTo(2);
-        assertThat(err.toString()).contains("Missing required subcommand", "devices", "monitor", "echo");
+        assertThat(err.toString()).contains("Missing required subcommand", "devices", "monitor", "echo", "detect-range");
     }
 
     @Test

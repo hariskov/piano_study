@@ -18,6 +18,10 @@
             <artifactId>pp-midi-jdk</artifactId>
         </dependency>
         <dependency>
+            <groupId>bg.petarh.piano</groupId>
+            <artifactId>pp-engine</artifactId>
+        </dependency>
+        <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
         </dependency>

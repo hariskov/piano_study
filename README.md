@@ -20,4 +20,5 @@ bin/pp --help
 bin/pp devices          # list MIDI inputs and outputs with their ids
 bin/pp monitor <id>     # print key presses, releases and pedal changes (Ctrl+C to stop)
 bin/pp echo <in> <out>  # play what you press through an output, e.g. jdk:Gervill
+bin/pp detect-range <id> # press the lowest, then the highest key to find the keyboard's range
 ```
