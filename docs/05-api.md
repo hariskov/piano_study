@@ -66,6 +66,9 @@ Result: `{"seed":42,"tempo":90}`.
 ### `session.pause`, `session.resume`, `session.stop`
 No params. Result `null`. Error -32001 if no session is running. Pause and resume are ignored in states where they don't apply. Stop finishes the session and sends `session.summary`.
 
+### `session.adjust`
+Params: any of `hands`, `level`, `accidentals`, `mixed` (random notes) and `chordTypes`, `inversions` (chords), with the same values as `session.start`. Changes the running exercise: the target being played stays, and from the next measure on the targets follow the new settings (the look-ahead is generated again). A value that can't be played gives -32602, and the session keeps its old settings. Result `null`; -32001 if no session is running.
+
 ### `session.changeTempo`
 Params `{"bpm":80}`. Takes effect from the next beat (TMP-3) and is saved as the tempo for the session's mode. Result `null`.
 

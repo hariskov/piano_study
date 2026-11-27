@@ -24,6 +24,7 @@ import bg.petarh.piano.midi.input.MidiInputPort;
 import bg.petarh.piano.midi.input.TimestampSource;
 import bg.petarh.piano.midi.output.MidiOutputPort;
 import bg.petarh.piano.midi.output.OutputConnection;
+import bg.petarh.piano.model.note.Target;
 import bg.petarh.piano.model.time.Tempo;
 
 import java.util.List;
@@ -39,16 +40,18 @@ public final class SessionMethods implements AutoCloseable {
         private final String inputId;
         private final Optional<OutputConnection> metronome;
         private final String modeKey;
+        private final PracticePlan plan;
         private final InputListener listener;
         private InputConnection input;
         private boolean inputLost;
 
-        private Active(Practice practice, String inputId, Optional<OutputConnection> metronome, String modeKey,
+        private Active(Practice practice, String inputId, Optional<OutputConnection> metronome, PracticePlan plan,
                        InputListener listener) {
             this.practice = practice;
+            this.plan = plan;
             this.inputId = inputId;
             this.metronome = metronome;
-            this.modeKey = modeKey;
+            this.modeKey = plan.modeKey();
             this.listener = listener;
         }
     }
@@ -82,6 +85,7 @@ public final class SessionMethods implements AutoCloseable {
         server.register("session.resume", Void.class, Void.class, ignored -> methods.control(Practice::resume));
         server.register("session.changeTempo", TempoParams.class, Void.class, methods::changeTempo);
         server.register("session.stop", Void.class, Void.class, ignored -> methods.control(Practice::stop));
+        server.register("session.adjust", AdjustParams.class, Void.class, methods::adjust);
         return methods;
     }
 
@@ -102,7 +106,7 @@ public final class SessionMethods implements AutoCloseable {
         Optional<MidiClicks> clicks = metronome.map(MidiClicks::new);
         Results results = new Results();
         Practice practice = Practice.prepare(plan.targets(), plan.timing(), plan.mode(), clock::nanos,
-                SessionListener.all(List.of(new SessionEvents(events, plan.names()), results)),
+                SessionListener.all(List.of(new SessionEvents(events, plan::nameOf), results)),
                 Optional.of(accent -> {
                     Messages.BEAT.send(events, new BeatEvent(accent));
                     clicks.ifPresent(output -> output.click(accent));
@@ -111,13 +115,21 @@ public final class SessionMethods implements AutoCloseable {
             InputMessage.EVENT.send(events, InputMessage.of(event));
             practice.input().onEvent(latency.apply(event));
         };
-        Active session = new Active(practice, params.input(), metronome, plan.modeKey(), listener);
+        Active session = new Active(practice, params.input(), metronome, plan, listener);
         session.input = openInput(params.input(), listener, metronome);
         active = session;
         int bpm = plan.timing().tempo().bpm();
         settings.update(current -> current.withInput(params.input()).withTempo(plan.modeKey(), bpm));
         practice.start().whenComplete((ignored, failure) -> finished(session, results));
         return new SessionStarted(plan.seed(), bpm);
+    }
+
+    private Object adjust(AdjustParams change) {
+        Active session = currentSession().orElseThrow(
+                () -> new RpcException(RpcException.SESSION_ERROR, "No session is running"));
+        Consumer<Optional<Target>> apply = session.plan.adjust(change);
+        session.practice.onSessionThread(() -> apply.accept(session.practice.currentTarget()));
+        return null;
     }
 
     private Object changeTempo(TempoParams params) {

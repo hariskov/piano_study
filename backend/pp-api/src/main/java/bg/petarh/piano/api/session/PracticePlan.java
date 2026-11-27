@@ -32,24 +32,39 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-record PracticePlan(TargetSource targets, SessionTiming timing, FollowMode mode, long seed,
-                    Function<Target, Optional<String>> names) {
-
-    String modeKey() {
-        return modeKey(mode);
-    }
-
-    private static String modeKey(FollowMode mode) {
-        return mode.name().toLowerCase(Locale.ROOT);
-    }
+final class PracticePlan {
 
     private static final int DEFAULT_TEMPO = 90;
     private static final int DEFAULT_NOTES = 50;
     private static final int DEFAULT_COUNT_IN_BARS = 1;
+
+    private final Settings settings;
+    private final SessionTiming timing;
+    private final FollowMode mode;
+    private final long seed;
+    private final KeySignature key;
+    private final Map<Fraction, Chord> chordsByStart = new ConcurrentHashMap<>();
+    private final SwitchingMeasures measures;
+    private final TargetSource targets;
+    private volatile SessionStartParams params;
+
+    private PracticePlan(SessionStartParams params, Settings settings, SessionTiming timing, FollowMode mode,
+                         long seed) {
+        this.params = params;
+        this.settings = settings;
+        this.timing = timing;
+        this.mode = mode;
+        this.seed = seed;
+        this.key = KeySignature.parse(or(params.key(), "C"));
+        this.measures = new SwitchingMeasures(measuresFor(params, seed, 0));
+        TargetSource source = TargetSource.fromMeasures(measures);
+        int notes = or(params.notes(), DEFAULT_NOTES);
+        this.targets = notes > 0 ? source.limitedTo(notes) : source;
+    }
 
     static PracticePlan from(SessionStartParams params, Settings settings) {
         if (params.input() == null) {
@@ -60,54 +75,84 @@ record PracticePlan(TargetSource targets, SessionTiming timing, FollowMode mode,
         SessionTiming timing = new SessionTiming(Tempo.of(bpm),
                 TimeSignature.parse(or(params.time(), "4/4")), or(params.countIn(), DEFAULT_COUNT_IN_BARS));
         long seed = params.seed() != null ? params.seed() : ThreadLocalRandom.current().nextLong();
-        Set<Hand> hands = hands(or(params.hands(), "right"));
-        KeyboardRange range = params.range() != null ? KeyboardRange.parse(params.range()) : defaultRange(hands);
-        KeyboardRange keyboard = params.keyboard() != null
-                ? KeyboardRange.parseKeyboard(params.keyboard())
-                : settings.keyboardFor(params.input()).orElse(KeyboardRange.fullPiano());
-        KeySignature key = KeySignature.parse(or(params.key(), "C"));
-        NoteValue noteValue = NoteValue.valueOf(or(params.noteValue(), "quarter").toUpperCase(Locale.ROOT));
-        int notes = or(params.notes(), DEFAULT_NOTES);
-        return switch (or(params.exercise(), "")) {
-            case "random" -> {
-                RandomNotesSettings notesSettings = new RandomNotesSettings(hands, range, keyboard, key, noteValue,
-                        timing.meter(), Level.of(or(params.level(), 1)), RandomNotesOptions.defaults()
-                        .withAccidentals(or(params.accidentals(), false))
-                        .withMixedNoteValues(or(params.mixed(), false)));
-                RandomNotesGenerator generator = RandomNotesGenerator.withSeed(notesSettings, seed);
-                yield new PracticePlan(targets(generator::nextMeasure, notes), timing, mode, seed,
-                        target -> Optional.empty());
-            }
-            case "chords" -> chords(params, hands, range, keyboard, key, noteValue, timing, mode, seed, notes);
-            default -> throw new IllegalArgumentException("Unknown exercise, expected random or chords: "
-                    + params.exercise());
+        return new PracticePlan(params, settings, timing, mode, seed);
+    }
+
+    TargetSource targets() {
+        return targets;
+    }
+
+    SessionTiming timing() {
+        return timing;
+    }
+
+    FollowMode mode() {
+        return mode;
+    }
+
+    long seed() {
+        return seed;
+    }
+
+    String modeKey() {
+        return modeKey(mode);
+    }
+
+    Optional<String> nameOf(Target target) {
+        return Optional.ofNullable(chordsByStart.remove(target.start())).map(chord -> chord.name(key));
+    }
+
+    Consumer<Optional<Target>> adjust(AdjustParams change) {
+        SessionStartParams adjusted = params.adjustedBy(change);
+        measuresFor(adjusted, seed, 0);
+        return current -> {
+            long nextMeasure = current
+                    .map(target -> target.start().dividedBy(timing.meter().measureLength()).floor() + 1)
+                    .orElse(0L);
+            measures.switchTo(measuresFor(adjusted, seed + nextMeasure, nextMeasure));
+            targets.discardLookAhead();
+            params = adjusted;
         };
     }
 
-    private static PracticePlan chords(SessionStartParams params, Set<Hand> hands, KeyboardRange range,
-                                       KeyboardRange keyboard, KeySignature key, NoteValue noteValue,
-                                       SessionTiming timing, FollowMode mode, long seed, int notes) {
-        Set<ChordType> types = or(params.chordTypes(), List.of("maj", "min")).stream()
+    private Supplier<List<NoteEvent>> measuresFor(SessionStartParams source, long generatorSeed, long firstMeasure) {
+        Set<Hand> hands = hands(or(source.hands(), "right"));
+        KeyboardRange range = source.range() != null ? KeyboardRange.parse(source.range()) : defaultRange(hands);
+        KeyboardRange keyboard = source.keyboard() != null
+                ? KeyboardRange.parseKeyboard(source.keyboard())
+                : settings.keyboardFor(source.input()).orElse(KeyboardRange.fullPiano());
+        NoteValue noteValue = NoteValue.valueOf(or(source.noteValue(), "quarter").toUpperCase(Locale.ROOT));
+        return switch (or(source.exercise(), "")) {
+            case "random" -> RandomNotesGenerator.withSeed(new RandomNotesSettings(hands, range, keyboard, key,
+                    noteValue, timing.meter(), Level.of(or(source.level(), 1)), RandomNotesOptions.defaults()
+                    .withAccidentals(or(source.accidentals(), false))
+                    .withMixedNoteValues(or(source.mixed(), false))), generatorSeed, firstMeasure)::nextMeasure;
+            case "chords" -> chords(source, hands, range, keyboard, noteValue, generatorSeed, firstMeasure);
+            default -> throw new IllegalArgumentException("Unknown exercise, expected random or chords: "
+                    + source.exercise());
+        };
+    }
+
+    private Supplier<List<NoteEvent>> chords(SessionStartParams source, Set<Hand> hands, KeyboardRange range,
+                                             KeyboardRange keyboard, NoteValue noteValue, long generatorSeed,
+                                             long firstMeasure) {
+        Set<ChordType> types = or(source.chordTypes(), List.of("maj", "min")).stream()
                 .map(ChordType::forCode)
                 .collect(Collectors.toCollection(() -> EnumSet.noneOf(ChordType.class)));
-        Set<Inversion> inversions = or(params.inversions(), List.of(0)).stream()
+        Set<Inversion> inversions = or(source.inversions(), List.of(0)).stream()
                 .map(Inversion::of)
                 .collect(Collectors.toCollection(() -> EnumSet.noneOf(Inversion.class)));
         RandomChordGenerator generator = RandomChordGenerator.withSeed(new ChordSettings(hands, range, keyboard, key,
-                types, inversions, noteValue, timing.meter()), seed);
-        Map<Fraction, Chord> chordsByStart = new ConcurrentHashMap<>();
-        Supplier<List<NoteEvent>> measures = () -> {
+                types, inversions, noteValue, timing.meter()), generatorSeed, firstMeasure);
+        return () -> {
             List<ChordEvent> measure = generator.nextMeasure();
             measure.forEach(event -> chordsByStart.put(event.start(), event.chord()));
             return measure.stream().flatMap(event -> event.notes().stream()).toList();
         };
-        return new PracticePlan(targets(measures, notes), timing, mode, seed,
-                target -> Optional.ofNullable(chordsByStart.remove(target.start())).map(chord -> chord.name(key)));
     }
 
-    private static TargetSource targets(Supplier<List<NoteEvent>> measures, int notes) {
-        TargetSource source = TargetSource.fromMeasures(measures);
-        return notes > 0 ? source.limitedTo(notes) : source;
+    private static String modeKey(FollowMode mode) {
+        return mode.name().toLowerCase(Locale.ROOT);
     }
 
     private static Set<Hand> hands(String hands) {
