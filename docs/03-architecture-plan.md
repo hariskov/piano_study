@@ -234,7 +234,15 @@ The rest of the backend only uses the interfaces in `pp-midi`. `javax.sound.midi
 
 ## 5. Engine (`pp-engine`)
 
-The `pp-engine` module exists now, with a first use case: `engine.keyboard.KeyboardRangeDetection`. It's a small state machine (`AwaitingLowest` → `AwaitingHighest` → `Detected`) that is fed `InputEvent`s and only reacts to key presses. Pressing the first key again is ignored, and the order of the two keys doesn't matter. The CLI uses it now, and the device setup screen will later (KEY-3). It recognises a preset with `KeyboardPreset.matching(range)`. The rest of this section is still planned.
+The `pp-engine` module exists now, with a first use case: `engine.keyboard.KeyboardRangeDetection`. It's a small state machine (`AwaitingLowest` → `AwaitingHighest` → `Detected`) that is fed `InputEvent`s and only reacts to key presses. Pressing the first key again is ignored, and the order of the two keys doesn't matter. The CLI uses it now, and the device setup screen will later (KEY-3). It recognises a preset with `KeyboardPreset.matching(range)`.
+
+Also implemented:
+- `engine.time`: `Clock` (`nowNanos()`), `SystemClock` (`System.nanoTime`), `ManualClock` (moved forward by tests, never back) and `Stopwatch` (start, pause, resume; paused time isn't counted). Every engine test uses `ManualClock`, so none of them depends on real time.
+- `engine.targets`: `TargetSource` (`next()`, `peek(count)`, `limitedTo(count)` for a session of N notes).
+  - `TargetSource.of(list)` serves a fixed list (songs, tests).
+  - `TargetSource.fromMeasures(supplier)` wraps a generator's `nextMeasure` and turns each measure into targets with `Targets.from`. It always holds the current measure plus 4 more (spec 4.4 look-ahead), so endless sessions never wait for the generator. The engine takes a plain `Supplier`, so it doesn't depend on `pp-generator`; `pp-app` connects them.
+
+The rest of this section is still planned.
 
 ### 5.1 Parts of the engine
 
