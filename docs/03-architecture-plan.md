@@ -352,6 +352,7 @@ The message types are written once in Java, and the matching TypeScript types ar
 - Every method is registered with its params and result record (`RpcServer.register(name, Params.class, Result.class, handler)`), and `RpcServer.methods()` lists them.
 - Every event is an `ApiEvent<P>` constant declared next to its record (`Messages.STATE`, `DeviceList.CHANGED`, …) and sent with `event.send(sink, params)`. `PianoApi.EVENTS` lists them all.
 - `api.contract.TypeScriptContract` turns them into `frontend/src/api/protocol.ts`: one interface per record, plus an `ApiMethods` map (method → `{ params; result }`) and an `ApiEvents` map (event → params). Params fields are all optional (the backend fills in defaults). Result and event fields are required unless the record component is marked `@MayBeAbsent`.
+- Jackson reads and writes the API records by reflection, so every package holding one must be `opens … to tools.jackson.databind` in `module-info.java`. `JsonAccessTest` checks this for every registered method and event, because the test runner opens packages on its own and would otherwise hide a missing `opens`.
 - The file is committed. `ProtocolFileTest` regenerates it on every build and fails if the committed copy is out of date; `-Dprotocol.write=true` writes it again.
 
 Implemented so far (`pp-api`, using Jackson 3):
@@ -398,6 +399,7 @@ Implemented so far (`pp-library`, settings part):
 | Golden | MIDI → MusicXML, MusicXML → model | stored inputs and expected outputs in `src/test/resources` |
 | Engine scenarios | whole sessions from scripted input ("press C4 at 1000 ms…") | a scenario test runner that uses the manual clock |
 | Device integration | real ALSA path | a virtual MIDI port (`snd-virmidi` kernel module plus `aplaymidi`/`amidi`) to send in recorded MIDI |
+| UI end to end | The real Electron app and backend with the virtual keyboard: devices, a random session played by mouse, a chord session played on the computer keyboard, results | Playwright for Electron (`npm run e2e`, needs a display; not part of `./mvnw verify`) |
 | API | JSON-RPC contract over stdio | In-memory streams in place of stdin/stdout, JSON snapshot tests |
 | UI | components, protocol handling | Vitest, plus Playwright with Electron for smoke tests |
 | Manual | with the real piano | a checklist for each phase (see `04-phases.md`) |

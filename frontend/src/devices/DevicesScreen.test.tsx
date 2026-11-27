@@ -59,6 +59,14 @@ describe("DevicesScreen", () => {
     expect(fake.callsOf("settings.update")).toContainEqual({ input: "virtual:keyboard" });
   });
 
+  it("saves the input it shows as chosen when none was saved", async () => {
+    const fake = backend().answer("settings.get", () => ({ keyboards: {}, tempos: {}, latencyOffsetMs: 0 }));
+    show(fake);
+    await screen.findByLabelText("Piano");
+
+    await waitFor(() => expect(fake.callsOf("settings.update")).toEqual([{ input: "jdk:Piano" }]));
+  });
+
   it("shows the saved keyboard size of the input", async () => {
     show(backend());
     await screen.findByLabelText("Piano");

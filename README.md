@@ -23,6 +23,15 @@ bin/ui
 
 The first start downloads the Electron binary (about 100 MB, once). The app starts the backend (`bin/pp api`) itself and stops it when the window closes.
 
+End-to-end smoke test (Playwright driving the real app; needs a display, for example Xvfb on a headless machine):
+
+```
+./mvnw -q package -DskipTests
+cd frontend && PATH=$PWD/target/node:$PATH npm run e2e        # or: xvfb-run npm run e2e
+```
+
+It plays a random-notes session and a chord session on the virtual keyboard and saves screenshots in `frontend/test-results/screens/`.
+
 ## Command-line tools
 
 ```

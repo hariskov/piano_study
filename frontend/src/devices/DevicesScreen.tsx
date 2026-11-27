@@ -21,7 +21,11 @@ export function DevicesScreen() {
     void Promise.all([client.request("devices.list", {}), client.request("settings.get", {})]).then(([list, saved]) => {
       setDevices(list);
       setSettings(saved);
-      setInput(saved.input ?? list.inputs[0]?.id);
+      const shown = saved.input ?? list.inputs[0]?.id;
+      setInput(shown);
+      if (saved.input === undefined && shown !== undefined) {
+        void client.request("settings.update", { input: shown }).then(setSettings);
+      }
     });
     return client.on("devices.changed", setDevices);
   }, [client]);
