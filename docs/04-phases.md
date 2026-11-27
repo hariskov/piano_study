@@ -9,6 +9,15 @@ v1.0:             P8 Notation → P9 Full practice features → P10 Release hard
 v2.0:             P11 PDF/OMR
 ```
 
+## Current status
+
+| Phase | Status |
+|---|---|
+| P0 Skeleton and MIDI devices | **In progress.** Done: Maven build, `pp-model` (`Pitch`, `KeyboardRange`, presets), `pp-midi` (ports, events, virtual devices), `pp-midi-jdk` (input, output, device catalog). Remaining: `pp-app` CLI (`--list-devices`, `--monitor`, `--detect-range`, `--echo`), `snd-virmidi` integration test, manual test with the piano. |
+| P1–P11 | Not started |
+
+This table is updated in every PR that completes a deliverable.
+
 ---
 
 ## v0.5: Proof of concept, random notes and chords
