@@ -246,6 +246,9 @@ Also implemented:
   - `advance()` moves to the next target (the evaluators will call it) and finishes after the last one. `stop()` finishes from any state.
   - `elapsedNanos()` counts running time only, without the count-in or pauses.
   - An action that doesn't fit the state throws `IllegalStateException`. The session isn't thread-safe, by design: it is only used from the session thread (§5.3).
+- `engine.evaluation`: `Evaluator.onInput(InputEvent)` returns `Evaluation`s (sealed: `CorrectNote`, `WrongNote`, `TargetCompleted`).
+  - `WaitEvaluator` implements Wait mode (spec 3.2). It tracks the keys held down and the press time of each target key counted so far. A target is complete when all its keys are counted and they are either all held or were pressed within the chord window (default 300 ms). It then calls `session.advance()`.
+  - It counts `completedTargets()` and `wrongKeys()` for the results.
 
 The rest of this section is still planned.
 

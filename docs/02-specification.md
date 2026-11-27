@@ -113,7 +113,9 @@ Before starting, the user chooses:
 - The music stops at the next expected note or chord (the "target").
 - The target counts as **correct** once all of its pitches are held at the same time, or were pressed within the chord window (default 300 ms between the first and last key).
 - A key that isn't part of the target counts as **wrong**. It is shown in red, the music doesn't move on, and it adds to the wrong-key count.
-- Pressing a key again that was already counted for the target is ignored.
+- Pressing a key again that was already counted for the target is ignored: it isn't counted twice and isn't wrong. It does refresh that key's press time for the chord window, so a chord that was pressed too slowly can be completed by pressing the early keys again.
+- Only new presses count. A key still held down from the previous target must be pressed again for the next one.
+- Keys pressed during the count-in or while paused are ignored.
 - Accompaniment waits along with the music.
 
 **Tempo mode**
