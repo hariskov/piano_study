@@ -29,6 +29,8 @@ function createWindow(): void {
     width: 1280,
     height: 800,
     title: "Piano Player",
+    autoHideMenuBar: true,
+    backgroundColor: "#14161b",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -41,7 +43,7 @@ function createWindow(): void {
   if (devServer) {
     void window.loadURL(devServer);
   } else {
-    void window.loadFile(path.join(__dirname, "..", "renderer", "index.html"));
+    void window.loadFile(path.join(__dirname, "..", "renderer", "index.html"), { hash: process.env.PP_SCREEN ?? "" });
   }
 }
 

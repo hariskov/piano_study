@@ -310,6 +310,14 @@ The renderer never talks to the backend directly:
 - **Preload** (`preload.cts`): exposes `window.backend = { send, onLine, onExit }` through `contextBridge`. The window runs with context isolation, the sandbox and no Node integration.
 - **Renderer** (`src/api/rpcClient.ts`): JSON-RPC is handled here. `RpcClient.request(method, params)` is typed from `protocol.ts` and resolves with the result or rejects with `RpcError(code, message)`. `on(event, listener)` returns an unsubscribe function. `disconnect(reason)`, called on `backend:exit`, fails every pending request. `connectToBackend()` returns nothing outside Electron, for example in a plain browser during development.
 
+**Renderer structure** (`frontend/src/`, one folder per feature):
+- `app/`: `App` (navigation; the current screen is kept in the URL hash, and `PP_SCREEN` opens Electron on a given screen), `HomeScreen`, and `BackendContext` / `useBackend()`, which give every screen the `RpcClient`.
+- `devices/`: `DevicesScreen` (choose the input and output, keyboard size preset or custom range saved per input, a live keyboard through `devices.monitor`; with `virtual:keyboard`, clicking keys plays it).
+- `keyboard/`: `layoutKeys(low, high)` (white keys one unit wide, black keys 0.6 wide and 0.3 to the left of the next white key), the presets (the same as the Java `KeyboardPreset`), and the SVG `PianoKeyboard` (pressed, target, correct and wrong keys; pointer input).
+- `music/`: pitch names ↔ MIDI numbers.
+- `testing/FakeBackend`: an in-memory `Transport` that answers requests and sends events, used by the screen tests.
+- `styles.css`: one dark theme with CSS variables.
+
 The main and preload sources are `.cts` files, compiled by `tsconfig.electron.json` to CommonJS `.cjs` (Electron's sandboxed preload needs CommonJS). The renderer is built by Vite. Electron 45 downloads its binary on first start, not at `npm install`. `bin/ui` starts the app with Maven's Node.
 
 **Protocol: JSON-RPC 2.0.**
