@@ -1,13 +1,14 @@
-package io.github.hariskov.piano.midi.virtual;
+package io.github.hariskov.piano.midi.virtual.input;
 
-import io.github.hariskov.piano.midi.DeviceDescriptor;
-import io.github.hariskov.piano.midi.DeviceId;
-import io.github.hariskov.piano.midi.DeviceUnavailableException;
-import io.github.hariskov.piano.midi.InputConnection;
-import io.github.hariskov.piano.midi.InputEvent;
-import io.github.hariskov.piano.midi.InputListener;
-import io.github.hariskov.piano.midi.MidiInputPort;
-import io.github.hariskov.piano.midi.TimestampSource;
+import io.github.hariskov.piano.midi.device.DeviceDescriptor;
+import io.github.hariskov.piano.midi.device.DeviceId;
+import io.github.hariskov.piano.midi.device.DeviceUnavailableException;
+import io.github.hariskov.piano.midi.input.InputConnection;
+import io.github.hariskov.piano.midi.input.InputEvent;
+import io.github.hariskov.piano.midi.input.InputListener;
+import io.github.hariskov.piano.midi.input.MidiInputPort;
+import io.github.hariskov.piano.midi.input.TimestampSource;
+import io.github.hariskov.piano.midi.value.Velocity;
 import io.github.hariskov.piano.model.pitch.Pitch;
 
 import java.util.List;
@@ -15,7 +16,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class VirtualInputPort implements MidiInputPort {
 
-    public static final DeviceId DEVICE_ID = new DeviceId("virtual:keyboard");
+    public static final DeviceId DEVICE_ID = DeviceId.of("virtual:keyboard");
     private static final DeviceDescriptor DEVICE =
             new DeviceDescriptor(DEVICE_ID, "Virtual keyboard", "On-screen and computer keyboard input");
 
@@ -50,7 +51,7 @@ public final class VirtualInputPort implements MidiInputPort {
         };
     }
 
-    public void press(Pitch pitch, int velocity) {
+    public void press(Pitch pitch, Velocity velocity) {
         publish(new InputEvent.NoteOn(pitch, velocity, clock.nanos()));
     }
 

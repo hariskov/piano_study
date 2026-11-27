@@ -1,22 +1,25 @@
-package io.github.hariskov.piano.midi.virtual;
+package io.github.hariskov.piano.midi.virtual.output;
 
-import io.github.hariskov.piano.midi.DeviceDescriptor;
-import io.github.hariskov.piano.midi.DeviceId;
-import io.github.hariskov.piano.midi.DeviceUnavailableException;
-import io.github.hariskov.piano.midi.MidiOutputPort;
-import io.github.hariskov.piano.midi.OutputConnection;
-import io.github.hariskov.piano.midi.OutputEvent;
+import io.github.hariskov.piano.midi.device.DeviceDescriptor;
+import io.github.hariskov.piano.midi.device.DeviceId;
+import io.github.hariskov.piano.midi.device.DeviceUnavailableException;
+import io.github.hariskov.piano.midi.output.MidiOutputPort;
+import io.github.hariskov.piano.midi.output.OutputConnection;
+import io.github.hariskov.piano.midi.output.OutputEvent;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class VirtualOutputPort implements MidiOutputPort {
 
-    public static final DeviceId DEVICE_ID = new DeviceId("virtual:silent");
+    public static final DeviceId DEVICE_ID = DeviceId.of("virtual:silent");
     private static final DeviceDescriptor DEVICE =
             new DeviceDescriptor(DEVICE_ID, "Silent output", "Discards sound, keeps a record of sent events");
 
     private final List<OutputEvent> sent = new CopyOnWriteArrayList<>();
+
+    public VirtualOutputPort() {
+    }
 
     @Override
     public List<DeviceDescriptor> devices() {
