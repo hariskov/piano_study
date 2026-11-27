@@ -10,6 +10,7 @@ Docs: `docs/01-vision.md`, `docs/02-specification.md`, `docs/03-architecture-pla
 
 ## Rules
 
+- Group ID and base package: `bg.petarh.piano`. New backend modules go under `backend/` with the `backend` POM as their parent.
 - Test first: write the failing unit test, then the code. All hardware (MIDI in/out) sits behind interfaces so everything can be tested without a device.
 - Clean architecture and SOLID, as described in `docs/03-architecture-plan.md` §2A. The core modules (`pp-model`, `pp-engine`, `pp-generator`) never depend on I/O, MIDI or web libraries.
 - No comments or Javadoc that just restate names or signatures. A comment is only for a non-obvious *why*.
