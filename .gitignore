@@ -1,0 +1,10 @@
+target/
+node_modules/
+dist/
+out/
+*.log
+.idea/
+*.iml
+.vscode/
+.DS_Store
+.claude/settings.local.json
