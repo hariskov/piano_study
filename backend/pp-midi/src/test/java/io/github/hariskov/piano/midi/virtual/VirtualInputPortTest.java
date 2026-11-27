@@ -4,7 +4,7 @@ import io.github.hariskov.piano.midi.DeviceId;
 import io.github.hariskov.piano.midi.DeviceUnavailableException;
 import io.github.hariskov.piano.midi.InputConnection;
 import io.github.hariskov.piano.midi.InputEvent;
-import io.github.hariskov.piano.model.Pitch;
+import io.github.hariskov.piano.model.pitch.Pitch;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

@@ -1,6 +1,6 @@
 package io.github.hariskov.piano.midi;
 
-import io.github.hariskov.piano.model.Pitch;
+import io.github.hariskov.piano.model.pitch.Pitch;
 
 public sealed interface InputEvent {
 

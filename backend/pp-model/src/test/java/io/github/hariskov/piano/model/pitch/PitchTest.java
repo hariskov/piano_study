@@ -1,4 +1,4 @@
-package io.github.hariskov.piano.model;
+package io.github.hariskov.piano.model.pitch;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -75,5 +75,22 @@ class PitchTest {
     void transposesBySemitones() {
         assertThat(Pitch.parse("C4").transpose(12)).isEqualTo(Pitch.parse("C5"));
         assertThat(Pitch.parse("C4").transpose(-1)).isEqualTo(Pitch.parse("B3"));
+    }
+
+    @Test
+    void pitchesWithSameMidiNumberAreEqualRegardlessOfSpelling() {
+        assertThat(Pitch.parse("C#4")).isEqualTo(Pitch.parse("Db4")).isEqualTo(Pitch.of(61));
+        assertThat(Pitch.parse("C#4")).hasSameHashCodeAs(Pitch.parse("Db4"));
+        assertThat(Pitch.parse("C4")).isNotEqualTo(Pitch.parse("C5"));
+    }
+
+    @Test
+    void describesItselfByName() {
+        assertThat(Pitch.of(61)).hasToString("C#4");
+    }
+
+    @Test
+    void rejectsTranspositionBeyondMidiRange() {
+        assertThatIllegalArgumentException().isThrownBy(() -> Pitch.parse("G9").transpose(1));
     }
 }

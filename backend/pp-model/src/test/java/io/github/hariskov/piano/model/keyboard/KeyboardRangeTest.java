@@ -1,12 +1,13 @@
-package io.github.hariskov.piano.model;
+package io.github.hariskov.piano.model.keyboard;
 
+import io.github.hariskov.piano.model.pitch.Pitch;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class KeyboardRangeTest {
 
@@ -26,12 +27,7 @@ class KeyboardRangeTest {
         assertThat(range.lowest()).isEqualTo(Pitch.parse(lowest));
         assertThat(range.highest()).isEqualTo(Pitch.parse(highest));
         assertThat(range.keyCount()).isEqualTo(keyCount);
-    }
-
-    @ParameterizedTest
-    @EnumSource(KeyboardPreset.class)
-    void presetKeyCountMatchesItsRange(KeyboardPreset preset) {
-        assertThat(preset.range().keyCount()).isEqualTo(preset.keyCount());
+        assertThat(preset.keyCount()).isEqualTo(keyCount);
     }
 
     @Test
@@ -99,5 +95,22 @@ class KeyboardRangeTest {
 
         assertThat(range.pitches()).containsExactly(
                 Pitch.parse("C4"), Pitch.parse("C#4"), Pitch.parse("D4"), Pitch.parse("D#4"), Pitch.parse("E4"));
+    }
+
+    @Test
+    void exposesPitchesAsReadOnlyList() {
+        KeyboardRange range = KeyboardRange.of(Pitch.parse("C4"), Pitch.parse("E4"));
+
+        assertThatThrownBy(() -> range.pitches().add(Pitch.parse("F4")))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void rangesWithSameBoundsAreEqual() {
+        KeyboardRange first = KeyboardRange.of(Pitch.parse("C2"), Pitch.parse("C7"));
+
+        assertThat(first).isEqualTo(KeyboardPreset.KEYS_61.range());
+        assertThat(first).hasSameHashCodeAs(KeyboardPreset.KEYS_61.range());
+        assertThat(first).hasToString("C2-C7");
     }
 }
