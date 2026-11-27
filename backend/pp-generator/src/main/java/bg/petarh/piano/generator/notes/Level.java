@@ -6,10 +6,12 @@ public enum Level {
     ONE(1, 1),
     TWO(2, 1),
     THREE(3, 2),
-    FOUR(4, 3);
+    FOUR(4, 3),
+    FIVE(5, 3);
 
     private static final int FIRST_LEVEL_WITH_MIXED_NOTE_VALUES = 3;
     private static final int FIRST_LEVEL_WITH_ACCIDENTALS = 4;
+    private static final int FIRST_LEVEL_WITH_HANDS_TOGETHER = 5;
 
     private final int number;
     private final int mostNotesTogether;
@@ -40,5 +42,9 @@ public enum Level {
 
     boolean playsAccidentals() {
         return number >= FIRST_LEVEL_WITH_ACCIDENTALS;
+    }
+
+    boolean playsHandsTogether() {
+        return number >= FIRST_LEVEL_WITH_HANDS_TOGETHER;
     }
 }

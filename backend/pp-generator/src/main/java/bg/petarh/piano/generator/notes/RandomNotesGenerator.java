@@ -6,6 +6,7 @@ import bg.petarh.piano.model.pitch.Pitch;
 import bg.petarh.piano.model.time.Fraction;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -49,19 +50,29 @@ public final class RandomNotesGenerator {
     }
 
     public List<NoteEvent> nextMeasure() {
-        Hand hand = handOrder.get((int) (measureIndex % handOrder.size()));
         Fraction start = settings.meter().measureLength().times(measureIndex);
+        List<Hand> playing = settings.level().playsHandsTogether()
+                ? handOrder
+                : List.of(handOrder.get((int) (measureIndex % handOrder.size())));
+        measureIndex++;
+        return playing.stream()
+                .flatMap(hand -> measureFor(hand, start).stream())
+                .sorted(Comparator.comparing(NoteEvent::start).thenComparing(NoteEvent::pitch))
+                .toList();
+    }
+
+    private List<NoteEvent> measureFor(Hand hand, Fraction start) {
         List<Fraction> durations = Rhythm.fill(settings.meter().measureLength(), settings.noteValue(),
                 settings.playsMixedNoteValues(), random);
         List<NoteEvent> notes = new ArrayList<>();
+        Fraction at = start;
         for (Fraction duration : durations) {
             Pitch melody = lines.get(hand).next(random);
             for (Pitch pitch : harmonies.get(hand).around(melody, random)) {
-                notes.add(new NoteEvent(pitch, start, duration, hand));
+                notes.add(new NoteEvent(pitch, at, duration, hand));
             }
-            start = start.plus(duration);
+            at = at.plus(duration);
         }
-        measureIndex++;
-        return List.copyOf(notes);
+        return notes;
     }
 }

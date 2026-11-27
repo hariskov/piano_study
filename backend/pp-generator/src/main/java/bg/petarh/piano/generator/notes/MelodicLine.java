@@ -40,7 +40,7 @@ final class MelodicLine {
         }
         return switch (level) {
             case ONE -> Math.abs(candidate - position) <= LARGEST_STEP;
-            case TWO, THREE, FOUR -> Math.abs(pitches.get(candidate).midiNumber() - pitches.get(position).midiNumber())
+            case TWO, THREE, FOUR, FIVE -> Math.abs(pitches.get(candidate).midiNumber() - pitches.get(position).midiNumber())
                     <= LARGEST_JUMP_SEMITONES;
         };
     }

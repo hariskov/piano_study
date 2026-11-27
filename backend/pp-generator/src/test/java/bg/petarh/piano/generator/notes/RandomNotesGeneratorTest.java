@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.SplittableRandom;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -181,7 +182,7 @@ class RandomNotesGeneratorTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = Level.class, names = {"THREE", "FOUR"})
+    @EnumSource(value = Level.class, names = {"THREE", "FOUR", "FIVE"})
     void mixedNoteValuesStillFillEachMeasure(Level level) {
         RandomNotesGenerator generator = RandomNotesGenerator.withSeed(withOptions(level, false, true), 12);
 
@@ -202,6 +203,44 @@ class RandomNotesGeneratorTest {
     void levelsBelowThreeIgnoreMixedNoteValues() {
         assertThat(notes(withOptions(Level.TWO, false, true), 2, 16)).extracting(NoteEvent::duration)
                 .containsOnly(Fraction.of(1, 4));
+    }
+
+    @Test
+    void levelFivePlaysBothHandsInEveryMeasure() {
+        RandomNotesGenerator generator = RandomNotesGenerator.withSeed(bothHands(Level.FIVE, false), 21);
+
+        for (int measure = 0; measure < 8; measure++) {
+            List<NoteEvent> notes = generator.nextMeasure();
+            for (Hand hand : Hand.values()) {
+                List<NoteEvent> handNotes = notes.stream().filter(note -> note.hand() == hand).toList();
+                assertThat(filledBy(handNotes)).isEqualTo(Fraction.whole(1));
+                assertThat(handNotes).allMatch(note -> hand == Hand.RIGHT
+                        ? note.pitch().compareTo(MIDDLE_C) >= 0
+                        : note.pitch().compareTo(MIDDLE_C) < 0);
+            }
+        }
+    }
+
+    @Test
+    void levelFiveHandsHaveTheirOwnRhythm() {
+        RandomNotesGenerator generator = RandomNotesGenerator.withSeed(bothHands(Level.FIVE, true), 4);
+
+        boolean anyMeasureDiffers = IntStream.range(0, 16).mapToObj(i -> generator.nextMeasure())
+                .anyMatch(notes -> !startsOf(notes, Hand.RIGHT).equals(startsOf(notes, Hand.LEFT)));
+        assertThat(anyMeasureDiffers).isTrue();
+    }
+
+    @Test
+    void levelFiveListsNotesInTimeOrder() {
+        List<NoteEvent> notes = RandomNotesGenerator.withSeed(bothHands(Level.FIVE, true), 9).nextMeasure();
+
+        assertThat(notes).extracting(NoteEvent::start).isSorted();
+    }
+
+    @Test
+    void levelFiveWithOneHandPlaysThatHandOnly() {
+        assertThat(notes(withOptions(Level.FIVE, false, false), 3, 8)).extracting(NoteEvent::hand)
+                .containsOnly(Hand.RIGHT);
     }
 
     @ParameterizedTest
@@ -239,6 +278,22 @@ class RandomNotesGeneratorTest {
         return new RandomNotesSettings(Set.of(Hand.RIGHT), range("C4", "C6"), KeyboardRange.fullPiano(),
                 KeySignature.major("C"), NoteValue.QUARTER, TimeSignature.COMMON_TIME, level, accidentals,
                 mixedNoteValues);
+    }
+
+    private static RandomNotesSettings bothHands(Level level, boolean mixedNoteValues) {
+        return new RandomNotesSettings(Set.of(Hand.RIGHT, Hand.LEFT), range("C2", "C6"), KeyboardRange.fullPiano(),
+                KeySignature.major("C"), NoteValue.QUARTER, TimeSignature.COMMON_TIME, level, false,
+                mixedNoteValues);
+    }
+
+    private static Fraction filledBy(List<NoteEvent> notes) {
+        return notesTogether(notes).stream().map(group -> group.getFirst().duration())
+                .reduce(Fraction.ZERO, Fraction::plus);
+    }
+
+    private static Set<Fraction> startsOf(List<NoteEvent> notes, Hand hand) {
+        return notes.stream().filter(note -> note.hand() == hand).map(NoteEvent::start)
+                .collect(Collectors.toSet());
     }
 
     private static List<List<NoteEvent>> notesTogether(List<NoteEvent> notes) {
