@@ -19,7 +19,7 @@ class StdioTransportTest {
     private final ByteArrayOutputStream out = new ByteArrayOutputStream();
 
     StdioTransportTest() {
-        server.register("ping", Void.class, ignored -> "pong");
+        server.register("ping", Void.class, Object.class, ignored -> "pong");
     }
 
     @Test

@@ -6,6 +6,8 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,7 +16,7 @@ public final class RpcServer {
 
     private static final String VERSION = "2.0";
 
-    private record Registered<P>(Class<P> paramsType, RpcMethod<P> method) {
+    private record Registered<P>(Class<P> paramsType, Class<?> resultType, RpcMethod<P> method) {
     }
 
     private final JsonMapper mapper = JsonMapper.builder()
@@ -25,8 +27,16 @@ public final class RpcServer {
     public RpcServer() {
     }
 
-    public <P> void register(String name, Class<P> paramsType, RpcMethod<P> method) {
-        methods.put(name, new Registered<>(paramsType, method));
+    public <P> void register(String name, Class<P> paramsType, Class<?> resultType, RpcMethod<P> method) {
+        methods.put(name, new Registered<>(paramsType, resultType, method));
+    }
+
+    public List<MethodSignature> methods() {
+        return methods.entrySet().stream()
+                .map(entry -> new MethodSignature(entry.getKey(), entry.getValue().paramsType(),
+                        entry.getValue().resultType()))
+                .sorted(Comparator.comparing(MethodSignature::name))
+                .toList();
     }
 
     public Optional<String> handle(String line) {

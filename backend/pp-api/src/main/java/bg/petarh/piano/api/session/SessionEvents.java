@@ -27,18 +27,18 @@ final class SessionEvents implements SessionListener {
 
     @Override
     public void onStateChanged(SessionState state) {
-        events.emit("session.state", new StateEvent(state.name()));
+        Messages.STATE.send(events, new StateEvent(state.name()));
     }
 
     @Override
     public void onTargetChanged(Optional<Target> target) {
-        target.ifPresent(next -> events.emit("session.target", new TargetEvent(next.start().toString(),
+        target.ifPresent(next -> Messages.TARGET.send(events, new TargetEvent(next.start().toString(),
                 names.apply(next).orElse(null), next.notes().stream().map(NoteInfo::of).toList())));
     }
 
     @Override
     public void onEvaluation(Evaluation evaluation) {
-        events.emit("eval", switch (evaluation) {
+        Messages.EVAL.send(events, switch (evaluation) {
             case Evaluation.CorrectNote correct -> new EvalEvent("CORRECT", correct.pitch().name(), null, null);
             case Evaluation.WrongNote wrong -> new EvalEvent("WRONG", wrong.pitch().name(), null, null);
             case Evaluation.TargetCompleted ignored -> new EvalEvent("TARGET_COMPLETED", null, null, null);

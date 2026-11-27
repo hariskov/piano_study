@@ -42,7 +42,7 @@ public final class DeviceWatcher implements AutoCloseable {
         }
         boolean inputsDiffer = !now.inputs().equals(last.inputs());
         last = now;
-        events.emit("devices.changed", now);
+        DeviceList.CHANGED.send(events, now);
         if (inputsDiffer) {
             inputsChanged.accept(now.inputs().stream().map(DeviceInfo::id).collect(Collectors.toSet()));
         }

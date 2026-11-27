@@ -10,6 +10,6 @@ public final class DeviceMethods {
     }
 
     public static void register(RpcServer server, MidiInputPort inputs, MidiOutputPort outputs) {
-        server.register("devices.list", Void.class, ignored -> DeviceList.of(inputs, outputs));
+        server.register("devices.list", Void.class, DeviceList.class, ignored -> DeviceList.of(inputs, outputs));
     }
 }

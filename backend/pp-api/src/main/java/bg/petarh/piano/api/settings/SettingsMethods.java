@@ -1,5 +1,6 @@
 package bg.petarh.piano.api.settings;
 
+import bg.petarh.piano.api.rpc.MayBeAbsent;
 import bg.petarh.piano.api.rpc.RpcServer;
 import bg.petarh.piano.engine.evaluation.FollowMode;
 import bg.petarh.piano.library.settings.Settings;
@@ -12,7 +13,7 @@ import java.util.TreeMap;
 
 public final class SettingsMethods {
 
-    record SettingsView(String input, String output, Map<String, String> keyboards, Map<String, Integer> tempos,
+    public record SettingsView(@MayBeAbsent String input, @MayBeAbsent String output, Map<String, String> keyboards, Map<String, Integer> tempos,
                         int latencyOffsetMs) {
 
         static SettingsView of(Settings settings) {
@@ -23,7 +24,7 @@ public final class SettingsMethods {
         }
     }
 
-    record SettingsUpdate(String input, String output, Map<String, String> keyboards, Map<String, Integer> tempos,
+    public record SettingsUpdate(String input, String output, Map<String, String> keyboards, Map<String, Integer> tempos,
                           Integer latencyOffsetMs) {
 
         Settings applyTo(Settings settings) {
@@ -56,8 +57,8 @@ public final class SettingsMethods {
     }
 
     public static void register(RpcServer server, SettingsService settings) {
-        server.register("settings.get", Void.class, ignored -> SettingsView.of(settings.current()));
-        server.register("settings.update", SettingsUpdate.class,
+        server.register("settings.get", Void.class, SettingsView.class, ignored -> SettingsView.of(settings.current()));
+        server.register("settings.update", SettingsUpdate.class, SettingsView.class,
                 update -> SettingsView.of(settings.update(update::applyTo)));
     }
 }

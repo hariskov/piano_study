@@ -2,7 +2,7 @@ package bg.petarh.piano.api.session;
 
 import java.util.List;
 
-record SessionStartParams(
+public record SessionStartParams(
         String input,
         String exercise,
         String mode,
