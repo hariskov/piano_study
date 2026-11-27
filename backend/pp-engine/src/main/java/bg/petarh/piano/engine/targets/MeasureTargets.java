@@ -29,6 +29,11 @@ final class MeasureTargets implements TargetSource {
     }
 
     @Override
+    public void discardLookAhead() {
+        buffered.clear();
+    }
+
+    @Override
     public List<Target> peek(int count) {
         fill();
         List<Target> upcoming = new ArrayList<>(count);

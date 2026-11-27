@@ -58,6 +58,10 @@ public final class Practice implements AutoCloseable {
         thread.changeTempo(tempo);
     }
 
+    public void onSessionThread(Runnable action) {
+        thread.submit(action);
+    }
+
     public void stop() {
         thread.close();
     }

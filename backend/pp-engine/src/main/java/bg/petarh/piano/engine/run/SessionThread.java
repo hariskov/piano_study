@@ -45,6 +45,10 @@ public final class SessionThread implements InputListener, AutoCloseable {
         actions.add(driver::resume);
     }
 
+    public void submit(Runnable action) {
+        actions.add(action);
+    }
+
     public void changeTempo(Tempo tempo) {
         actions.add(() -> driver.changeTempo(tempo));
     }

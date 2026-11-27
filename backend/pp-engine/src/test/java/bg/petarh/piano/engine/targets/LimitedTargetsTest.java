@@ -40,6 +40,18 @@ class LimitedTargetsTest {
     }
 
     @Test
+    void keepsItsCountWhenTheLookAheadIsDiscarded() {
+        TargetSource limited = TargetSource.fromMeasures(() -> List.of(target("C4", Fraction.ZERO).notes().getFirst()))
+                .limitedTo(2);
+        limited.next();
+
+        limited.discardLookAhead();
+
+        assertThat(limited.next()).isPresent();
+        assertThat(limited.next()).isEmpty();
+    }
+
+    @Test
     void rejectsLimitBelowOne() {
         assertThatIllegalArgumentException().isThrownBy(() -> source.limitedTo(0));
     }

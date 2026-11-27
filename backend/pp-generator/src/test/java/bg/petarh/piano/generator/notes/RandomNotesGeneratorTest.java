@@ -49,6 +49,14 @@ class RandomNotesGeneratorTest {
     }
 
     @Test
+    void canStartAtALaterMeasure() {
+        RandomNotesGenerator generator = RandomNotesGenerator.withSeed(rightHand(Level.TWO, KeySignature.major("C")), 3, 5);
+
+        assertThat(generator.nextMeasure().getFirst().start()).isEqualTo(Fraction.whole(5));
+        assertThat(generator.nextMeasure().getFirst().start()).isEqualTo(Fraction.whole(6));
+    }
+
+    @Test
     void randomSeedIsReportedSoTheExerciseCanBeReplayed() {
         RandomNotesSettings settings = rightHand(Level.TWO, KeySignature.major("C"));
         RandomNotesGenerator generator = RandomNotesGenerator.withRandomSeed(settings);

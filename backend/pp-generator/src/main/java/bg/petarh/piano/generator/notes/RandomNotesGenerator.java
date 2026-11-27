@@ -44,6 +44,15 @@ public final class RandomNotesGenerator {
         return new RandomNotesGenerator(settings, seed);
     }
 
+    public static RandomNotesGenerator withSeed(RandomNotesSettings settings, long seed, long firstMeasure) {
+        if (firstMeasure < 0) {
+            throw new IllegalArgumentException("First measure cannot be negative: " + firstMeasure);
+        }
+        RandomNotesGenerator generator = new RandomNotesGenerator(settings, seed);
+        generator.measureIndex = firstMeasure;
+        return generator;
+    }
+
     public static RandomNotesGenerator withRandomSeed(RandomNotesSettings settings) {
         return new RandomNotesGenerator(settings, ThreadLocalRandom.current().nextLong());
     }

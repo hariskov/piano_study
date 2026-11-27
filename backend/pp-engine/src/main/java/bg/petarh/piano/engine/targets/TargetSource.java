@@ -13,6 +13,9 @@ public interface TargetSource {
 
     List<Target> peek(int count);
 
+    default void discardLookAhead() {
+    }
+
     default TargetSource limitedTo(int count) {
         return new LimitedTargets(this, count);
     }

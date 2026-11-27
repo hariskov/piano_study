@@ -29,6 +29,11 @@ final class LimitedTargets implements TargetSource {
     }
 
     @Override
+    public void discardLookAhead() {
+        source.discardLookAhead();
+    }
+
+    @Override
     public List<Target> peek(int count) {
         return source.peek(Math.min(count, remaining));
     }
