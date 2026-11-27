@@ -251,6 +251,9 @@ Also implemented:
   - It counts `completedTargets()` and `wrongKeys()` for the results.
   - `TempoEvaluator` implements Tempo mode. A note is expected at `tempo.nanosFor(note.start())` of session running time (`Session.runningNanosAt(timestamp)`, so the count-in and pauses are left out). A press is matched to the nearest unmatched note of the same pitch whose `TimingWindows` (default ±50/±100/±150 ms) contain it, and graded `PERFECT`/`GOOD`/`OK` as `TimedNote` with its offset; otherwise it is a `WrongNote`. `onTick(now)` moves the session past each target whose widest window has closed, reporting unmatched notes as `MissedNote`, so the session finishes only after the last window. It counts `gradeCount(grade)`, `misses()` and `wrongKeys()`.
   - Changing the tempo during a session (TMP-3) isn't supported yet. It needs a tempo map from the change point, and comes with the session thread.
+- `engine.run`: running a session.
+  - `SessionDriver` connects a `Session`, an `Evaluator` and a `Clock`. `start`, `handle(InputEvent)`, `tick`, `pause`, `resume` and `stop` drive them, and a `SessionListener` hears `onStateChanged`, `onTargetChanged` (only on real changes) and every `onEvaluation`. It is synchronous, so it is tested with `ManualClock`.
+  - `SessionThread` is the session thread of §5.3. As an `InputListener`, it only queues events from the MIDI thread. One daemon thread runs the queued actions, ticks the driver every interval (for count-in and misses), and completes the future returned by `start()` when the session finishes. `pause()`/`resume()` are queued too (and ignored in the wrong state); `close()` stops the session and waits for the thread.
 
 The rest of this section is still planned.
 

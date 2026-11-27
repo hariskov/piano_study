@@ -14,7 +14,7 @@ v2.0:             P11 PDF/OMR
 | Phase | Status |
 |---|---|
 | P0 Skeleton and MIDI devices | **Code complete.** Done: Maven build (root → `backend` → modules), `pp-model` (`Pitch`, `KeyboardRange`, presets), `pp-midi` (ports, events, virtual devices), `pp-midi-jdk` (input, output, device catalog), `pp-engine` (keyboard range detection), `pp-app` CLI (`pp devices`, `pp monitor`, `pp echo`, `pp detect-range`, `bin/pp` launcher). Manual input test with the Yamaha P-45 passed, and Gervill output was heard on the laptop (see `docs/testing/phase0-manual.md`). Remaining: manual test of `pp echo` and `pp detect-range` with the piano, and the `snd-virmidi` integration test. |
-| P1 Model, engine and generator | **In progress.** Done: `Fraction`, `Tempo`, `TempoMarking`, `TimeSignature`, `KeySignature`, `NoteEvent`, `Target`, `pp-generator` with random notes levels 1–5, engine clocks, target sources, `Session`, `WaitEvaluator`, `TempoEvaluator`, chords (`Chord`, `ChordType`, `Inversion`), chord generator. |
+| P1 Model, engine and generator | **In progress.** Done: `Fraction`, `Tempo`, `TempoMarking`, `TimeSignature`, `KeySignature`, `NoteEvent`, `Target`, `pp-generator` with random notes levels 1–5, engine clocks, target sources, `Session`, `WaitEvaluator`, `TempoEvaluator`, session driver and thread, chords (`Chord`, `ChordType`, `Inversion`), chord generator. |
 | P2–P11 | Not started |
 
 This table is updated in every PR that completes a deliverable.
@@ -63,7 +63,8 @@ PR plan, in order:
 11. Session state machine
 12. Wait mode evaluator
 13. Tempo mode evaluator
-14. `pp random` / `pp chords` CLI
+14. Session runner: driver and session thread
+15. `pp random` / `pp chords` CLI
 
 Deliverables:
 - `pp-model`: `NoteEvent`, `Fraction`, `Tempo`, `TempoMap`, `Target`, `KeyboardRange`, time signatures, key signatures.
@@ -71,7 +72,7 @@ Deliverables:
   - random notes (range limited to the keyboard range, key, hands, complexity levels 1–5, note value, time signature, seed)
   - **chord practice** (chord types, inversions, show or hide chord names)
   - look-ahead stream for endless sessions
-- `pp-engine`: `Clock` (real and manual), tempo handling (BPM, beat unit, changing tempo mid-session), `Session` state machine, `WaitEvaluator`, `TempoEvaluator`, `NoScoreEvaluator`, results summary.
+- `pp-engine`: `Clock` (real and manual), tempo handling (BPM, beat unit, changing tempo mid-session), `Session` state machine, `WaitEvaluator`, `TempoEvaluator`, session driver and thread, `NoScoreEvaluator`, results summary.
 - CLI: `pp random --hands=right --mode=wait --level=2 --tempo=90` and `pp chords --types=maj,min --inversions=0,1 --mode=wait`. They print the target ("C4", "Dm/F") and the result of each press in the terminal.
 
 Testing:
