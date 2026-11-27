@@ -1,9 +1,12 @@
 package bg.petarh.piano.app.cli;
 
 import bg.petarh.piano.app.practice.PracticePrinter;
+import bg.petarh.piano.app.practice.PracticeSummary;
 import bg.petarh.piano.engine.metronome.ClickOutput;
 import bg.petarh.piano.engine.metronome.MidiClicks;
 import bg.petarh.piano.engine.run.Practice;
+import bg.petarh.piano.engine.run.Results;
+import bg.petarh.piano.engine.run.SessionListener;
 import bg.petarh.piano.engine.session.SessionTiming;
 import bg.petarh.piano.engine.targets.TargetSource;
 import bg.petarh.piano.midi.device.DeviceId;
@@ -41,10 +44,12 @@ final class PracticeRunner {
         TargetSource source = TargetSource.fromMeasures(measures);
         TargetSource targets = options.targetCount > 0 ? source.limitedTo(options.targetCount) : source;
         PracticePrinter printer = new PracticePrinter(out, names);
+        Results results = new Results();
         Optional<OutputConnection> metronomeOutput = options.metronomeOutputId
                 .map(id -> environment.outputs().open(DeviceId.of(id)));
         AutoCloseable metronome = () -> metronomeOutput.ifPresent(OutputConnection::close);
-        Practice practice = Practice.prepare(targets, timing, options.mode, environment.clock()::nanos, printer,
+        Practice practice = Practice.prepare(targets, timing, options.mode, environment.clock()::nanos,
+                SessionListener.all(List.of(printer, results)),
                 metronomeOutput.<ClickOutput>map(MidiClicks::new));
         InputConnection input = openInput(options, practice, metronome);
         out.println(options.mode.name().charAt(0) + options.mode.name().substring(1).toLowerCase(Locale.ROOT)
@@ -55,7 +60,7 @@ final class PracticeRunner {
                 // Input closes first so no key press reaches a stopped session, and the metronome output last.
             }
         }, done);
-        out.println(printer.tally().summary(Duration.ofNanos(practice.elapsedNanos())));
+        out.println(PracticeSummary.describe(results.summary(), Duration.ofNanos(practice.elapsedNanos())));
     }
 
     private InputConnection openInput(PracticeOptions options, Practice practice, AutoCloseable metronome)
