@@ -143,14 +143,14 @@ Implemented so far: `model.pitch` (`Pitch`), `model.keyboard` (`KeyboardRange`, 
 - `KeySignature`: number of fifths (−7 flats … +7 sharps) plus `KeyMode` (major/minor), as MusicXML stores it. Created from a tonic name (`major("Bb")`, `minor("F#")`). `contains(Pitch)` tells whether a note belongs to the key (natural minor uses the notes of its relative major); `usesFlats()` decides sharp or flat spelling later.
 
 `model.note`:
-- `Hand`: `RIGHT` plays staff 1, `LEFT` plays staff 2.
+- `Hand`: `RIGHT` plays staff 1, `LEFT` plays staff 2. `portionOf(range)` splits a range at middle C (right: C4 and up, left: below C4); the generators use it when both hands practise, and MIDI import will use it as the default hand split (MID-5).
 - `NoteEvent` record: `Pitch`, `start` and `duration` (`Fraction`, in whole notes) and `Hand`. The start can't be negative and the duration must be positive. Voice, measure, spelling and ties are added with MusicXML in v0.8; random practice doesn't need them.
 - `Target`: the notes that start together (a single note or a chord), sorted low to high. `pitches()` / `pitchesFor(hand)` give what must be pressed; the same pitch in both hands counts once. `duration()` is the longest note.
 - `Targets.from(notes, hands)`: groups notes by start time into targets in time order, keeping only the hands being practised.
 
 `model.chord`:
 - `ChordType`: major, minor, diminished, augmented, major 7, minor 7, dominant 7, as semitones above the root. Each has a code for the CLI (`maj`, `min`, `dim`, `aug`, `maj7`, `min7`, `dom7`) and a symbol for names (`""`, `m`, `dim`, `aug`, `maj7`, `m7`, `7`).
-- `Inversion`: root position, 1st, 2nd, 3rd (3rd only for 7th chords).
+- `Inversion`: root position, 1st, 2nd, 3rd (3rd only for 7th chords). `ChordType.voicing(inversion)` gives the semitones above the root for an inversion.
 - `Chord.of(root, type, inversion)`: the inversion moves the lowest notes up an octave, so C major 1st inversion on C4 is E4 G4 C5. `name(key)` gives names like "Dm/F". The root is spelled with sharps or flats as the key prefers; the other notes are spelled by letter (a 3rd is two letters above the root), so B major 1st inversion is "B/D#", not "B/Eb".
 - Package-private `ChordSpelling` does the letter arithmetic.
 
@@ -189,6 +189,12 @@ Depends only on `pp-model`. Exported package `generator.notes`:
 - `RandomNotesGenerator`: `withSeed(settings, seed)` or `withRandomSeed(settings)` (the seed is kept in `seed()`, so any exercise can be replayed). `nextMeasure()` returns the next measure of `NoteEvent`s, with start times following on from the previous measure, so it never runs out. The engine pulls measures ahead of time (look-ahead) and turns them into targets with `Targets.from`.
 - `SplittableRandom` is used because its algorithm is fixed, so a seed gives the same notes on every JDK.
 - Package-private: `HandPitches` (the notes of the key a hand may play; with both hands, the right hand plays middle C and above and the left hand below it) and `MelodicLine` (picks each next note, following the level's rules).
+
+Exported package `generator.chords` (chord practice, spec 4.3):
+- `ChordSettings` record: hands, range, keyboard, key, chord types, inversions, note value, time signature. Checked when created like `RandomNotesSettings`, and each hand must have at least one chosen chord that fits completely in its range.
+- `RandomChordGenerator`: same seed handling as the notes generator. `nextMeasure()` returns `ChordEvent`s, one chord per note value. Roots are notes of the key; the chord's other notes may have accidentals (D major in C major has F#). The same chord never comes twice in a row. With both hands, the hands take turns each measure.
+- `ChordEvent` record: `Chord`, start, duration, hand; `notes()` turns it into `NoteEvent`s, which `Targets.from` groups back into one target per chord.
+- Package-private `ChordCandidates`: every chord (root in key × type × inversion) whose notes all fit the hand's range.
 
 ## 4A. MIDI layer (`pp-midi`, `pp-midi-jdk`)
 
