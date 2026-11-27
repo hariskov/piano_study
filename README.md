@@ -12,6 +12,8 @@ Requires JDK 25. Maven is provided by the wrapper.
 ./mvnw verify
 ```
 
+The frontend (`frontend/`, React + TypeScript + Vite) is built and tested by the same `./mvnw verify`; Maven downloads its own Node for it.
+
 ## Command-line tools
 
 ```
