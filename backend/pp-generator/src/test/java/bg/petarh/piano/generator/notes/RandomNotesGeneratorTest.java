@@ -5,6 +5,8 @@ import bg.petarh.piano.model.keyboard.KeyboardPreset;
 import bg.petarh.piano.model.keyboard.KeyboardRange;
 import bg.petarh.piano.model.note.Hand;
 import bg.petarh.piano.model.note.NoteEvent;
+import bg.petarh.piano.model.note.Target;
+import bg.petarh.piano.model.note.Targets;
 import bg.petarh.piano.model.pitch.Pitch;
 import bg.petarh.piano.model.time.Fraction;
 import bg.petarh.piano.model.time.NoteValue;
@@ -133,11 +135,80 @@ class RandomNotesGeneratorTest {
         }
     }
 
+    @Test
+    void levelThreeAddsSomeTwoNoteIntervals() {
+        KeySignature key = KeySignature.major("C");
+        List<Pitch> scale = scaleIn(range("C4", "C6"), key);
+        List<List<NoteEvent>> together = notesTogether(notes(rightHand(Level.THREE, key), 3, 32));
+
+        assertThat(together).extracting(List::size).contains(1, 2).doesNotContain(3);
+        assertThat(together).filteredOn(group -> group.size() == 2)
+                .allMatch(group -> isBetween(scaleSteps(group, scale).getFirst(), 2, 5));
+    }
+
+    @Test
+    void levelFourAddsThreeNoteChordsBuiltInThirds() {
+        KeySignature key = KeySignature.major("C");
+        List<Pitch> scale = scaleIn(range("C4", "C6"), key);
+        List<List<NoteEvent>> together = notesTogether(notes(rightHand(Level.FOUR, key), 3, 32));
+
+        assertThat(together).extracting(List::size).contains(1, 2, 3).allMatch(size -> size <= 3);
+        assertThat(together).filteredOn(group -> group.size() == 3)
+                .allMatch(group -> scaleSteps(group, scale).equals(List.of(2, 2)));
+    }
+
+    @Test
+    void notesPlayedTogetherShareTheirDuration() {
+        List<List<NoteEvent>> together = notesTogether(notes(rightHand(Level.FOUR, KeySignature.major("C")), 4, 16));
+
+        assertThat(together).allMatch(group -> group.stream().map(NoteEvent::duration).distinct().count() == 1);
+    }
+
+    @Test
+    void levelFourPlaysSharpsAndFlatsWhenAllowed() {
+        KeySignature cMajor = KeySignature.major("C");
+
+        assertThat(notes(withOptions(Level.FOUR, true, false), 2, 32))
+                .anyMatch(note -> !cMajor.contains(note.pitch()));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Level.class, names = {"ONE", "TWO", "THREE"})
+    void levelsBelowFourIgnoreAllowedAccidentals(Level level) {
+        KeySignature cMajor = KeySignature.major("C");
+
+        assertThat(notes(withOptions(level, true, false), 2, 32)).allMatch(note -> cMajor.contains(note.pitch()));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Level.class, names = {"THREE", "FOUR"})
+    void mixedNoteValuesStillFillEachMeasure(Level level) {
+        RandomNotesGenerator generator = RandomNotesGenerator.withSeed(withOptions(level, false, true), 12);
+
+        List<Fraction> durations = new ArrayList<>();
+        for (int measure = 0; measure < 16; measure++) {
+            List<List<NoteEvent>> together = notesTogether(generator.nextMeasure());
+            Fraction filled = together.stream().map(group -> group.getFirst().duration())
+                    .reduce(Fraction.ZERO, Fraction::plus);
+            assertThat(filled).isEqualTo(Fraction.whole(1));
+            assertThat(together.getFirst().getFirst().start()).isEqualTo(Fraction.whole(measure));
+            together.forEach(group -> durations.add(group.getFirst().duration()));
+        }
+        assertThat(durations).allMatch(duration -> duration.compareTo(Fraction.of(1, 4)) >= 0);
+        assertThat(durations.stream().distinct().count()).isGreaterThan(1);
+    }
+
+    @Test
+    void levelsBelowThreeIgnoreMixedNoteValues() {
+        assertThat(notes(withOptions(Level.TWO, false, true), 2, 16)).extracting(NoteEvent::duration)
+                .containsOnly(Fraction.of(1, 4));
+    }
+
     @ParameterizedTest
     @MethodSource("keyboardsAndRanges")
     void neverPlaysOutsideTheKeyboard(KeyboardRange keyboard, KeyboardRange practiceRange, Level level, long seed) {
         RandomNotesSettings settings = new RandomNotesSettings(Set.of(Hand.RIGHT), practiceRange, keyboard,
-                KeySignature.major("D"), NoteValue.QUARTER, TimeSignature.COMMON_TIME, level);
+                KeySignature.major("D"), NoteValue.QUARTER, TimeSignature.COMMON_TIME, level, true, true);
 
         assertThat(notes(settings, seed, 16)).extracting(NoteEvent::pitch).allMatch(keyboard::contains);
     }
@@ -162,6 +233,20 @@ class RandomNotesGeneratorTest {
     private static RandomNotesSettings rightHand(Level level, KeySignature key) {
         return new RandomNotesSettings(Set.of(Hand.RIGHT), range("C4", "C6"), KeyboardRange.fullPiano(), key,
                 NoteValue.QUARTER, TimeSignature.COMMON_TIME, level);
+    }
+
+    private static RandomNotesSettings withOptions(Level level, boolean accidentals, boolean mixedNoteValues) {
+        return new RandomNotesSettings(Set.of(Hand.RIGHT), range("C4", "C6"), KeyboardRange.fullPiano(),
+                KeySignature.major("C"), NoteValue.QUARTER, TimeSignature.COMMON_TIME, level, accidentals,
+                mixedNoteValues);
+    }
+
+    private static List<List<NoteEvent>> notesTogether(List<NoteEvent> notes) {
+        return Targets.from(notes).stream().map(Target::notes).toList();
+    }
+
+    private static boolean isBetween(int value, int lowest, int highest) {
+        return value >= lowest && value <= highest;
     }
 
     private static List<NoteEvent> notes(RandomNotesSettings settings, long seed, int measureCount) {

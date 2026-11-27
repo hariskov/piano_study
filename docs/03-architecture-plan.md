@@ -185,10 +185,10 @@ record NoteEvent(int pitch,            // MIDI note 0–127
 ## 4B. Generator (`pp-generator`)
 
 Depends only on `pp-model`. Exported package `generator.notes`:
-- `RandomNotesSettings` record: hands, practice range, keyboard range, key, note value, time signature and `Level`. It is checked when created: the range is limited to the keyboard (`playableRange()`, KEY-6), the note value must fill the measure, and each hand needs at least two notes of the key.
+- `RandomNotesSettings` record: hands, practice range, keyboard range, key, note value, time signature, `Level`, and the two options "allow sharps and flats" and "mixed note values" (a shorter constructor leaves both off). `playsAccidentals()` / `playsMixedNoteValues()` say whether an option applies at the chosen level. It is checked when created: the range is limited to the keyboard (`playableRange()`, KEY-6), the note value must fill the measure, and each hand needs at least two notes of the key.
 - `RandomNotesGenerator`: `withSeed(settings, seed)` or `withRandomSeed(settings)` (the seed is kept in `seed()`, so any exercise can be replayed). `nextMeasure()` returns the next measure of `NoteEvent`s, with start times following on from the previous measure, so it never runs out. The engine pulls measures ahead of time (look-ahead) and turns them into targets with `Targets.from`.
 - `SplittableRandom` is used because its algorithm is fixed, so a seed gives the same notes on every JDK.
-- Package-private: `HandPitches` (the notes of the key a hand may play; with both hands, the right hand plays middle C and above and the left hand below it) and `MelodicLine` (picks each next note, following the level's rules).
+- Package-private: `HandPitches` (the notes a hand may play; with both hands, the right hand plays middle C and above and the left hand below it), `MelodicLine` (picks each next note, following the level's rules), `Harmony` (adds an interval or a triad to a note at levels 3–4) and `Rhythm` (fills a measure with note values).
 
 Exported package `generator.chords` (chord practice, spec 4.3):
 - `ChordSettings` record: hands, range, keyboard, key, chord types, inversions, note value, time signature. Checked when created like `RandomNotesSettings`, and each hand must have at least one chosen chord that fits completely in its range.

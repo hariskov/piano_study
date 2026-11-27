@@ -2,6 +2,7 @@ package bg.petarh.piano.generator.notes;
 
 import bg.petarh.piano.model.note.Hand;
 import bg.petarh.piano.model.note.NoteEvent;
+import bg.petarh.piano.model.pitch.Pitch;
 import bg.petarh.piano.model.time.Fraction;
 
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ public final class RandomNotesGenerator {
     private final RandomGenerator random;
     private final List<Hand> handOrder;
     private final Map<Hand, MelodicLine> lines = new EnumMap<>(Hand.class);
+    private final Map<Hand, Harmony> harmonies = new EnumMap<>(Hand.class);
     private long measureIndex;
 
     private RandomNotesGenerator(RandomNotesSettings settings, long seed) {
@@ -27,7 +29,10 @@ public final class RandomNotesGenerator {
         this.random = new SplittableRandom(seed);
         this.handOrder = List.copyOf(settings.hands());
         for (Hand hand : handOrder) {
-            lines.put(hand, MelodicLine.of(HandPitches.forHand(settings, hand), hand, settings.level()));
+            List<Pitch> scale = HandPitches.forHand(settings, hand);
+            List<Pitch> melodyPitches = settings.playsAccidentals() ? HandPitches.allForHand(settings, hand) : scale;
+            lines.put(hand, MelodicLine.of(melodyPitches, hand, settings.level()));
+            harmonies.put(hand, Harmony.of(scale, hand, settings.level()));
         }
     }
 
@@ -45,13 +50,16 @@ public final class RandomNotesGenerator {
 
     public List<NoteEvent> nextMeasure() {
         Hand hand = handOrder.get((int) (measureIndex % handOrder.size()));
-        MelodicLine line = lines.get(hand);
-        Fraction duration = settings.noteValue().duration();
         Fraction start = settings.meter().measureLength().times(measureIndex);
-        int count = settings.noteValue().notesPerMeasure(settings.meter());
-        List<NoteEvent> notes = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) {
-            notes.add(new NoteEvent(line.next(random), start.plus(duration.times(i)), duration, hand));
+        List<Fraction> durations = Rhythm.fill(settings.meter().measureLength(), settings.noteValue(),
+                settings.playsMixedNoteValues(), random);
+        List<NoteEvent> notes = new ArrayList<>();
+        for (Fraction duration : durations) {
+            Pitch melody = lines.get(hand).next(random);
+            for (Pitch pitch : harmonies.get(hand).around(melody, random)) {
+                notes.add(new NoteEvent(pitch, start, duration, hand));
+            }
+            start = start.plus(duration);
         }
         measureIndex++;
         return List.copyOf(notes);
