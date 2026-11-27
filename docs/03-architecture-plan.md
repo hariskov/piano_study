@@ -136,6 +136,7 @@ Implemented so far: `model.pitch` (`Pitch`), `model.keyboard` (`KeyboardRange`, 
 - `Fraction`: exact musical time in whole notes. Always reduced, with a positive denominator. Overflow raises `ArithmeticException` instead of wrapping around.
 - `Tempo`: BPM (20–240) plus a beat unit (quarter note by default). `nanosFor(duration)` converts musical time to nanoseconds, rounded to the nearest nanosecond. `adjustedBy` keeps the result within range.
 - `TempoMarking`: the eight presets and their BPM ranges (TMP-1/2).
+- `NoteValue`: whole, half, quarter, eighth; `fillsMeasureOf(meter)` and `notesPerMeasure(meter)`.
 - `TimeSignature`: beats (1–32) over a note value (1, 2, 4 … 64), parsed from "6/8". `measureLength()` in whole notes. Compound meters (6/8, 9/8, 12/8, 6/4) are counted in dotted beats: `countedBeat()` is 3/8 and `beatsPerMeasure()` is 2 for 6/8. `PRACTICE_METERS` holds the four offered in random mode (2/4, 3/4, 4/4, 6/8).
 
 `model.key`:
@@ -174,6 +175,14 @@ record NoteEvent(int pitch,            // MIDI note 0–127
 - **`Tempo`** is stored as BPM plus a beat unit. A session's tempo is either an absolute BPM (random mode) or a scaling factor applied to the song's tempo map (songs). Both are shown in the UI as BPM.
 - **Hand = staff:** staff 1 is the right hand, staff 2 the left hand. This matches how MusicXML describes piano parts.
 - The engine flattens a part into a list of **`Target`s**, where each target is the group of notes that start at the same time (a single note or a chord), with tied notes merged.
+
+## 4B. Generator (`pp-generator`)
+
+Depends only on `pp-model`. Exported package `generator.notes`:
+- `RandomNotesSettings` record: hands, practice range, keyboard range, key, note value, time signature and `Level`. It is checked when created: the range is limited to the keyboard (`playableRange()`, KEY-6), the note value must fill the measure, and each hand needs at least two notes of the key.
+- `RandomNotesGenerator`: `withSeed(settings, seed)` or `withRandomSeed(settings)` (the seed is kept in `seed()`, so any exercise can be replayed). `nextMeasure()` returns the next measure of `NoteEvent`s, with start times following on from the previous measure, so it never runs out. The engine pulls measures ahead of time (look-ahead) and turns them into targets with `Targets.from`.
+- `SplittableRandom` is used because its algorithm is fixed, so a seed gives the same notes on every JDK.
+- Package-private: `HandPitches` (the notes of the key a hand may play; with both hands, the right hand plays middle C and above and the left hand below it) and `MelodicLine` (picks each next note, following the level's rules).
 
 ## 4A. MIDI layer (`pp-midi`, `pp-midi-jdk`)
 
