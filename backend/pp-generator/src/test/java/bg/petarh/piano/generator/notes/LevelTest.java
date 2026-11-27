@@ -15,6 +15,7 @@ class LevelTest {
         assertThat(Level.of(2)).isEqualTo(Level.TWO);
         assertThat(Level.of(3)).isEqualTo(Level.THREE);
         assertThat(Level.of(4)).isEqualTo(Level.FOUR);
+        assertThat(Level.of(5)).isEqualTo(Level.FIVE);
         assertThat(Level.TWO.number()).isEqualTo(2);
     }
 
