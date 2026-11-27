@@ -6,9 +6,8 @@
 
     <parent>
         <groupId>io.github.hariskov.piano</groupId>
-        <artifactId>piano-player</artifactId>
+        <artifactId>backend</artifactId>
         <version>0.1.0-SNAPSHOT</version>
-        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>pp-midi-jdk</artifactId>
@@ -17,7 +16,6 @@
         <dependency>
             <groupId>io.github.hariskov.piano</groupId>
             <artifactId>pp-midi</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>
