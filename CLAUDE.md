@@ -14,7 +14,7 @@ Docs: `docs/01-vision.md`, `docs/02-specification.md`, `docs/03-architecture-pla
 - Clean architecture and SOLID, as described in `docs/03-architecture-plan.md` §2A. The core modules (`pp-model`, `pp-engine`, `pp-generator`) never depend on I/O, MIDI or web libraries.
 - No comments or Javadoc that just restate names or signatures. A comment is only for a non-obvious *why*.
 - Git commits and PRs must not mention Claude or AI: no `Co-Authored-By` lines and no "Generated with" footers.
-- Keep the specification in sync when a decision changes.
+- **Keep the documentation up to date in the same PR as the change:** the specification (requirements), the architecture (structure, modules, design decisions), the status table in `docs/04-phases.md`, `README.md` and this file. A PR that changes behaviour or structure without updating the docs it affects is not finished.
 
 ## Workflow
 
