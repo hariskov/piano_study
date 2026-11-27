@@ -211,10 +211,12 @@ final class PartReader {
 
     private void direction(XMLStreamReader xml) throws XMLStreamException {
         Tempo[] metronome = {null};
-        boolean[] sounded = {false};
+        Tempo[] sounded = {null};
+        Fraction[] offset = {Fraction.ZERO};
         Xml.children(xml, child -> {
             switch (child) {
-                case "sound" -> sounded[0] = sound(xml);
+                case "sound" -> sounded[0] = soundTempo(xml);
+                case "offset" -> offset[0] = Fraction.of(Integer.parseInt(Xml.text(xml)), divisions * 4L);
                 case "direction-type" -> Xml.children(xml, type -> {
                     if (type.equals("metronome")) {
                         metronome[0] = metronome(xml);
@@ -225,19 +227,23 @@ final class PartReader {
                 default -> Xml.skip(xml);
             }
         });
-        if (!sounded[0] && metronome[0] != null) {
-            tempos.put(position, metronome[0]);
+        Tempo tempo = sounded[0] != null ? sounded[0] : metronome[0];
+        if (tempo != null) {
+            tempos.put(position.plus(offset[0]), tempo);
         }
     }
 
-    private boolean sound(XMLStreamReader xml) throws XMLStreamException {
+    private void sound(XMLStreamReader xml) throws XMLStreamException {
+        Tempo tempo = soundTempo(xml);
+        if (tempo != null) {
+            tempos.put(position, tempo);
+        }
+    }
+
+    private Tempo soundTempo(XMLStreamReader xml) throws XMLStreamException {
         String tempo = xml.getAttributeValue(null, "tempo");
         Xml.skip(xml);
-        if (tempo == null) {
-            return false;
-        }
-        tempos.put(position, Tempo.of(clampedBpm(Double.parseDouble(tempo))));
-        return true;
+        return tempo == null ? null : Tempo.of(clampedBpm(Double.parseDouble(tempo)));
     }
 
     private Tempo metronome(XMLStreamReader xml) throws XMLStreamException {
