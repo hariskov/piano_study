@@ -1,4 +1,4 @@
-package io.github.hariskov.piano.midi;
+package io.github.hariskov.piano.midi.input;
 
 @FunctionalInterface
 public interface TimestampSource {

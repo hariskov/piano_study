@@ -1,4 +1,7 @@
-package io.github.hariskov.piano.midi;
+package io.github.hariskov.piano.midi.input;
+
+import io.github.hariskov.piano.midi.device.DeviceDescriptor;
+import io.github.hariskov.piano.midi.device.DeviceId;
 
 import java.util.List;
 
