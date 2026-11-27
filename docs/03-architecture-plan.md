@@ -130,7 +130,7 @@ pp-app → pp-midi-jdk → pp-midi
 
 ## 4. Song model (`pp-model`)
 
-Implemented so far: `model.pitch` (`Pitch`), `model.keyboard` (`KeyboardRange`, `KeyboardPreset`), `model.time`, `model.key` and `model.note`.
+Implemented so far: `model.pitch` (`Pitch`), `model.keyboard` (`KeyboardRange`, `KeyboardPreset`), `model.time`, `model.key`, `model.note` and `model.chord`.
 
 `model.time`:
 - `Fraction`: exact musical time in whole notes. Always reduced, with a positive denominator. Overflow raises `ArithmeticException` instead of wrapping around.
@@ -147,6 +147,12 @@ Implemented so far: `model.pitch` (`Pitch`), `model.keyboard` (`KeyboardRange`, 
 - `NoteEvent` record: `Pitch`, `start` and `duration` (`Fraction`, in whole notes) and `Hand`. The start can't be negative and the duration must be positive. Voice, measure, spelling and ties are added with MusicXML in v0.8; random practice doesn't need them.
 - `Target`: the notes that start together (a single note or a chord), sorted low to high. `pitches()` / `pitchesFor(hand)` give what must be pressed; the same pitch in both hands counts once. `duration()` is the longest note.
 - `Targets.from(notes, hands)`: groups notes by start time into targets in time order, keeping only the hands being practised.
+
+`model.chord`:
+- `ChordType`: major, minor, diminished, augmented, major 7, minor 7, dominant 7, as semitones above the root. Each has a code for the CLI (`maj`, `min`, `dim`, `aug`, `maj7`, `min7`, `dom7`) and a symbol for names (`""`, `m`, `dim`, `aug`, `maj7`, `m7`, `7`).
+- `Inversion`: root position, 1st, 2nd, 3rd (3rd only for 7th chords).
+- `Chord.of(root, type, inversion)`: the inversion moves the lowest notes up an octave, so C major 1st inversion on C4 is E4 G4 C5. `name(key)` gives names like "Dm/F". The root is spelled with sharps or flats as the key prefers; the other notes are spelled by letter (a 3rd is two letters above the root), so B major 1st inversion is "B/D#", not "B/Eb".
+- Package-private `ChordSpelling` does the letter arithmetic.
 
 The rest of this section is still planned.
 

@@ -189,7 +189,7 @@ Level details:
 
 - Chord types to choose from: major, minor, diminished, augmented, major 7, minor 7, dominant 7 (and sus2/sus4 for v1).
 - Inversions: root position, 1st, 2nd (3rd for 7th chords). Any combination can be selected.
-- The chord name (for example "Dm/F") can be shown or hidden. Hiding it makes it a reading exercise.
+- The chord name (for example "Dm/F") can be shown or hidden. Hiding it makes it a reading exercise. Names are spelled correctly for the chord: the root uses sharps or flats as the key does (Bb in F major, A# never), and the bass note after the slash is spelled from the root (B/D#, Ab/C).
 - Scored with the Wait or Tempo chord rules from section 3.2.
 
 ### 4.4 Generator rules
