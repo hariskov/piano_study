@@ -113,4 +113,24 @@ class KeyboardRangeTest {
         assertThat(first).hasSameHashCodeAs(KeyboardPreset.KEYS_61.range());
         assertThat(first).hasToString("C2-C7");
     }
+
+    @ParameterizedTest
+    @CsvSource({
+            "A0, C8, KEYS_88",
+            "E1, G7, KEYS_76",
+            "C2, C7, KEYS_61",
+            "C3, C5, KEYS_25"
+    })
+    void findsPresetMatchingARange(String lowest, String highest, KeyboardPreset expected) {
+        KeyboardRange range = KeyboardRange.of(Pitch.parse(lowest), Pitch.parse(highest));
+
+        assertThat(KeyboardPreset.matching(range)).contains(expected);
+    }
+
+    @Test
+    void customRangeMatchesNoPreset() {
+        KeyboardRange range = KeyboardRange.of(Pitch.parse("F1"), Pitch.parse("F7"));
+
+        assertThat(KeyboardPreset.matching(range)).isEmpty();
+    }
 }

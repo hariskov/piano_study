@@ -2,6 +2,9 @@ package bg.petarh.piano.model.keyboard;
 
 import bg.petarh.piano.model.pitch.Pitch;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 public enum KeyboardPreset {
     KEYS_88("A0", "C8"),
     KEYS_76("E1", "G7"),
@@ -15,6 +18,10 @@ public enum KeyboardPreset {
 
     KeyboardPreset(String lowest, String highest) {
         this.range = KeyboardRange.of(Pitch.parse(lowest), Pitch.parse(highest));
+    }
+
+    public static Optional<KeyboardPreset> matching(KeyboardRange range) {
+        return Arrays.stream(values()).filter(preset -> preset.range.equals(range)).findFirst();
     }
 
     public KeyboardRange range() {
