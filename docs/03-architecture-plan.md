@@ -130,7 +130,7 @@ pp-app → pp-midi-jdk → pp-midi
 
 ## 4. Song model (`pp-model`)
 
-Implemented so far: `model.pitch` (`Pitch`), `model.keyboard` (`KeyboardRange`, `KeyboardPreset`), `model.time` and `model.key`.
+Implemented so far: `model.pitch` (`Pitch`), `model.keyboard` (`KeyboardRange`, `KeyboardPreset`), `model.time`, `model.key` and `model.note`.
 
 `model.time`:
 - `Fraction`: exact musical time in whole notes. Always reduced, with a positive denominator. Overflow raises `ArithmeticException` instead of wrapping around.
@@ -140,6 +140,12 @@ Implemented so far: `model.pitch` (`Pitch`), `model.keyboard` (`KeyboardRange`, 
 
 `model.key`:
 - `KeySignature`: number of fifths (−7 flats … +7 sharps) plus `KeyMode` (major/minor), as MusicXML stores it. Created from a tonic name (`major("Bb")`, `minor("F#")`). `contains(Pitch)` tells whether a note belongs to the key (natural minor uses the notes of its relative major); `usesFlats()` decides sharp or flat spelling later.
+
+`model.note`:
+- `Hand`: `RIGHT` plays staff 1, `LEFT` plays staff 2.
+- `NoteEvent` record: `Pitch`, `start` and `duration` (`Fraction`, in whole notes) and `Hand`. The start can't be negative and the duration must be positive. Voice, measure, spelling and ties are added with MusicXML in v0.8; random practice doesn't need them.
+- `Target`: the notes that start together (a single note or a chord), sorted low to high. `pitches()` / `pitchesFor(hand)` give what must be pressed; the same pitch in both hands counts once. `duration()` is the longest note.
+- `Targets.from(notes, hands)`: groups notes by start time into targets in time order, keeping only the hands being practised.
 
 The rest of this section is still planned.
 
