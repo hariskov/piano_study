@@ -111,4 +111,18 @@ class KeySignatureTest {
         assertThat(KeySignature.major("Ab")).hasToString("Ab major");
         assertThat(KeySignature.minor("F#")).hasToString("F# minor");
     }
+
+    @Test
+    void parsesKeyNames() {
+        assertThat(KeySignature.parse("C")).isEqualTo(KeySignature.major("C"));
+        assertThat(KeySignature.parse("Bb")).isEqualTo(KeySignature.major("Bb"));
+        assertThat(KeySignature.parse("F#m")).isEqualTo(KeySignature.minor("F#"));
+        assertThat(KeySignature.parse("am")).isEqualTo(KeySignature.minor("A"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "H", "Cmaj", "Dbm"})
+    void rejectsUnknownKeyNames(String name) {
+        assertThatIllegalArgumentException().isThrownBy(() -> KeySignature.parse(name));
+    }
 }

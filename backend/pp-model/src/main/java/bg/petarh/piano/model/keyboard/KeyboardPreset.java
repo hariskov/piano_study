@@ -20,6 +20,10 @@ public enum KeyboardPreset {
         this.range = KeyboardRange.of(Pitch.parse(lowest), Pitch.parse(highest));
     }
 
+    public static Optional<KeyboardPreset> withKeys(int keyCount) {
+        return Arrays.stream(values()).filter(preset -> preset.keyCount() == keyCount).findFirst();
+    }
+
     public static Optional<KeyboardPreset> matching(KeyboardRange range) {
         return Arrays.stream(values()).filter(preset -> preset.range.equals(range)).findFirst();
     }

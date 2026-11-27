@@ -3,11 +3,14 @@ package bg.petarh.piano.model.key;
 import bg.petarh.piano.model.pitch.Pitch;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class KeySignature {
 
+    private static final Pattern KEY_NAME = Pattern.compile("([A-Ga-g][#b]?)(m?)");
     private static final int MOST_ACCIDENTALS = 7;
     private static final int SEMITONES_PER_FIFTH = 7;
     private static final int SEMITONES_PER_OCTAVE = 12;
@@ -37,6 +40,14 @@ public final class KeySignature {
                     "A key signature has at most " + MOST_ACCIDENTALS + " sharps or flats: " + fifths);
         }
         return new KeySignature(fifths, mode);
+    }
+
+    public static KeySignature parse(String name) {
+        Matcher matcher = KEY_NAME.matcher(name);
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException("Expected a key like C, Bb, F#m or am: " + name);
+        }
+        return matcher.group(2).isEmpty() ? major(matcher.group(1)) : minor(matcher.group(1));
     }
 
     public static KeySignature major(String tonic) {

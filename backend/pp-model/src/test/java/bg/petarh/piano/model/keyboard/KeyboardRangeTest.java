@@ -4,6 +4,7 @@ import bg.petarh.piano.model.pitch.Pitch;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -132,5 +133,32 @@ class KeyboardRangeTest {
         KeyboardRange range = KeyboardRange.of(Pitch.parse("F1"), Pitch.parse("F7"));
 
         assertThat(KeyboardPreset.matching(range)).isEmpty();
+    }
+
+    @Test
+    void parsesRanges() {
+        assertThat(KeyboardRange.parse("C4-C6")).isEqualTo(KeyboardRange.of(Pitch.parse("C4"), Pitch.parse("C6")));
+        assertThat(KeyboardRange.parse("C#3-Bb4")).isEqualTo(KeyboardRange.of(Pitch.parse("C#3"), Pitch.parse("Bb4")));
+        assertThat(KeyboardRange.parse("C-1-G9")).isEqualTo(KeyboardRange.of(Pitch.of(0), Pitch.of(127)));
+        assertThat(KeyboardRange.parse(KeyboardRange.fullPiano().toString())).isEqualTo(KeyboardRange.fullPiano());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "C4", "C4-", "C6-C4", "C4..C6"})
+    void rejectsInvalidRanges(String text) {
+        assertThatIllegalArgumentException().isThrownBy(() -> KeyboardRange.parse(text));
+    }
+
+    @Test
+    void findsPresetsByKeyCount() {
+        assertThat(KeyboardPreset.withKeys(61)).contains(KeyboardPreset.KEYS_61);
+        assertThat(KeyboardPreset.withKeys(50)).isEmpty();
+    }
+
+    @Test
+    void parsesAKeyboardAsAPresetSizeOrARange() {
+        assertThat(KeyboardRange.parseKeyboard("88")).isEqualTo(KeyboardRange.fullPiano());
+        assertThat(KeyboardRange.parseKeyboard("F1-F7")).isEqualTo(KeyboardRange.of(Pitch.parse("F1"), Pitch.parse("F7")));
+        assertThatIllegalArgumentException().isThrownBy(() -> KeyboardRange.parseKeyboard("50"));
     }
 }
