@@ -158,7 +158,13 @@ Implemented so far: `model.pitch` (`Pitch`), `model.keyboard` (`KeyboardRange` w
 - `Chord.of(root, type, inversion)`: the inversion moves the lowest notes up an octave, so C major 1st inversion on C4 is E4 G4 C5. `name(key)` gives names like "Dm/F". The root is spelled with sharps or flats as the key prefers; the other notes are spelled by letter (a 3rd is two letters above the root), so B major 1st inversion is "B/D#", not "B/Eb".
 - Package-private `ChordSpelling` does the letter arithmetic.
 
-The rest of this section is still planned.
+`model.score` (songs; implemented):
+- `Score` (built with `Score.builder(title)`): title, optional composer, parts, the time signature, key and tempo changes as `Placed<T>(at, value)` lists (4/4, C major and 120 BPM when the file gives none), and the length in whole notes. Lookups: `timeSignatureAt`, `keyAt`, `tempoMap()`, `measureStarts()`, `measureIndexAt`, `measureCount`. Changes must lie inside the score, and part ids must be unique.
+- `Part(id, name, staffCount 1–2, notes)`: notes as written. `playableNotes()` turns them into the engine's `NoteEvent`s: tied notes (`Tie` START/CONTINUE/STOP on the same pitch, staff and voice, end to start) become one longer note; staff 1 is the right hand and staff 2 the left; sorted by time, then pitch.
+- `ScoreNote(spelling, start, duration, staff, voice, tie)`: a note as notated. Rests aren't stored; they are the gaps.
+- `Spelling(step, alter, octave)`: how a pitch is written (C#4 or Db4), up to double sharps and flats; `pitch()` gives the sounding pitch; `of(pitch, preferFlats)` spells one.
+
+The original plan below is kept for reference; the implemented types above replace it.
 
 These are the in-memory types every part of the app works with. MusicXML is the format stored on disk; this model is what the code uses.
 
