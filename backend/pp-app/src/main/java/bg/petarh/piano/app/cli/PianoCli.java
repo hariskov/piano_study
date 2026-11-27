@@ -16,6 +16,7 @@ public final class PianoCli {
         CommandLine commandLine = new CommandLine(new PianoCommand());
         commandLine.addSubcommand(new DevicesCommand(environment.inputs(), environment.outputs()));
         commandLine.addSubcommand(new MonitorCommand(environment));
+        commandLine.addSubcommand(new EchoCommand(environment));
         commandLine.setOut(out);
         commandLine.setErr(err);
         commandLine.setExecutionExceptionHandler((exception, command, parseResult) -> {
