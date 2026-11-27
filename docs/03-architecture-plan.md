@@ -130,10 +130,16 @@ pp-app → pp-midi-jdk → pp-midi
 
 ## 4. Song model (`pp-model`)
 
-Implemented so far: `model.pitch` (`Pitch`), `model.keyboard` (`KeyboardRange`, `KeyboardPreset`) and `model.time`:
+Implemented so far: `model.pitch` (`Pitch`), `model.keyboard` (`KeyboardRange`, `KeyboardPreset`), `model.time` and `model.key`.
+
+`model.time`:
 - `Fraction`: exact musical time in whole notes. Always reduced, with a positive denominator. Overflow raises `ArithmeticException` instead of wrapping around.
 - `Tempo`: BPM (20–240) plus a beat unit (quarter note by default). `nanosFor(duration)` converts musical time to nanoseconds, rounded to the nearest nanosecond. `adjustedBy` keeps the result within range.
 - `TempoMarking`: the eight presets and their BPM ranges (TMP-1/2).
+- `TimeSignature`: beats (1–32) over a note value (1, 2, 4 … 64), parsed from "6/8". `measureLength()` in whole notes. Compound meters (6/8, 9/8, 12/8, 6/4) are counted in dotted beats: `countedBeat()` is 3/8 and `beatsPerMeasure()` is 2 for 6/8. `PRACTICE_METERS` holds the four offered in random mode (2/4, 3/4, 4/4, 6/8).
+
+`model.key`:
+- `KeySignature`: number of fifths (−7 flats … +7 sharps) plus `KeyMode` (major/minor), as MusicXML stores it. Created from a tonic name (`major("Bb")`, `minor("F#")`). `contains(Pitch)` tells whether a note belongs to the key (natural minor uses the notes of its relative major); `usesFlats()` decides sharp or flat spelling later.
 
 The rest of this section is still planned.
 

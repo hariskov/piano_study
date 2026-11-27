@@ -159,10 +159,10 @@ Before starting, the user chooses:
 |---|---|---|
 | Hands | right / left / both | right |
 | Range | lowest–highest note, or a preset (for example "C4–C5", "treble staff", "bass staff", "grand staff"); always limited to the keyboard range (KEY-6) | treble staff |
-| Key | any key signature; only notes in that key, or allow sharps and flats | C major, no sharps or flats |
+| Key | any major or minor key signature with up to 7 sharps or flats; only notes in that key (minor keys use the natural minor scale), or allow sharps and flats | C major, no sharps or flats |
 | Tempo | presets / slider / number field (section 1B) | Andante 90 |
 | Note value | how long each generated note or chord lasts: whole, half, quarter, eighth (or a mix, from level 3 up) | quarter |
-| Time signature | 2/4, 3/4, 4/4, 6/8 (used for bar lines and the metronome) | 4/4 |
+| Time signature | 2/4, 3/4, 4/4, 6/8 (used for bar lines and the metronome; 6/8 is counted in two dotted-quarter beats) | 4/4 |
 | Complexity | level 1–5 (see below) | 1 |
 | Follow mode | Wait / Tempo | Wait |
 | Length | number of notes, a time limit, or endless | 50 notes |
