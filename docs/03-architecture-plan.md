@@ -14,7 +14,7 @@
 │  │                                                                            │ │
 │  │  api ──► engine (session, evaluation, playback scheduling)                 │ │
 │  │   │        ▲            ▲                ▲                                 │ │
-│  │   │     midi-io      generator        model ◄── musicxml ◄── import-midi   │ │
+│  │   │     midi-jdk     generator        model ◄── musicxml ◄── import-midi   │ │
 │  │   │   (in/out/synth) (random/chords)              ▲          (v2: import-pdf)│
 │  │   └──► library (stored MusicXML songs, metadata, progress)                 │ │
 │  └────────────────────────────────────────────────────────────────────────────┘ │
@@ -68,14 +68,15 @@ The code follows **clean architecture** and the **SOLID** principles:
 - **O, open/closed:** new behaviour is added by adding implementations, not by editing switch statements. A new follow mode is a new `Evaluator`, a new song source is a new `ScoreImporter`, a new exercise is a new `ExerciseGenerator`.
 - **L, Liskov substitution:** any implementation can replace another of the same interface. For example, the real clock and the manual clock are interchangeable, and so are the software synth and a hardware MIDI output.
 - **I, interface segregation:** interfaces are small and focused, such as `MidiInputSource`, `MidiOutputSink` and `DeviceCatalog`, rather than one large `MidiService`.
-- **D, dependency inversion:** the core (`pp-model`, `pp-engine`, `pp-generator`) defines the interfaces it needs, and the outer modules (`pp-midi-io`, `pp-musicxml`, `pp-api`) implement them. The core never imports `javax.sound.midi`, Javalin or Jackson. Wiring happens in one place: `pp-app` (constructor injection, no DI framework).
+- **D, dependency inversion:** the core (`pp-model`, `pp-engine`, `pp-generator`) defines the interfaces it needs, and the outer modules (`pp-midi-jdk`, `pp-musicxml`, `pp-api`) implement them. MIDI devices are reached only through the `MidiInputPort` / `MidiOutputPort` interfaces in `pp-midi`, which also has virtual devices for tests and for on-screen keyboard input. The core never imports `javax.sound.midi`, Javalin or Jackson. Wiring happens in one place: `pp-app` (constructor injection, no DI framework).
 
 Layers, from the inside out:
 
 ```
 domain        pp-model                        pure types, no I/O
+ports         pp-midi                         MIDI interfaces and virtual devices
 application   pp-engine, pp-generator         use cases; define ports (interfaces)
-adapters      pp-midi-io, pp-musicxml,        implement the ports
+adapters      pp-midi-jdk, pp-musicxml,       implement the ports
               pp-import-midi, pp-library, pp-api
 bootstrap     pp-app                          wiring, main()
 ```
@@ -95,7 +96,8 @@ piano-player/                      (parent pom)
 ├── backend/
 │   ├── pp-model/                  shared song model, no dependencies
 │   ├── pp-musicxml/               MusicXML ⇄ model
-│   ├── pp-midi-io/                devices, input stream, output/synth
+│   ├── pp-midi/                   MIDI port interfaces, events, virtual devices
+│   ├── pp-midi-jdk/               javax.sound.midi adapter (hardware, built-in synth)
 │   ├── pp-import-midi/            MIDI file → MusicXML (quantise, split hands)
 │   ├── pp-generator/              random notes and chords
 │   ├── pp-engine/                 sessions, evaluation, playback scheduling
@@ -110,7 +112,8 @@ Allowed dependencies (arrows point to what a module may use):
 
 ```
 pp-app → pp-api → pp-engine → pp-model
-                  pp-engine → pp-midi-io
+                  pp-engine → pp-midi → pp-model
+pp-app → pp-midi-jdk → pp-midi
                   pp-engine → pp-generator → pp-model
          pp-api → pp-library → pp-musicxml → pp-model
                   pp-library → pp-import-midi → pp-musicxml
@@ -159,9 +162,9 @@ record NoteEvent(int pitch,            // MIDI note 0–127
 ### 5.2 Event flow
 
 ```
-piano ─► midi-io (timestamp) ─► InputEvent ─► Session ─► Evaluator ─► EvaluationEvent ─► api ─► UI
+piano ─► midi-jdk (timestamp) ─► InputEvent ─► Session ─► Evaluator ─► EvaluationEvent ─► api ─► UI
                                                 │
-                                                └──► PlaybackScheduler ─► midi-io out / synth
+                                                └──► PlaybackScheduler ─► midi-jdk out / synth
 ```
 
 Every input event carries the backend timestamp from when it arrived (spec DEV-8). The evaluator only works with that timestamp.
