@@ -145,6 +145,22 @@ class SessionDriverTest {
         assertThat(listener.states).containsExactly(SessionState.RUNNING);
     }
 
+    @Test
+    void changesTheTempoOnlyWhileRunningOrPaused() {
+        Session session = session(1);
+        SessionDriver driver = new SessionDriver(session, new WaitEvaluator(session), clock, listener);
+        driver.changeTempo(Tempo.of(60));
+        driver.start();
+        driver.changeTempo(Tempo.of(60));
+        assertThat(session.tempo()).isEqualTo(Tempo.of(120));
+
+        clock.advance(Duration.ofSeconds(2));
+        driver.tick();
+        driver.changeTempo(Tempo.of(60));
+
+        assertThat(session.tempo()).isEqualTo(Tempo.of(60));
+    }
+
     private SessionDriver waitDriver(int countInBars) {
         Session session = session(countInBars);
         return new SessionDriver(session, new WaitEvaluator(session), clock, listener);

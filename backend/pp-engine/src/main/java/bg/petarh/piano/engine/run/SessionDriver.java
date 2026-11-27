@@ -7,6 +7,7 @@ import bg.petarh.piano.engine.session.SessionState;
 import bg.petarh.piano.engine.time.Clock;
 import bg.petarh.piano.midi.input.InputEvent;
 import bg.petarh.piano.model.note.Target;
+import bg.petarh.piano.model.time.Tempo;
 
 import java.util.List;
 import java.util.Optional;
@@ -55,6 +56,12 @@ public final class SessionDriver {
         if (session.state() == SessionState.PAUSED) {
             session.resume();
             announceChanges();
+        }
+    }
+
+    public void changeTempo(Tempo tempo) {
+        if (session.state() == SessionState.RUNNING || session.state() == SessionState.PAUSED) {
+            session.changeTempo(tempo);
         }
     }
 
