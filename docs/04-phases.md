@@ -14,7 +14,8 @@ v2.0:             P11 PDF/OMR
 | Phase | Status |
 |---|---|
 | P0 Skeleton and MIDI devices | **Code complete.** Done: Maven build (root → `backend` → modules), `pp-model` (`Pitch`, `KeyboardRange`, presets), `pp-midi` (ports, events, virtual devices), `pp-midi-jdk` (input, output, device catalog), `pp-engine` (keyboard range detection), `pp-app` CLI (`pp devices`, `pp monitor`, `pp echo`, `pp detect-range`, `bin/pp` launcher). Manual input test with the Yamaha P-45 passed, and Gervill output was heard on the laptop (see `docs/testing/phase0-manual.md`). Remaining: manual test of `pp echo` and `pp detect-range` with the piano, and the `snd-virmidi` integration test. |
-| P1–P11 | Not started |
+| P1 Model, engine and generator | **In progress.** Done: `Fraction`, `Tempo`, `TempoMarking`. |
+| P2–P11 | Not started |
 
 This table is updated in every PR that completes a deliverable.
 
@@ -47,6 +48,17 @@ Done when: `mvn verify` passes, and your piano's key presses show up in `pp moni
 
 ### Phase 1: Model, engine and generator (random notes and chords)
 **Goal:** the core practice loop works headless (without a UI) for random notes and chords.
+
+PR plan, in order:
+1. Musical time and tempo: `Fraction`, `Tempo`, `TempoMarking`
+2. Time and key signatures
+3. Notes and targets: `NoteEvent`, `Target`
+4. Random notes generator: levels, range, key, hands, seed
+5. Chord generator: types, inversions
+6. Engine clock and session state machine
+7. Wait mode evaluator
+8. Tempo mode evaluator
+9. `pp random` / `pp chords` CLI
 
 Deliverables:
 - `pp-model`: `NoteEvent`, `Fraction`, `Tempo`, `TempoMap`, `Target`, `KeyboardRange`, time signatures, key signatures.

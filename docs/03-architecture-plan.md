@@ -130,6 +130,13 @@ pp-app → pp-midi-jdk → pp-midi
 
 ## 4. Song model (`pp-model`)
 
+Implemented so far: `model.pitch` (`Pitch`), `model.keyboard` (`KeyboardRange`, `KeyboardPreset`) and `model.time`:
+- `Fraction`: exact musical time in whole notes. Always reduced, with a positive denominator. Overflow raises `ArithmeticException` instead of wrapping around.
+- `Tempo`: BPM (20–240) plus a beat unit (quarter note by default). `nanosFor(duration)` converts musical time to nanoseconds, rounded to the nearest nanosecond. `adjustedBy` keeps the result within range.
+- `TempoMarking`: the eight presets and their BPM ranges (TMP-1/2).
+
+The rest of this section is still planned.
+
 These are the in-memory types every part of the app works with. MusicXML is the format stored on disk; this model is what the code uses.
 
 ```java
