@@ -314,6 +314,14 @@ The renderer never talks to the backend directly:
 - `app/`: `App` (navigation; the current screen is kept in the URL hash, and `PP_SCREEN` opens Electron on a given screen), `HomeScreen`, and `BackendContext` / `useBackend()`, which give every screen the `RpcClient`.
 - `devices/`: `DevicesScreen` (choose the input and output, keyboard size preset or custom range saved per input, a live keyboard through `devices.monitor`; with `virtual:keyboard`, clicking keys plays it).
 - `practice/`: `SetupScreen` (exercise, follow mode, tempo, hands, level or chord types and inversions, key, note value, time signature, count-in, length or endless, optional range, metronome, sharps and flats, mixed values) and `setupForm` (pure: `defaultSetup(settings)` with the saved tempo per mode, `toStartParams(setup, input, output)` building `session.start` params, sending only what applies to the exercise).
+- `practice/PracticeScreen`: starts `session.start` with the setup's params, sends every session event to the pure `practiceReducer` (`practiceState.ts`), and stops the session if the screen closes early. It shows:
+  - the tempo control (`session.changeTempo` while playing), a beat light, Pause/Resume and Stop
+  - the current target in large type (the chord name, or the notes)
+  - `NoteLanes`: one lane per hand, past targets sliding off to the left in green (correct) or grey (missed), the current target at the "now" line
+  - the last timing grade, and overlays for the count-in, pause and a disconnected piano
+  - the keyboard with target hints and keys coloured while held (green for correct, red for wrong)
+
+  With `virtual:keyboard`, the computer keys A S D F G H J K L ; (white keys C4–E5) and W E T Y U O P (black keys) play it (`computerKeys.ts`, DEV-7). When `session.summary` arrives it shows `ResultsView`: accuracy, then wrong keys and time (Wait mode) or the grade counts (Tempo mode), with "Practise again" and "Change settings".
 - `tempo/`: the marking table and `clampBpm`, and `TempoControl` (TMP-1/2: 8 preset buttons, slider, number field committed on Enter or blur, −/+ with Shift for ±5, the current marking name), all kept within 20–240.
 - `keyboard/`: `layoutKeys(low, high)` (white keys one unit wide, black keys 0.6 wide and 0.3 to the left of the next white key), the presets (the same as the Java `KeyboardPreset`), and the SVG `PianoKeyboard` (pressed, target, correct and wrong keys; pointer input).
 - `music/`: pitch names ↔ MIDI numbers.

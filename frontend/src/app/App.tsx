@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { connectToBackend } from "../api/backend";
 import type { SessionStartParams } from "../api/protocol";
 import { DevicesScreen } from "../devices/DevicesScreen";
+import { PracticeScreen } from "../practice/PracticeScreen";
 import { SetupScreen } from "../practice/SetupScreen";
 import { BackendContext } from "./backendContext";
 import { HomeScreen } from "./HomeScreen";
@@ -44,7 +45,10 @@ export function App() {
                 key={item.screen}
                 type="button"
                 className={item.screen === screen ? "nav active" : "nav"}
-                onClick={() => open(item.screen)}
+                onClick={() => {
+                  setStarted(undefined);
+                  open(item.screen);
+                }}
               >
                 {item.label}
               </button>
@@ -56,7 +60,7 @@ export function App() {
           {screen === "devices" && <DevicesScreen />}
           {screen === "practice" &&
             (started ? (
-              <p className="muted">Starting {started.exercise} practice… (the practice screen comes next)</p>
+              <PracticeScreen params={started} onChangeSettings={() => setStarted(undefined)} />
             ) : (
               <SetupScreen onStart={setStarted} onChooseDevice={() => open("devices")} />
             ))}
