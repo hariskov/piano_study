@@ -25,6 +25,7 @@ public final class Score {
     private final List<Placed<KeySignature>> keys;
     private final List<Placed<Tempo>> tempos;
     private final Fraction length;
+    private final List<Fraction> givenMeasureStarts;
 
     private Score(Builder builder) {
         this.title = builder.title;
@@ -34,6 +35,7 @@ public final class Score {
         this.timeSignatures = placed(builder.timeSignatures, TimeSignature.COMMON_TIME, length);
         this.keys = placed(builder.keys, KeySignature.major("C"), length);
         this.tempos = placed(builder.tempos, DEFAULT_TEMPO, length);
+        this.givenMeasureStarts = checkedMeasureStarts(builder.measureStarts);
     }
 
     public static Builder builder(String title) {
@@ -89,6 +91,9 @@ public final class Score {
     }
 
     public List<Fraction> measureStarts() {
+        if (!givenMeasureStarts.isEmpty()) {
+            return givenMeasureStarts;
+        }
         List<Fraction> starts = new ArrayList<>();
         for (Fraction at = Fraction.ZERO; at.compareTo(length) < 0; at = at.plus(timeSignatureAt(at).measureLength())) {
             starts.add(at);
@@ -107,6 +112,21 @@ public final class Score {
             index++;
         }
         return index;
+    }
+
+    private static List<Fraction> checkedMeasureStarts(List<Fraction> starts) {
+        if (starts.isEmpty()) {
+            return List.of();
+        }
+        if (!starts.getFirst().isZero()) {
+            throw new IllegalArgumentException("The first measure must start at 0, not " + starts.getFirst());
+        }
+        for (int i = 1; i < starts.size(); i++) {
+            if (starts.get(i).compareTo(starts.get(i - 1)) <= 0) {
+                throw new IllegalArgumentException("Measure starts must go forward: " + starts);
+            }
+        }
+        return List.copyOf(starts);
     }
 
     private static <T> T valueAt(List<Placed<T>> changes, Fraction position) {
@@ -143,6 +163,7 @@ public final class Score {
         private final List<Placed<KeySignature>> keys = new ArrayList<>();
         private final List<Placed<Tempo>> tempos = new ArrayList<>();
         private Fraction length = Fraction.ZERO;
+        private List<Fraction> measureStarts = List.of();
 
         private Builder(String title) {
             this.title = Objects.requireNonNull(title, "title");
@@ -173,6 +194,11 @@ public final class Score {
 
         public Builder tempo(Fraction at, Tempo tempo) {
             tempos.add(new Placed<>(at, tempo));
+            return this;
+        }
+
+        public Builder measureStarts(List<Fraction> starts) {
+            this.measureStarts = List.copyOf(starts);
             return this;
         }
 

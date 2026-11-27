@@ -54,6 +54,25 @@ class ScoreTest {
     }
 
     @Test
+    void usesTheGivenMeasureStartsForPickupsAndOddMeasures() {
+        Score score = Score.builder("Pickup")
+                .measureStarts(List.of(Fraction.ZERO, Fraction.of(1, 4), Fraction.of(5, 4)))
+                .length(Fraction.of(9, 4))
+                .build();
+
+        assertThat(score.measureStarts()).containsExactly(Fraction.ZERO, Fraction.of(1, 4), Fraction.of(5, 4));
+        assertThat(score.measureIndexAt(Fraction.of(1, 2))).isEqualTo(1);
+    }
+
+    @Test
+    void rejectsMeasureStartsThatDoNotBeginAtZeroOrGoBackwards() {
+        assertThatIllegalArgumentException().isThrownBy(() -> Score.builder("x")
+                .measureStarts(List.of(Fraction.of(1, 4))).length(Fraction.whole(1)).build());
+        assertThatIllegalArgumentException().isThrownBy(() -> Score.builder("x")
+                .measureStarts(List.of(Fraction.ZERO, Fraction.of(1, 2), Fraction.of(1, 4))).length(Fraction.whole(1)).build());
+    }
+
+    @Test
     void buildsTheTempoMapFromTempoChanges() {
         Score score = Score.builder("Tempo")
                 .tempo(Fraction.ZERO, Tempo.of(60))
