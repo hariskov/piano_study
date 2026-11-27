@@ -12,6 +12,7 @@
     <modules>
         <module>backend/pp-model</module>
         <module>backend/pp-midi</module>
+        <module>backend/pp-midi-jdk</module>
     </modules>
 
     <properties>
