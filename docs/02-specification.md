@@ -178,6 +178,13 @@ Before starting, the user chooses:
 | 4 | Intervals and 3-note chords, accidentals (sharps/flats) if allowed |
 | 5 | Both hands moving independently, any chord from the chosen chord types |
 
+Level details:
+- Level 1: the first note is anywhere in a window of 8 notes of the key (an octave). For the right hand the window starts at the bottom of the range; for the left hand it ends at the top. Each next note is a 2nd or 3rd away (one or two notes of the key), never the same note again.
+- Level 2: any note in the range, up to an octave (12 semitones) away from the previous one, never the same note again.
+- Levels 1–4 with both hands: the hands take turns, one measure each, starting with the right hand. The right hand plays middle C (C4) and above, the left hand below it. With one hand, that hand uses the whole range.
+- The chosen note value must fill a measure exactly (for example half notes don't fit 3/4); the setup only offers values that fit.
+- The range must hold at least two notes of the key for each hand being practised.
+
 ### 4.3 Chord practice
 
 - Chord types to choose from: major, minor, diminished, augmented, major 7, minor 7, dominant 7 (and sus2/sus4 for v1).
