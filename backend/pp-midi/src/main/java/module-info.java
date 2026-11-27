@@ -1,10 +1,10 @@
-module io.github.hariskov.piano.midi {
-    requires transitive io.github.hariskov.piano.model;
+module bg.petarh.piano.midi {
+    requires transitive bg.petarh.piano.model;
 
-    exports io.github.hariskov.piano.midi.device;
-    exports io.github.hariskov.piano.midi.value;
-    exports io.github.hariskov.piano.midi.input;
-    exports io.github.hariskov.piano.midi.output;
-    exports io.github.hariskov.piano.midi.virtual.input;
-    exports io.github.hariskov.piano.midi.virtual.output;
+    exports bg.petarh.piano.midi.device;
+    exports bg.petarh.piano.midi.value;
+    exports bg.petarh.piano.midi.input;
+    exports bg.petarh.piano.midi.output;
+    exports bg.petarh.piano.midi.virtual.input;
+    exports bg.petarh.piano.midi.virtual.output;
 }

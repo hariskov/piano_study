@@ -1,4 +1,4 @@
-module io.github.hariskov.piano.model {
-    exports io.github.hariskov.piano.model.pitch;
-    exports io.github.hariskov.piano.model.keyboard;
+module bg.petarh.piano.model {
+    exports bg.petarh.piano.model.pitch;
+    exports bg.petarh.piano.model.keyboard;
 }
