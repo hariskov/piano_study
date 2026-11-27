@@ -17,8 +17,9 @@ v2.0:             P11 PDF/OMR
 **Goal:** confirm the piano works with Java on Linux, set up the project structure.
 
 Deliverables:
-- Maven multi-module project (`pp-model`, `pp-midi-io`, `pp-app` to start), Java 25, a working build with JUnit.
-- `pp-midi-io`: list devices, open an input, timestamped `InputEvent` stream, open an output or the built-in synth.
+- Maven multi-module project (`pp-model`, `pp-midi`, `pp-midi-jdk`, `pp-app` to start), Java 25, a working build with JUnit.
+- `pp-midi`: `MidiInputPort` / `MidiOutputPort` interfaces, `InputEvent` / `OutputEvent`, virtual input and output devices (testable with no hardware).
+- `pp-midi-jdk`: `javax.sound.midi` implementation: list devices, open an input, timestamped `InputEvent` stream, open an output or the built-in synth.
 - `KeyboardRange` with the presets (88/76/73/61/49/37/25) and custom ranges (spec 1A).
 - CLI:
   - `pp --list-devices`
