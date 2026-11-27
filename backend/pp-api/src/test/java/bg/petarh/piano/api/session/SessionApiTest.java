@@ -2,6 +2,7 @@ package bg.petarh.piano.api.session;
 
 import bg.petarh.piano.api.PianoApi;
 import bg.petarh.piano.api.rpc.RpcServer;
+import bg.petarh.piano.api.settings.InMemorySettings;
 import bg.petarh.piano.midi.value.Velocity;
 import bg.petarh.piano.midi.virtual.input.VirtualKeyboard;
 import bg.petarh.piano.midi.virtual.output.SilentOutput;
@@ -27,7 +28,8 @@ class SessionApiTest {
     private final RpcServer server = new RpcServer();
     private final List<JsonNode> events = new CopyOnWriteArrayList<>();
     private final PianoApi api = PianoApi.create(server, keyboard.port(), silent.port(), System::nanoTime,
-            (method, params) -> events.add(JSON.readTree(server.notification(method, params))));
+            (method, params) -> events.add(JSON.readTree(server.notification(method, params))),
+            new InMemorySettings());
 
     @AfterEach
     void closeApi() {

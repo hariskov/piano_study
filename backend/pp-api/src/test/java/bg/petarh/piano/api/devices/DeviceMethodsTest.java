@@ -2,6 +2,7 @@ package bg.petarh.piano.api.devices;
 
 import bg.petarh.piano.api.PianoApi;
 import bg.petarh.piano.api.rpc.RpcServer;
+import bg.petarh.piano.api.settings.InMemorySettings;
 import bg.petarh.piano.midi.virtual.input.VirtualKeyboard;
 import bg.petarh.piano.midi.virtual.output.SilentOutput;
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,7 @@ class DeviceMethodsTest {
 
     DeviceMethodsTest() {
         PianoApi.create(server, VirtualKeyboard.withClock(() -> 0L).port(), SilentOutput.create().port(),
-                () -> 0L, (method, params) -> { });
+                () -> 0L, (method, params) -> { }, new InMemorySettings());
     }
 
     @Test

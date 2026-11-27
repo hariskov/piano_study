@@ -10,6 +10,7 @@ import bg.petarh.piano.generator.notes.Level;
 import bg.petarh.piano.generator.notes.RandomNotesGenerator;
 import bg.petarh.piano.generator.notes.RandomNotesOptions;
 import bg.petarh.piano.generator.notes.RandomNotesSettings;
+import bg.petarh.piano.library.settings.Settings;
 import bg.petarh.piano.model.chord.Chord;
 import bg.petarh.piano.model.chord.ChordType;
 import bg.petarh.piano.model.chord.Inversion;
@@ -38,31 +39,42 @@ import java.util.stream.Collectors;
 record PracticePlan(TargetSource targets, SessionTiming timing, FollowMode mode, long seed,
                     Function<Target, Optional<String>> names) {
 
+    String modeKey() {
+        return modeKey(mode);
+    }
+
+    private static String modeKey(FollowMode mode) {
+        return mode.name().toLowerCase(Locale.ROOT);
+    }
+
     private static final int DEFAULT_TEMPO = 90;
     private static final int DEFAULT_NOTES = 50;
     private static final int DEFAULT_COUNT_IN_BARS = 1;
 
-    static PracticePlan from(SessionStartParams params) {
+    static PracticePlan from(SessionStartParams params, Settings settings) {
         if (params.input() == null) {
             throw new IllegalArgumentException("input is required: the MIDI input device id");
         }
         FollowMode mode = FollowMode.valueOf(or(params.mode(), "wait").toUpperCase(Locale.ROOT));
-        SessionTiming timing = new SessionTiming(Tempo.of(or(params.tempo(), DEFAULT_TEMPO)),
+        int bpm = params.tempo() != null ? params.tempo() : settings.tempoFor(modeKey(mode)).orElse(DEFAULT_TEMPO);
+        SessionTiming timing = new SessionTiming(Tempo.of(bpm),
                 TimeSignature.parse(or(params.time(), "4/4")), or(params.countIn(), DEFAULT_COUNT_IN_BARS));
         long seed = params.seed() != null ? params.seed() : ThreadLocalRandom.current().nextLong();
         Set<Hand> hands = hands(or(params.hands(), "right"));
         KeyboardRange range = params.range() != null ? KeyboardRange.parse(params.range()) : defaultRange(hands);
-        KeyboardRange keyboard = KeyboardRange.parseKeyboard(or(params.keyboard(), "88"));
+        KeyboardRange keyboard = params.keyboard() != null
+                ? KeyboardRange.parseKeyboard(params.keyboard())
+                : settings.keyboardFor(params.input()).orElse(KeyboardRange.fullPiano());
         KeySignature key = KeySignature.parse(or(params.key(), "C"));
         NoteValue noteValue = NoteValue.valueOf(or(params.noteValue(), "quarter").toUpperCase(Locale.ROOT));
         int notes = or(params.notes(), DEFAULT_NOTES);
         return switch (or(params.exercise(), "")) {
             case "random" -> {
-                RandomNotesSettings settings = new RandomNotesSettings(hands, range, keyboard, key, noteValue,
+                RandomNotesSettings notesSettings = new RandomNotesSettings(hands, range, keyboard, key, noteValue,
                         timing.meter(), Level.of(or(params.level(), 1)), RandomNotesOptions.defaults()
                         .withAccidentals(or(params.accidentals(), false))
                         .withMixedNoteValues(or(params.mixed(), false)));
-                RandomNotesGenerator generator = RandomNotesGenerator.withSeed(settings, seed);
+                RandomNotesGenerator generator = RandomNotesGenerator.withSeed(notesSettings, seed);
                 yield new PracticePlan(targets(generator::nextMeasure, notes), timing, mode, seed,
                         target -> Optional.empty());
             }

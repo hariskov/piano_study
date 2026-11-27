@@ -11,7 +11,7 @@ final class Messages {
     private Messages() {
     }
 
-    record SessionStarted(long seed) {
+    record SessionStarted(long seed, int tempo) {
     }
 
     record TempoParams(int bpm) {

@@ -20,7 +20,7 @@ The keywords **MUST**, **SHOULD** and **MAY** mean: required, recommended, and o
 | DEV-6 | The app MUST show live input activity on the device screen (for example, a keyboard where pressed keys light up) so the user can check the connection. |
 | DEV-7 | The app MUST offer **virtual keyboard input** (computer keyboard or mouse on the on-screen keyboard) for testing without a piano. |
 | DEV-8 | Key presses MUST be timestamped by the backend when they arrive. All scoring uses the backend clock, so delays in the UI never affect scores. |
-| DEV-9 | The app SHOULD offer a latency offset setting (in milliseconds) for Tempo mode. |
+| DEV-9 | The app SHOULD offer a latency offset setting (in milliseconds, −500 to 500) for Tempo mode. A positive offset means key presses reach the computer late, so they are moved that much earlier before scoring. |
 | DEV-10 | Closing an output device MUST first silence it (All Notes Off on every channel), so no note keeps sounding. |
 | DEV-11 | Key velocity (how hard a key is pressed, 1–127) MUST be kept on every key press, and passed through unchanged when notes are played back. |
 | DEV-12 | (v1) Some pianos send the keys used to change settings (for example FUNCTION + key on the Yamaha P-45) as ordinary notes. A session MUST offer a way to avoid these counting as wrong notes, for example by pausing the session. |
