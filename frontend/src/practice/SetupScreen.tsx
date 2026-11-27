@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useBackend } from "../app/backendContext";
 import type { SessionStartParams, SettingsView } from "../api/protocol";
 import { TempoControl } from "../tempo/TempoControl";
+import { AccidentalsCheck, ChordTypeChecks, HandsSelect, LevelSelect, MixedCheck } from "./exerciseControls";
 import { defaultSetup, savedTempo, toStartParams, type Mode, type Setup } from "./setupForm";
 
 interface Props {
@@ -11,23 +12,7 @@ interface Props {
 }
 
 const KEYS = ["C", "G", "D", "A", "E", "B", "F#", "F", "Bb", "Eb", "Ab", "Db", "Am", "Em", "Bm", "Dm", "Gm", "Cm"];
-const CHORD_TYPES = [
-  ["maj", "Major"],
-  ["min", "Minor"],
-  ["dim", "Diminished"],
-  ["aug", "Augmented"],
-  ["maj7", "Major 7th"],
-  ["min7", "Minor 7th"],
-  ["dom7", "Dominant 7th"],
-] as const;
 const INVERSIONS = ["Root position", "1st inversion", "2nd inversion", "3rd inversion (7ths)"];
-const LEVELS = [
-  "1 · steps of a 2nd or 3rd",
-  "2 · jumps up to an octave",
-  "3 · some two-note intervals",
-  "4 · intervals and chords",
-  "5 · both hands together",
-];
 
 export function SetupScreen({ onStart, onChooseDevice, previous }: Props) {
   const client = useBackend();
@@ -65,18 +50,18 @@ export function SetupScreen({ onStart, onChooseDevice, previous }: Props) {
   return (
     <section className="screen setup">
       <h2>Practice</h2>
+      <div className="exercise-tabs" role="tablist" aria-label="Exercise">
+        <label className={random ? "tab active" : "tab"}>
+          <input type="radio" checked={random} onChange={() => change({ exercise: "random" })} aria-label="Random notes" />
+          <span>Random notes</span>
+        </label>
+        <label className={random ? "tab" : "tab active"}>
+          <input type="radio" checked={!random} onChange={() => change({ exercise: "chords" })} aria-label="Chords" />
+          <span>Chords</span>
+        </label>
+      </div>
       <div className="columns">
         <div className="card">
-          <div className="segmented" role="radiogroup" aria-label="Exercise">
-            <label>
-              <input type="radio" checked={random} onChange={() => change({ exercise: "random" })} aria-label="Random notes" />
-              <span>Random notes</span>
-            </label>
-            <label>
-              <input type="radio" checked={!random} onChange={() => change({ exercise: "chords" })} aria-label="Chords" />
-              <span>Chords</span>
-            </label>
-          </div>
           <div className="segmented" role="radiogroup" aria-label="Follow mode">
             <label>
               <input type="radio" checked={setup.mode === "wait"} onChange={() => chooseMode("wait")} aria-label="Wait mode" />
@@ -90,26 +75,8 @@ export function SetupScreen({ onStart, onChooseDevice, previous }: Props) {
           <TempoControl value={setup.tempo} onChange={(tempo) => change({ tempo })} />
         </div>
         <div className="card form-grid">
-          <label className="field">
-            <span>Hands</span>
-            <select aria-label="Hands" value={setup.hands} onChange={(event) => change({ hands: event.target.value as Setup["hands"] })}>
-              <option value="right">Right hand</option>
-              <option value="left">Left hand</option>
-              <option value="both">Both hands</option>
-            </select>
-          </label>
-          {random && (
-            <label className="field">
-              <span>Level</span>
-              <select aria-label="Level" value={setup.level} onChange={(event) => change({ level: Number(event.target.value) })}>
-                {LEVELS.map((description, index) => (
-                  <option key={description} value={index + 1}>
-                    {description}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
+          <HandsSelect value={setup.hands} onChange={(hands) => change({ hands })} />
+          {random && <LevelSelect value={setup.level} onChange={(level) => change({ level })} />}
           <label className="field">
             <span>Key</span>
             <select aria-label="Key" value={setup.key} onChange={(event) => change({ key: event.target.value })}>
@@ -178,34 +145,15 @@ export function SetupScreen({ onStart, onChooseDevice, previous }: Props) {
             </label>
             {random && (
               <>
-                <label className="check">
-                  <input type="checkbox" checked={setup.accidentals} onChange={(event) => change({ accidentals: event.target.checked })} />
-                  Sharps and flats <small className="muted">(level 4+)</small>
-                </label>
-                <label className="check">
-                  <input type="checkbox" checked={setup.mixed} onChange={(event) => change({ mixed: event.target.checked })} />
-                  Mixed note values <small className="muted">(level 3+)</small>
-                </label>
+                <AccidentalsCheck checked={setup.accidentals} onChange={(accidentals) => change({ accidentals })} />
+                <MixedCheck checked={setup.mixed} onChange={(mixed) => change({ mixed })} />
               </>
             )}
           </div>
         </div>
         {!random && (
           <div className="card">
-            <fieldset className="plain">
-              <legend>Chord types</legend>
-              {CHORD_TYPES.map(([code, name]) => (
-                <label key={code} className="check">
-                  <input
-                    type="checkbox"
-                    aria-label={name}
-                    checked={setup.chordTypes.includes(code)}
-                    onChange={() => change({ chordTypes: toggle(setup.chordTypes, code) })}
-                  />
-                  {name}
-                </label>
-              ))}
-            </fieldset>
+            <ChordTypeChecks value={setup.chordTypes} onChange={(chordTypes) => change({ chordTypes })} />
             <fieldset className="plain">
               <legend>Inversions</legend>
               {INVERSIONS.map((name, inversion) => (

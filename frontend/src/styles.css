@@ -619,3 +619,62 @@ button:disabled {
 .actions {
   gap: 0.75rem;
 }
+
+.exercise-tabs {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  margin-bottom: 1.25rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.exercise-tabs .tab {
+  cursor: pointer;
+}
+
+.exercise-tabs input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.exercise-tabs span {
+  display: inline-block;
+  padding: 0.6rem 1.6rem;
+  border-radius: 9px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.exercise-tabs .tab.active span {
+  background: var(--accent);
+  color: #1a1408;
+}
+
+.practice-main {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.practice-main .stage {
+  margin-bottom: 0;
+}
+
+.adjust h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.adjust fieldset.plain {
+  margin-bottom: 0.5rem;
+}
+
+.small {
+  font-size: 0.8rem;
+}

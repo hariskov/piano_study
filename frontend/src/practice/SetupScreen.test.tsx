@@ -43,6 +43,14 @@ describe("SetupScreen", () => {
     expect((screen.getByLabelText("Tempo in BPM") as HTMLInputElement).value).toBe("100");
   });
 
+  it("puts the choice between random notes and chords above the settings", async () => {
+    show(backend("jdk:Piano"));
+    const tabs = await screen.findByRole("tablist", { name: "Exercise" });
+
+    expect(tabs.closest(".card")).toBeNull();
+    expect(tabs.compareDocumentPosition(screen.getByLabelText("Hands")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("shows chord options only for chords", async () => {
     show(backend("jdk:Piano"));
     await screen.findByLabelText("Tempo in BPM");
