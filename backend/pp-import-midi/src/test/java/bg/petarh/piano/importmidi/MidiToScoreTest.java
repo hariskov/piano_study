@@ -115,7 +115,9 @@ class MidiToScoreTest {
                 List.of(), List.of(new RawKeySignature(0, -2, false)), PPQ, List.of());
 
         assertThat(notes(convert(flatKey), 0).getFirst().spelling()).hasToString("Bb4");
-        assertThat(notes(convert(midi(List.of(note(1, 0, 70, 0, PPQ)))), 0).getFirst().spelling()).hasToString("A#4");
+        RawMidi sharpKey = new RawMidi(1, PPQ, List.of(note(1, 0, 70, 0, PPQ)), Map.of(), Map.of(), List.of(),
+                List.of(), List.of(new RawKeySignature(0, 0, false)), PPQ, List.of());
+        assertThat(notes(convert(sharpKey), 0).getFirst().spelling()).hasToString("A#4");
     }
 
     @Test

@@ -60,19 +60,28 @@ public final class MidiToScore {
                         () -> new TreeMap<>(Comparator.comparingInt(RawMidi.TrackChannel::track)
                                 .thenComparingInt(RawMidi.TrackChannel::channel)),
                         Collectors.toList()));
-        List<Part> parts = new ArrayList<>();
-        Fraction lastEnd = Fraction.ZERO;
+        List<Draft> drafts = new ArrayList<>();
         for (Map.Entry<RawMidi.TrackChannel, List<RawNote>> part : byPart.entrySet()) {
             if (part.getKey().channel() == GeneralMidi.PERCUSSION_CHANNEL) {
                 warnings.add("Percussion (channel 10) can't be played on the piano and was left out");
                 continue;
             }
-            List<Quantiser.Span> placed = part.getValue().stream()
+            List<Quantiser.Span> spans = part.getValue().stream()
                     .map(note -> quantiser.place(note.pitch(), note.startTick(), note.endTick())).toList();
-            for (Quantiser.Span note : placed) {
+            drafts.add(new Draft(name(raw, part.getKey()), isPiano(raw, part.getKey()), spans, List.of()));
+        }
+        if (keys.isEmpty() && !drafts.isEmpty()) {
+            KeySignature estimated = KeyEstimator.estimate(drafts.stream().flatMap(draft -> draft.spans().stream()).toList());
+            keys.put(Fraction.ZERO, estimated);
+            warnings.add("The file has no key signature; the key was estimated as " + estimated);
+        }
+        List<Part> parts = new ArrayList<>();
+        Fraction lastEnd = Fraction.ZERO;
+        for (Draft draft : HandSplitter.arrange(drafts, options.splitPoint())) {
+            for (Quantiser.Span note : draft.spans()) {
                 lastEnd = note.end().compareTo(lastEnd) > 0 ? note.end() : lastEnd;
             }
-            parts.add(new Part("P" + (parts.size() + 1), name(raw, part.getKey()), 1, voiced(placed, keys)));
+            parts.add(new Part("P" + (parts.size() + 1), draft.name(), draft.staffCount(), scored(draft, keys)));
         }
 
         Fraction length = roundedUpToMeasure(lastEnd, times);
@@ -84,9 +93,18 @@ public final class MidiToScore {
         return new MidiConversion(score.length(length).build(), new ArrayList<>(warnings));
     }
 
-    private static List<ScoreNote> voiced(List<Quantiser.Span> notes, TreeMap<Fraction, KeySignature> keys) {
+    private static List<ScoreNote> scored(Draft draft, TreeMap<Fraction, KeySignature> keys) {
+        List<ScoreNote> scored = new ArrayList<>();
+        for (int staff = 1; staff <= draft.staffCount(); staff++) {
+            scored.addAll(voiced(draft.notesOn(staff), staff, keys));
+        }
+        return scored;
+    }
+
+    private static List<ScoreNote> voiced(List<Quantiser.Span> notes, int staff, TreeMap<Fraction, KeySignature> keys) {
         List<Quantiser.Span> ordered = notes.stream()
-                .sorted(Comparator.comparing(Quantiser.Span::start).thenComparing(Quantiser.Span::pitch, Comparator.reverseOrder()))
+                .sorted(Comparator.comparing(Quantiser.Span::start)
+                        .thenComparing(Quantiser.Span::pitch, Comparator.reverseOrder()))
                 .toList();
         List<Voice> voices = new ArrayList<>();
         List<ScoreNote> scored = new ArrayList<>();
@@ -95,7 +113,7 @@ public final class MidiToScore {
             Map.Entry<Fraction, KeySignature> key = keys.floorEntry(note.start());
             boolean flats = key != null && key.getValue().usesFlats();
             scored.add(new ScoreNote(Spelling.of(Pitch.of(note.pitch()), flats), note.start(),
-                    note.end().minus(note.start()), 1, voice, Tie.NONE));
+                    note.end().minus(note.start()), staff, voice, Tie.NONE));
         }
         return scored;
     }
@@ -139,6 +157,10 @@ public final class MidiToScore {
             warnings.add("A tempo of " + bpm + " BPM was changed to " + clamped + " BPM, the closest that can be played");
         }
         return Tempo.of(clamped);
+    }
+
+    private static boolean isPiano(RawMidi raw, RawMidi.TrackChannel part) {
+        return raw.program(part.track(), part.channel()).map(GeneralMidi::isPiano).orElse(true);
     }
 
     private static String name(RawMidi raw, RawMidi.TrackChannel part) {
