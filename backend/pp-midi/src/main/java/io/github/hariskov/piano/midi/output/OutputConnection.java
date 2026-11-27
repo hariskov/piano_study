@@ -1,4 +1,6 @@
-package io.github.hariskov.piano.midi;
+package io.github.hariskov.piano.midi.output;
+
+import io.github.hariskov.piano.midi.device.DeviceDescriptor;
 
 public interface OutputConnection extends AutoCloseable {
 
