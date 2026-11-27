@@ -13,7 +13,8 @@ class DeviceMethodsTest {
     private final RpcServer server = new RpcServer();
 
     DeviceMethodsTest() {
-        PianoApi.register(server, VirtualKeyboard.withClock(() -> 0L).port(), SilentOutput.create().port());
+        PianoApi.create(server, VirtualKeyboard.withClock(() -> 0L).port(), SilentOutput.create().port(),
+                () -> 0L, (method, params) -> { });
     }
 
     @Test

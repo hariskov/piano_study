@@ -2,7 +2,7 @@
 
 Piano learning desktop app: Java 25 backend (Maven multi-module) and an Electron + React + TypeScript UI. Linux only.
 
-Docs: `docs/01-vision.md`, `docs/02-specification.md`, `docs/03-architecture-plan.md`, `docs/04-phases.md`.
+Docs: `docs/01-vision.md`, `docs/02-specification.md`, `docs/03-architecture-plan.md`, `docs/04-phases.md`, `docs/05-api.md` (backend API reference).
 
 ## Build
 
