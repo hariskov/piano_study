@@ -28,8 +28,8 @@ final class JdkInputConnection implements InputConnection {
 
     @Override
     public void close() {
-        receiver.close();
-        transmitter.close();
-        device.close();
+        try (device; transmitter; receiver) {
+            // Resources close in reverse order: receiver, transmitter, then device, even if one of them fails.
+        }
     }
 }

@@ -6,8 +6,13 @@ import javax.sound.midi.Transmitter;
 
 final class FakeTransmitter implements Transmitter {
 
+    private final boolean failOnClose;
     private Receiver receiver;
     private boolean closed;
+
+    FakeTransmitter(boolean failOnClose) {
+        this.failOnClose = failOnClose;
+    }
 
     void emit(MidiMessage message) {
         if (!closed && receiver != null) {
@@ -32,5 +37,8 @@ final class FakeTransmitter implements Transmitter {
     @Override
     public void close() {
         closed = true;
+        if (failOnClose) {
+            throw new IllegalStateException("transmitter close failed");
+        }
     }
 }

@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 class JdkMidiInputPortTest {
 
@@ -89,5 +90,23 @@ class JdkMidiInputPortTest {
         InputConnection connection = port.open(PIANO_ID, received::add);
 
         assertThat(connection.device().id()).isEqualTo(PIANO_ID);
+    }
+
+    @Test
+    void closesDeviceWhenTransmitterCannotBeObtained() {
+        piano.failingOnTransmitter();
+
+        assertThatExceptionOfType(DeviceUnavailableException.class)
+                .isThrownBy(() -> port.open(PIANO_ID, received::add));
+        assertThat(piano.isOpen()).isFalse();
+    }
+
+    @Test
+    void closesDeviceEvenWhenTransmitterFailsToClose() {
+        piano.withTransmittersFailingOnClose();
+        InputConnection connection = port.open(PIANO_ID, received::add);
+
+        assertThatIllegalStateException().isThrownBy(connection::close);
+        assertThat(piano.isOpen()).isFalse();
     }
 }
