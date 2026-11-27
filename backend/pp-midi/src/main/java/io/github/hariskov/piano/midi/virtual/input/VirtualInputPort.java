@@ -7,63 +7,36 @@ import io.github.hariskov.piano.midi.input.InputConnection;
 import io.github.hariskov.piano.midi.input.InputEvent;
 import io.github.hariskov.piano.midi.input.InputListener;
 import io.github.hariskov.piano.midi.input.MidiInputPort;
-import io.github.hariskov.piano.midi.input.TimestampSource;
-import io.github.hariskov.piano.midi.value.Velocity;
-import io.github.hariskov.piano.model.pitch.Pitch;
 
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
-public final class VirtualInputPort implements MidiInputPort {
+final class VirtualInputPort implements MidiInputPort {
 
-    public static final DeviceId DEVICE_ID = DeviceId.of("virtual:keyboard");
-    private static final DeviceDescriptor DEVICE =
-            new DeviceDescriptor(DEVICE_ID, "Virtual keyboard", "On-screen and computer keyboard input");
+    private final DeviceDescriptor device;
+    private final Set<VirtualInputConnection> connections = new CopyOnWriteArraySet<>();
 
-    private final TimestampSource clock;
-    private final List<InputListener> listeners = new CopyOnWriteArrayList<>();
-
-    public VirtualInputPort(TimestampSource clock) {
-        this.clock = clock;
+    VirtualInputPort(DeviceDescriptor device) {
+        this.device = device;
     }
 
     @Override
     public List<DeviceDescriptor> devices() {
-        return List.of(DEVICE);
+        return List.of(device);
     }
 
     @Override
     public InputConnection open(DeviceId id, InputListener listener) {
-        if (!DEVICE_ID.equals(id)) {
+        if (!device.id().equals(id)) {
             throw new DeviceUnavailableException(id);
         }
-        listeners.add(listener);
-        return new InputConnection() {
-            @Override
-            public DeviceDescriptor device() {
-                return DEVICE;
-            }
-
-            @Override
-            public void close() {
-                listeners.remove(listener);
-            }
-        };
+        VirtualInputConnection connection = new VirtualInputConnection(device, listener, connections::remove);
+        connections.add(connection);
+        return connection;
     }
 
-    public void press(Pitch pitch, Velocity velocity) {
-        publish(new InputEvent.NoteOn(pitch, velocity, clock.nanos()));
-    }
-
-    public void release(Pitch pitch) {
-        publish(new InputEvent.NoteOff(pitch, clock.nanos()));
-    }
-
-    public void sustain(boolean down) {
-        publish(new InputEvent.SustainPedal(down, clock.nanos()));
-    }
-
-    private void publish(InputEvent event) {
-        listeners.forEach(listener -> listener.onEvent(event));
+    void publish(InputEvent event) {
+        connections.forEach(connection -> connection.deliver(event));
     }
 }

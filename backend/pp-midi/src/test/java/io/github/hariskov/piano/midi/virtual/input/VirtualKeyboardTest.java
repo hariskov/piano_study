@@ -4,9 +4,9 @@ import io.github.hariskov.piano.midi.device.DeviceId;
 import io.github.hariskov.piano.midi.device.DeviceUnavailableException;
 import io.github.hariskov.piano.midi.input.InputConnection;
 import io.github.hariskov.piano.midi.input.InputEvent;
+import io.github.hariskov.piano.midi.input.MidiInputPort;
 import io.github.hariskov.piano.midi.value.Velocity;
 import io.github.hariskov.piano.model.pitch.Pitch;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -16,41 +16,36 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-class VirtualInputPortTest {
+class VirtualKeyboardTest {
 
     private static final Pitch MIDDLE_C = Pitch.parse("C4");
     private static final Velocity MEDIUM = Velocity.of(90);
 
     private final AtomicLong now = new AtomicLong(1_000L);
     private final List<InputEvent> received = new ArrayList<>();
-    private VirtualInputPort port;
+    private final VirtualKeyboard keyboard = VirtualKeyboard.withClock(now::get);
+    private final MidiInputPort port = keyboard.port();
 
-    @BeforeEach
-    void setUp() {
-        port = new VirtualInputPort(now::get);
+    @Test
+    void portOffersOnlyTheVirtualKeyboardDevice() {
+        assertThat(port.devices()).containsExactly(keyboard.device());
     }
 
     @Test
-    void offersSingleVirtualKeyboardDevice() {
-        assertThat(port.devices()).singleElement()
-                .satisfies(device -> assertThat(device.id()).isEqualTo(VirtualInputPort.DEVICE_ID));
-    }
-
-    @Test
-    void rejectsUnknownDevice() {
+    void portRejectsUnknownDevice() {
         assertThatExceptionOfType(DeviceUnavailableException.class)
                 .isThrownBy(() -> port.open(DeviceId.of("missing"), received::add));
     }
 
     @Test
     void deliversTimestampedEventsToOpenConnection() {
-        port.open(VirtualInputPort.DEVICE_ID, received::add);
+        port.open(keyboard.device().id(), received::add);
 
-        port.press(MIDDLE_C, MEDIUM);
+        keyboard.press(MIDDLE_C, MEDIUM);
         now.set(2_000L);
-        port.release(MIDDLE_C);
+        keyboard.release(MIDDLE_C);
         now.set(3_000L);
-        port.sustain(true);
+        keyboard.sustain(true);
 
         assertThat(received).containsExactly(
                 new InputEvent.NoteOn(MIDDLE_C, MEDIUM, 1_000L),
@@ -60,19 +55,19 @@ class VirtualInputPortTest {
 
     @Test
     void ignoresKeysPressedWhileNothingIsConnected() {
-        port.press(MIDDLE_C, MEDIUM);
+        keyboard.press(MIDDLE_C, MEDIUM);
 
-        port.open(VirtualInputPort.DEVICE_ID, received::add);
+        port.open(keyboard.device().id(), received::add);
 
         assertThat(received).isEmpty();
     }
 
     @Test
     void stopsDeliveringAfterConnectionIsClosed() {
-        InputConnection connection = port.open(VirtualInputPort.DEVICE_ID, received::add);
+        InputConnection connection = port.open(keyboard.device().id(), received::add);
 
         connection.close();
-        port.press(MIDDLE_C, MEDIUM);
+        keyboard.press(MIDDLE_C, MEDIUM);
 
         assertThat(received).isEmpty();
     }
@@ -80,12 +75,19 @@ class VirtualInputPortTest {
     @Test
     void deliversToEveryOpenConnection() {
         List<InputEvent> second = new ArrayList<>();
-        port.open(VirtualInputPort.DEVICE_ID, received::add);
-        port.open(VirtualInputPort.DEVICE_ID, second::add);
+        port.open(keyboard.device().id(), received::add);
+        port.open(keyboard.device().id(), second::add);
 
-        port.press(MIDDLE_C, MEDIUM);
+        keyboard.press(MIDDLE_C, MEDIUM);
 
         assertThat(received).hasSize(1);
         assertThat(second).hasSize(1);
+    }
+
+    @Test
+    void connectionReportsItsDevice() {
+        InputConnection connection = port.open(keyboard.device().id(), received::add);
+
+        assertThat(connection.device()).isEqualTo(keyboard.device());
     }
 }
