@@ -11,3 +11,11 @@ Requires JDK 25. Maven is provided by the wrapper.
 ```
 ./mvnw verify
 ```
+
+## Command-line tools
+
+```
+./mvnw -q package -DskipTests
+bin/pp --help
+bin/pp devices          # list MIDI inputs and outputs with their ids
+```
