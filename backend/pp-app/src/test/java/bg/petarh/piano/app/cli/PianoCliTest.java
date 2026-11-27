@@ -1,5 +1,7 @@
 package bg.petarh.piano.app.cli;
 
+import bg.petarh.piano.midi.output.OutputEvent;
+import bg.petarh.piano.midi.value.MidiChannel;
 import bg.petarh.piano.midi.value.Velocity;
 import bg.petarh.piano.midi.virtual.input.VirtualKeyboard;
 import bg.petarh.piano.midi.virtual.output.SilentOutput;
@@ -83,11 +85,60 @@ class PianoCliTest {
     }
 
     @Test
+    void echoPlaysEverythingPressedOnTheOutput() {
+        lifetime.whileOpen(() -> {
+            now.set(100_000_000L);
+            keyboard.press(MIDDLE_C, Velocity.of(90));
+            keyboard.sustain(true);
+            keyboard.release(MIDDLE_C);
+        });
+
+        int exitCode = run("echo", "virtual:keyboard", "virtual:silent");
+
+        MidiChannel first = MidiChannel.of(0);
+        assertThat(exitCode).isZero();
+        assertThat(output.sentEvents()).containsExactly(
+                new OutputEvent.NoteOn(MIDDLE_C, Velocity.of(90), first),
+                new OutputEvent.SustainPedal(true, first),
+                new OutputEvent.NoteOff(MIDDLE_C, first));
+        assertThat(out.toString().lines()).containsExactly(
+                "Echoing virtual:keyboard to virtual:silent. Play the piano, Ctrl+C to stop.",
+                "    0.100 s  NOTE ON   C4   vel  90",
+                "    0.100 s  PEDAL     down",
+                "    0.100 s  NOTE OFF  C4");
+    }
+
+    @Test
+    void echoStopsAfterLifetimeEnds() {
+        run("echo", "virtual:keyboard", "virtual:silent");
+
+        keyboard.press(MIDDLE_C, Velocity.of(90));
+
+        assertThat(output.sentEvents()).isEmpty();
+    }
+
+    @Test
+    void echoReportsUnknownOutput() {
+        int exitCode = run("echo", "virtual:keyboard", "jdk:Missing");
+
+        assertThat(exitCode).isEqualTo(1);
+        assertThat(err.toString()).contains("MIDI device unavailable: jdk:Missing");
+    }
+
+    @Test
+    void echoReportsUnknownInput() {
+        int exitCode = run("echo", "jdk:Missing", "virtual:silent");
+
+        assertThat(exitCode).isEqualTo(1);
+        assertThat(err.toString()).contains("MIDI device unavailable: jdk:Missing");
+    }
+
+    @Test
     void requiresASubcommand() {
         int exitCode = run();
 
         assertThat(exitCode).isEqualTo(2);
-        assertThat(err.toString()).contains("Missing required subcommand", "devices", "monitor");
+        assertThat(err.toString()).contains("Missing required subcommand", "devices", "monitor", "echo");
     }
 
     @Test
@@ -103,6 +154,6 @@ class PianoCliTest {
         int exitCode = run("--help");
 
         assertThat(exitCode).isZero();
-        assertThat(out.toString()).contains("Usage: pp", "devices", "monitor");
+        assertThat(out.toString()).contains("Usage: pp", "devices", "monitor", "echo");
     }
 }

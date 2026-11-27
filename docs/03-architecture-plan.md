@@ -246,7 +246,7 @@ Sample events:
 
 Security: the backend only listens on `127.0.0.1`, on a random port. It requires a one-time token, which Electron passes to it when starting it.
 
-`pp-app` also has a **headless CLI** built with picocli subcommands (for example `pp devices`, `pp monitor <device>`, `pp random --hands=right`). `bin/pp` runs it on the module path. `PianoCli.create(CliEnvironment, out, err)` builds it from a `CliEnvironment` (input port, output port, clock, `Lifetime`), so CLI tests run against the virtual devices with a controlled clock. Long-running commands hand their open connections to `Lifetime.keepOpenUntilStopped`: in production (`UntilShutdown`) that blocks until Ctrl+C and closes the connections in a shutdown hook, so outputs get their All Notes Off. In tests a scripted lifetime plays some key presses and returns. A missing device is reported as a one-line error with exit code 1, not a stack trace. It can be used to test the backend before the UI exists, and it is what Phase 1–3 testing relies on.
+`pp-app` also has a **headless CLI** built with picocli subcommands (for example `pp devices`, `pp monitor <device>`, `pp random --hands=right`). `bin/pp` runs it on the module path. `PianoCli.create(CliEnvironment, out, err)` builds it from a `CliEnvironment` (input port, output port, clock, `Lifetime`), so CLI tests run against the virtual devices with a controlled clock. Long-running commands hand their open connections to `Lifetime.keepOpenUntilStopped`: in production (`UntilShutdown`) that blocks until Ctrl+C and closes the connections in a shutdown hook, so outputs get their All Notes Off. In tests a scripted lifetime plays some key presses and returns. A missing device is reported as a one-line error with exit code 1, not a stack trace. `pp echo` closes the input before the output, so no event reaches an output that is already closed; the output then sends All Notes Off. It can be used to test the backend before the UI exists, and it is what Phase 1–3 testing relies on.
 
 ## 8. Storage
 
@@ -277,5 +277,6 @@ Security: the backend only listens on `127.0.0.1`, on a random port. It requires
 | MIDI → notation produces messy rhythms | Adjustable quantisation, a preview step, golden-file tests on real songs |
 | Delay between backend and UI | Scoring uses backend timestamps; WebSocket on localhost is under 1 ms; measure in Phase 4 |
 | Electron package size (~150 MB with the Java runtime) | Acceptable for a desktop app; Tauri is the fallback if size matters |
+| Software synthesizer (Gervill) adds audio buffer latency (about 100 ms by default), so `echo` and playback may sound late | Measure with the piano. If noticeable, open Gervill with a smaller latency setting, or play through the piano's own sound engine (MIDI out) |
 | Rendering notation (v1) | Use VexFlow/OSMD instead of writing our own engraver |
 | OMR quality (v2) | Review screen; MusicXML from notation software stays the recommended way to add songs |
