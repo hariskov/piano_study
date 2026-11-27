@@ -34,8 +34,12 @@ public final class Stopwatch {
     }
 
     public long elapsedNanos() {
+        return elapsedAt(clock.nowNanos());
+    }
+
+    public long elapsedAt(long timestampNanos) {
         return state == State.RUNNING
-                ? elapsedBeforeLastStart + clock.nowNanos() - lastStartNanos
+                ? elapsedBeforeLastStart + timestampNanos - lastStartNanos
                 : elapsedBeforeLastStart;
     }
 

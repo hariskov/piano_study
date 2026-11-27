@@ -131,6 +131,7 @@ Before starting, the user chooses:
 - A press that doesn't match any expected note within the window counts as **wrong**.
 - Each expected note can be matched by at most one press. Each press matches at most one note: the nearest one in time with the same pitch.
 - Note length (how long a key is held) is NOT scored in v1.
+- Note times are measured from the end of the count-in, and time spent paused doesn't count. A note counts as missed once the end of its widest window has passed.
 
 **Listen mode**
 - The app plays the selected part(s) at the set tempo and highlights each note as it plays. Nothing is scored.

@@ -45,6 +45,10 @@ public final class Session {
         return stopwatch.elapsedNanos();
     }
 
+    public long runningNanosAt(long timestampNanos) {
+        return stopwatch.elapsedAt(timestampNanos);
+    }
+
     public void start() {
         require(SessionState.READY, "start");
         current = targets.next();

@@ -76,6 +76,18 @@ class SessionTest {
     }
 
     @Test
+    void convertsAKeyPressTimeToRunningTime() {
+        Session session = session(1);
+        session.start();
+        clock.advance(Duration.ofSeconds(2));
+        session.tick();
+        clock.advance(Duration.ofSeconds(1));
+
+        assertThat(session.runningNanosAt(Duration.ofMillis(2500).toNanos()))
+                .isEqualTo(Duration.ofMillis(500).toNanos());
+    }
+
+    @Test
     void movesThroughTheTargetsAndFinishesAfterTheLast() {
         Session session = session(0);
         session.start();

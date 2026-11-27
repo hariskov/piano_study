@@ -68,4 +68,23 @@ class StopwatchTest {
 
         assertThatIllegalStateException().isThrownBy(stopwatch::resume);
     }
+
+    @Test
+    void tellsTheElapsedTimeAtAMomentWhileRunning() {
+        clock.advanceNanos(1000);
+        stopwatch.start();
+        clock.advanceNanos(500);
+
+        assertThat(stopwatch.elapsedAt(1200)).isEqualTo(200);
+    }
+
+    @Test
+    void elapsedTimeAtAMomentStaysPutWhilePaused() {
+        stopwatch.start();
+        clock.advanceNanos(100);
+        stopwatch.pause();
+        clock.advanceNanos(100);
+
+        assertThat(stopwatch.elapsedAt(clock.nowNanos())).isEqualTo(100);
+    }
 }
