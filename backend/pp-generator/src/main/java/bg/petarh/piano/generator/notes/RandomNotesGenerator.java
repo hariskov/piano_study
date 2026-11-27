@@ -1,5 +1,6 @@
 package bg.petarh.piano.generator.notes;
 
+import bg.petarh.piano.model.keyboard.KeyboardRange;
 import bg.petarh.piano.model.note.Hand;
 import bg.petarh.piano.model.note.NoteEvent;
 import bg.petarh.piano.model.pitch.Pitch;
@@ -31,9 +32,11 @@ public final class RandomNotesGenerator {
         this.handOrder = List.copyOf(settings.hands());
         for (Hand hand : handOrder) {
             List<Pitch> scale = HandPitches.forHand(settings, hand);
-            List<Pitch> melodyPitches = settings.playsAccidentals() ? HandPitches.allForHand(settings, hand) : scale;
-            lines.put(hand, MelodicLine.of(melodyPitches, hand, settings.level()));
-            harmonies.put(hand, Harmony.of(scale, hand, settings.level()));
+            List<Pitch> allPitches = HandPitches.allForHand(settings, hand);
+            lines.put(hand, MelodicLine.of(settings.playsAccidentals() ? allPitches : scale, hand, settings.level()));
+            KeyboardRange handRange = KeyboardRange.of(allPitches.getFirst(), allPitches.getLast());
+            harmonies.put(hand, Harmony.of(scale, handRange, hand, settings.level(),
+                    settings.options().chordTypes(), settings.playsAccidentals()));
         }
     }
 

@@ -11,7 +11,7 @@ public enum Level {
 
     private static final int FIRST_LEVEL_WITH_MIXED_NOTE_VALUES = 3;
     private static final int FIRST_LEVEL_WITH_ACCIDENTALS = 4;
-    private static final int FIRST_LEVEL_WITH_HANDS_TOGETHER = 5;
+    private static final int FIRST_LEVEL_WITH_HANDS_TOGETHER_AND_CHORD_TYPES = 5;
 
     private final int number;
     private final int mostNotesTogether;
@@ -44,7 +44,11 @@ public enum Level {
         return number >= FIRST_LEVEL_WITH_ACCIDENTALS;
     }
 
+    boolean usesChordTypes() {
+        return number >= FIRST_LEVEL_WITH_HANDS_TOGETHER_AND_CHORD_TYPES;
+    }
+
     boolean playsHandsTogether() {
-        return number >= FIRST_LEVEL_WITH_HANDS_TOGETHER;
+        return number >= FIRST_LEVEL_WITH_HANDS_TOGETHER_AND_CHORD_TYPES;
     }
 }

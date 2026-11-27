@@ -1,5 +1,6 @@
 package bg.petarh.piano.generator.notes;
 
+import bg.petarh.piano.model.chord.ChordType;
 import bg.petarh.piano.model.key.KeySignature;
 import bg.petarh.piano.model.keyboard.KeyboardPreset;
 import bg.petarh.piano.model.keyboard.KeyboardRange;
@@ -243,11 +244,44 @@ class RandomNotesGeneratorTest {
                 .containsOnly(Hand.RIGHT);
     }
 
+    @Test
+    void levelFiveBuildsChordsFromTheChosenChordTypes() {
+        RandomNotesSettings settings = new RandomNotesSettings(Set.of(Hand.RIGHT), range("C3", "C6"),
+                KeyboardRange.fullPiano(), KeySignature.major("C"), NoteValue.QUARTER, TimeSignature.COMMON_TIME,
+                Level.FIVE, RandomNotesOptions.defaults().withChordTypes(Set.of(ChordType.DOMINANT_SEVENTH)));
+
+        List<List<NoteEvent>> chords = notesTogether(notes(settings, 6, 32)).stream()
+                .filter(group -> group.size() > 2).toList();
+
+        assertThat(chords).isNotEmpty().allMatch(RandomNotesGeneratorTest::isDominantSeventh);
+    }
+
+    @Test
+    void levelFiveChordsLeaveTheKeyOnlyWhenSharpsAndFlatsAreAllowed() {
+        KeySignature cMajor = KeySignature.major("C");
+        RandomNotesSettings settings = new RandomNotesSettings(Set.of(Hand.RIGHT), range("C3", "C6"),
+                KeyboardRange.fullPiano(), cMajor, NoteValue.QUARTER, TimeSignature.COMMON_TIME, Level.FIVE,
+                RandomNotesOptions.defaults().withAccidentals(true).withChordTypes(Set.of(ChordType.MAJOR)));
+
+        assertThat(notesTogether(notes(settings, 6, 32))).filteredOn(group -> group.size() == 3)
+                .anyMatch(group -> group.stream().anyMatch(note -> !cMajor.contains(note.pitch())));
+    }
+
+    @Test
+    void levelsBelowFiveIgnoreChordTypes() {
+        RandomNotesSettings settings = new RandomNotesSettings(Set.of(Hand.RIGHT), range("C3", "C6"),
+                KeyboardRange.fullPiano(), KeySignature.major("C"), NoteValue.QUARTER, TimeSignature.COMMON_TIME,
+                Level.FOUR, RandomNotesOptions.defaults().withChordTypes(Set.of(ChordType.DOMINANT_SEVENTH)));
+
+        assertThat(notesTogether(notes(settings, 6, 32))).allMatch(group -> group.size() <= 3);
+    }
+
     @ParameterizedTest
     @MethodSource("keyboardsAndRanges")
     void neverPlaysOutsideTheKeyboard(KeyboardRange keyboard, KeyboardRange practiceRange, Level level, long seed) {
         RandomNotesSettings settings = new RandomNotesSettings(Set.of(Hand.RIGHT), practiceRange, keyboard,
-                KeySignature.major("D"), NoteValue.QUARTER, TimeSignature.COMMON_TIME, level, true, true);
+                KeySignature.major("D"), NoteValue.QUARTER, TimeSignature.COMMON_TIME, level,
+                RandomNotesOptions.defaults().withAccidentals(true).withMixedNoteValues(true));
 
         assertThat(notes(settings, seed, 16)).extracting(NoteEvent::pitch).allMatch(keyboard::contains);
     }
@@ -276,14 +310,14 @@ class RandomNotesGeneratorTest {
 
     private static RandomNotesSettings withOptions(Level level, boolean accidentals, boolean mixedNoteValues) {
         return new RandomNotesSettings(Set.of(Hand.RIGHT), range("C4", "C6"), KeyboardRange.fullPiano(),
-                KeySignature.major("C"), NoteValue.QUARTER, TimeSignature.COMMON_TIME, level, accidentals,
-                mixedNoteValues);
+                KeySignature.major("C"), NoteValue.QUARTER, TimeSignature.COMMON_TIME, level,
+                RandomNotesOptions.defaults().withAccidentals(accidentals).withMixedNoteValues(mixedNoteValues));
     }
 
     private static RandomNotesSettings bothHands(Level level, boolean mixedNoteValues) {
         return new RandomNotesSettings(Set.of(Hand.RIGHT, Hand.LEFT), range("C2", "C6"), KeyboardRange.fullPiano(),
-                KeySignature.major("C"), NoteValue.QUARTER, TimeSignature.COMMON_TIME, level, false,
-                mixedNoteValues);
+                KeySignature.major("C"), NoteValue.QUARTER, TimeSignature.COMMON_TIME, level,
+                RandomNotesOptions.defaults().withMixedNoteValues(mixedNoteValues));
     }
 
     private static Fraction filledBy(List<NoteEvent> notes) {
@@ -298,6 +332,13 @@ class RandomNotesGeneratorTest {
 
     private static List<List<NoteEvent>> notesTogether(List<NoteEvent> notes) {
         return Targets.from(notes).stream().map(Target::notes).toList();
+    }
+
+    private static boolean isDominantSeventh(List<NoteEvent> group) {
+        Set<Integer> pitchClasses = group.stream().map(note -> note.pitch().pitchClass()).collect(Collectors.toSet());
+        return group.size() == 4 && IntStream.range(0, 12).anyMatch(root -> pitchClasses.equals(
+                ChordType.DOMINANT_SEVENTH.semitonesAboveRoot().stream()
+                        .map(semitones -> (root + semitones) % 12).collect(Collectors.toSet())));
     }
 
     private static boolean isBetween(int value, int lowest, int highest) {

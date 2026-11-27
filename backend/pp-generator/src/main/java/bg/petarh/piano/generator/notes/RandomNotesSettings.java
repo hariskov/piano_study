@@ -12,8 +12,8 @@ import java.util.Objects;
 import java.util.Set;
 
 public record RandomNotesSettings(Set<Hand> hands, KeyboardRange range, KeyboardRange keyboard, KeySignature key,
-                                  NoteValue noteValue, TimeSignature meter, Level level, boolean allowAccidentals,
-                                  boolean mixedNoteValues) {
+                                  NoteValue noteValue, TimeSignature meter, Level level,
+                                  RandomNotesOptions options) {
 
     public RandomNotesSettings {
         Objects.requireNonNull(range, "range");
@@ -22,6 +22,7 @@ public record RandomNotesSettings(Set<Hand> hands, KeyboardRange range, Keyboard
         Objects.requireNonNull(noteValue, "noteValue");
         Objects.requireNonNull(meter, "meter");
         Objects.requireNonNull(level, "level");
+        Objects.requireNonNull(options, "options");
         if (hands.isEmpty()) {
             throw new IllegalArgumentException("Choose at least one hand");
         }
@@ -40,15 +41,15 @@ public record RandomNotesSettings(Set<Hand> hands, KeyboardRange range, Keyboard
 
     public RandomNotesSettings(Set<Hand> hands, KeyboardRange range, KeyboardRange keyboard, KeySignature key,
                                NoteValue noteValue, TimeSignature meter, Level level) {
-        this(hands, range, keyboard, key, noteValue, meter, level, false, false);
+        this(hands, range, keyboard, key, noteValue, meter, level, RandomNotesOptions.defaults());
     }
 
     public boolean playsAccidentals() {
-        return allowAccidentals && level.playsAccidentals();
+        return options.allowAccidentals() && level.playsAccidentals();
     }
 
     public boolean playsMixedNoteValues() {
-        return mixedNoteValues && level.mixesNoteValues();
+        return options.mixedNoteValues() && level.mixesNoteValues();
     }
 
     public KeyboardRange playableRange() {
