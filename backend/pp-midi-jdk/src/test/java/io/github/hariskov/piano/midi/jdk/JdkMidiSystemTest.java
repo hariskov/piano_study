@@ -13,4 +13,11 @@ class JdkMidiSystemTest {
                 .extracting(DeviceDescriptor::name)
                 .doesNotContain("Real Time Sequencer");
     }
+
+    @Test
+    void listsBuiltInSoftwareSynthesizerAsOutput() {
+        assertThat(JdkMidi.outputPort().devices())
+                .extracting(DeviceDescriptor::name)
+                .contains("Gervill");
+    }
 }
