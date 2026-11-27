@@ -38,6 +38,12 @@ final class GeneralMidi {
     private GeneralMidi() {
     }
 
+    private static final int LAST_PIANO = 7;
+
+    static boolean isPiano(int program) {
+        return program >= 0 && program <= LAST_PIANO;
+    }
+
     static String instrument(int program) {
         return INSTRUMENTS.get(program);
     }

@@ -81,7 +81,7 @@ Tempo is set the same way everywhere (random mode and songs).
 | MID-2 | Each track/channel pair MUST become one MusicXML **part**. Its name comes from the track name or, failing that, from the General MIDI instrument name of its program change. Channel 10 is marked as percussion and can't be chosen for playing. |
 | MID-3 | Note timings MUST be **quantised** (snapped) to a grid the user can set (default: 1/16 notes, with triplets detected optionally) so they can be written as notation. |
 | MID-4 | Tempo changes, time signatures and key signatures from the MIDI file MUST be carried over. If the key signature is missing, the app SHOULD estimate it from the notes. |
-| MID-5 | **Hand splitting** for piano parts: if two tracks look like left and right hand, they MUST be joined into one part with two staves. Otherwise the notes MUST be split by pitch at a split point the user can set (default: middle C, MIDI note 60). |
+| MID-5 | **Hand splitting** for piano parts (General MIDI pianos, or parts without an instrument, as MIDI's default is the piano): if two tracks look like left and right hand, they MUST be joined into one part with two staves. Otherwise the notes MUST be split by pitch at a split point the user can set (default: middle C, MIDI note 60). Two tracks look like hands when their names say so (right/left, RH/LH, treble/bass, upper/lower), or when they are the file's only two parts and lie at least 5 semitones apart on average. |
 | MID-6 | Before saving, the import screen MUST show the parts found (name, instrument, number of notes, range) and let the user include or exclude each one, and change the hand-split settings. |
 | MID-7 | The conversion MUST be repeatable: the same file with the same settings always produces the same MusicXML. |
 

@@ -352,6 +352,11 @@ Implemented so far (`pp-import-midi`, step 1):
   - **Signatures:** time and key signatures carried over. Tempo becomes quarter-note BPM, clamped to 20–240 with a warning.
   - **Voices:** notes that start and end together share a voice as a chord; otherwise a note takes the first voice that is free by its start, or a new one. No voice ever has overlapping notes.
   - **Spelling, length and title:** sharps or flats as the key at the note prefers. The length is rounded up to the end of a measure. The title comes from track 0's name, else the file name.
+  - **Key estimation:** a file without a key signature gets an estimated key (`KeyEstimator`, Krumhansl–Schmuckler: a duration-weighted pitch-class histogram compared against the 24 major and minor Krumhansl–Kessler profiles), with a warning naming it.
+  - **Hands** (`HandSplitter`, MID-5): a part is piano if its program is 0–7, or if it has no program, since 0 is MIDI's default.
+    - **Joined:** two piano parts become one two-staff "Piano" part (the higher one is staff 1, the right hand) when their names say which hand they are (right/left, RH/LH, treble/bass, upper/lower), or when they are the file's only two parts and lie at least 5 semitones apart on average.
+    - **Split:** every other piano part gets two staves, split by pitch at `MidiImportOptions.splitPoint` (default 60, middle C).
+    - Other instruments keep one staff. Voices are assigned per staff.
   - Every step uses a fixed order, so the same file and options always give the same score (MID-7).
 
 ## 7. API (backend ↔ UI)
