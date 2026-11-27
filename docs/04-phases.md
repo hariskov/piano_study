@@ -92,17 +92,17 @@ Done when: scenario tests cover every rule in spec sections 3.2 and 4, and termi
 
 Deliverables:
 - Metronome and count-in through the synth or MIDI output, following the current tempo (TMP-6).
-- `pp-api`: REST (devices, keyboard range, settings, random-session setup and control, tempo changes) and WebSocket events (input, evaluation, session state, beat ticks, device changes); localhost only with a token; message definitions with generated TypeScript types.
+- `pp-api`: JSON-RPC 2.0 over stdin/stdout, one message per line. Requests: devices, keyboard range, settings, random/chord session setup and control, tempo changes. Events: input, evaluation, session state, beat ticks, device changes. Message definitions with generated TypeScript types.
 - `pp-library` (settings part only): settings saved to disk (devices, keyboard range for each device, latency offset, last tempo for each mode).
 - Device hot-plugging (DEV-5).
 
 Testing:
 - Metronome scheduling tests with the manual clock, including tempo changes.
-- API contract tests: JSON snapshots for each message type; a WebSocket client test that runs a whole random session and a chord session from start to results.
+- API contract tests: JSON snapshots for each message type; a scripted client on in-memory streams runs a whole random session and a chord session from start to results; end-of-input shuts the backend down cleanly.
 - Settings save and reload correctly.
 - **Manual:** the metronome sounds steady at 40, 90 and 240 BPM; unplug and replug the piano during a session.
 
-Done when: a scripted WebSocket client can run a complete random or chord session from start to results.
+Done when: a scripted client writing to the backend's stdin can run a complete random or chord session from start to results.
 
 ---
 

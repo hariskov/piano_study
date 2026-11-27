@@ -8,9 +8,9 @@
 │  ┌──────────── UI (Electron + TypeScript) ────────────┐                         │
 │  │  screens · note display (canvas/SVG) · keyboard    │                         │
 │  └───────────────▲───────────────────────┬────────────┘                         │
-│                  │ events (WebSocket)    │ commands (REST + WebSocket)          │
+│                  │ events                │ requests      (Electron IPC)         │
 │  ┌───────────────┴───────────────────────▼────────────────────────────────────┐ │
-│  │                        Java backend (localhost only)                       │ │
+│  │          Java backend (child process, JSON lines on stdin/stdout)          │ │
 │  │                                                                            │ │
 │  │  api ──► engine (session, evaluation, playback scheduling)                 │ │
 │  │   │        ▲            ▲                ▲                                 │ │
@@ -33,7 +33,7 @@ The backend does all the work: device handling, importing, generating notes, tim
 | Build | **Maven** (multi-module) | Your preference |
 | MIDI | **`javax.sound.midi`** (built into Java) | Device listing, input/output, MIDI file reading, built-in synthesiser. Uses ALSA on Linux. |
 | MusicXML | **ProxyMusic** (MusicXML 4.0 Java binding, used by Audiveris), with a hand-written StAX reader as a fallback | Full MusicXML support; the same library Audiveris uses, which makes v2 easier |
-| Backend ↔ UI | **Javalin** (small HTTP + WebSocket server) | Small, easy to embed, starts fast |
+| Backend ↔ UI | **stdin/stdout pipes**, one JSON-RPC 2.0 message per line | No network port, only Electron can talk to the backend, the backend stops when Electron does, no HTTP server dependency |
 | JSON | Jackson | Standard choice |
 | Logging | SLF4J + Logback | Standard choice |
 | Tests | JUnit 5, AssertJ | Standard choice |
@@ -48,7 +48,7 @@ The backend does all the work: device handling, importing, generating notes, tim
 
 The UI is built with web technology (HTML5 canvas/SVG and a JS framework) but runs inside **Electron**, which is a desktop window with its own bundled browser engine. The user never opens a browser, and the app installs and starts like any desktop program.
 
-At startup, Electron launches the Java backend as a hidden child process and connects to it over `127.0.0.1`. When the window closes, the backend stops.
+At startup, Electron's main process launches the Java backend as a hidden child process and talks to it through the process's stdin and stdout (see §7). The renderer (the React UI) reaches the main process through Electron's IPC bridge. When the window closes, stdin closes and the backend stops.
 
 Alternatives we considered:
 - **Tauri**: much smaller package, but on Linux it relies on the system's WebKitGTK, whose canvas performance and behaviour vary between distributions.
@@ -68,7 +68,7 @@ The code follows **clean architecture** and the **SOLID** principles:
 - **O, open/closed:** new behaviour is added by adding implementations, not by editing switch statements. A new follow mode is a new `Evaluator`, a new song source is a new `ScoreImporter`, a new exercise is a new `ExerciseGenerator`.
 - **L, Liskov substitution:** any implementation can replace another of the same interface. For example, the real clock and the manual clock are interchangeable, and so are the software synth and a hardware MIDI output.
 - **I, interface segregation:** interfaces are small and focused, such as `MidiInputSource`, `MidiOutputSink` and `DeviceCatalog`, rather than one large `MidiService`.
-- **D, dependency inversion:** the core (`pp-model`, `pp-engine`, `pp-generator`) defines the interfaces it needs, and the outer modules (`pp-midi-jdk`, `pp-musicxml`, `pp-api`) implement them. MIDI devices are reached only through the `MidiInputPort` / `MidiOutputPort` interfaces in `pp-midi`, which also has virtual devices for tests and for on-screen keyboard input. The core never imports `javax.sound.midi`, Javalin or Jackson. Wiring happens in one place: `pp-app` (constructor injection, no DI framework).
+- **D, dependency inversion:** the core (`pp-model`, `pp-engine`, `pp-generator`) defines the interfaces it needs, and the outer modules (`pp-midi-jdk`, `pp-musicxml`, `pp-api`) implement them. MIDI devices are reached only through the `MidiInputPort` / `MidiOutputPort` interfaces in `pp-midi`, which also has virtual devices for tests and for on-screen keyboard input. The core never imports `javax.sound.midi` or Jackson, and never touches stdin/stdout. Wiring happens in one place: `pp-app` (constructor injection, no DI framework).
 
 Layers, from the inside out:
 
@@ -109,7 +109,7 @@ piano-player/                      root parent pom: shared coordinates, Maven ve
 │   ├── pp-generator/              random notes and chords
 │   ├── pp-engine/                 sessions, evaluation, playback scheduling
 │   ├── pp-library/                song library, metadata, settings, progress
-│   ├── pp-api/                    Javalin REST + WebSocket, JSON message types
+│   ├── pp-api/                    JSON-RPC messages, dispatcher, stdio transport
 │   ├── pp-app/                    main(): wires everything together, CLI options
 │   └── pp-import-pdf/             (v2) Audiveris integration
 └── frontend/                      Electron + React + TypeScript; Maven runs npm via frontend-maven-plugin
@@ -283,7 +283,7 @@ Every input event carries the backend timestamp from when it arrived (spec DEV-8
 - MIDI input callbacks (from `javax.sound.midi`) only put events on a queue. They do no other work.
 - One **session thread** per session handles input events and clock ticks one at a time, so the session state needs no locking.
 - The playback scheduler runs on its own thread and always schedules about 200 ms ahead.
-- WebSocket sends happen asynchronously, so a slow UI can never block the session.
+- Events to the UI are written by a separate writer thread from a queue, so a slow UI can never block the session.
 
 ## 6. MIDI → MusicXML conversion (`pp-import-midi`)
 
@@ -298,20 +298,29 @@ The conversion is tested with **golden files**: known MIDI files whose expected 
 
 ## 7. API (backend ↔ UI)
 
-- **REST** for request/response actions: devices, library, import, settings, session setup.
-- **WebSocket** `/ws` for live events: key presses, evaluations, playhead position, session state, device changes.
-- Messages are JSON and every message has a `type` field. The message definitions are written once in Java, and the matching TypeScript types are generated from them (or kept as a shared JSON Schema), so the two sides can't drift apart.
+**Transport: stdin/stdout pipes.** Electron's main process starts the backend (`java … --api`) as a child process. Every message is one line of JSON (UTF-8, ending with `\n`): Electron writes requests to the backend's stdin and reads responses and events from its stdout. stderr is for logs only, and nothing else may be written to stdout. When stdin reaches end-of-file (Electron exited or closed it), the backend stops the session, closes the MIDI devices and exits. The backend opens no network port, so no other program can talk to it and no token is needed.
 
-Sample events:
+The renderer never talks to the backend directly. A small preload script exposes `request(method, params)` and `onEvent(listener)` through Electron's `contextBridge`, and the main process passes messages through.
+
+**Protocol: JSON-RPC 2.0.**
+- A **request** has an `id`, a `method` and `params`, and gets exactly one **response** with the same `id`: either `result` or `error` (`code`, `message`).
+- An **event** (a JSON-RPC notification, without `id`) is pushed by the backend at any time: key presses, evaluations, beats, playhead position, session state, device changes.
+- Methods are grouped by area: `devices.*`, `keyboard.*`, `settings.*`, `session.*` (start, pause, resume, stop, changeTempo), later `library.*` and `import.*`.
+
+Sample messages:
 ```json
-{"type":"input","pitch":60,"velocity":72,"on":true,"t":123456}
-{"type":"eval","targetId":42,"result":"CORRECT","grade":"GOOD","deltaMs":-37}
-{"type":"eval","pitch":61,"result":"WRONG","t":123470}
-{"type":"playhead","position":"17/4","measure":5}
-{"type":"session","state":"FINISHED","summary":{...}}
+{"jsonrpc":"2.0","id":7,"method":"session.start","params":{"mode":"WAIT","exercise":{"type":"random","level":2}}}
+{"jsonrpc":"2.0","id":7,"result":{"sessionId":"s1","seed":42}}
+{"jsonrpc":"2.0","method":"input","params":{"pitch":60,"velocity":72,"on":true,"t":123456}}
+{"jsonrpc":"2.0","method":"eval","params":{"result":"TIMED","pitch":60,"grade":"GOOD","offsetMs":-37}}
+{"jsonrpc":"2.0","method":"session.state","params":{"state":"FINISHED","summary":{}}}
 ```
 
-Security: the backend only listens on `127.0.0.1`, on a random port. It requires a one-time token, which Electron passes to it when starting it.
+**Structure of `pp-api`:**
+- **Messages and dispatcher:** the request and event types and a dispatcher that routes a request to its handler. This part doesn't know how bytes travel.
+- **Transport adapter:** reads lines from an `InputStream` and writes lines to an `OutputStream`. In production these are `System.in` / `System.out`; in tests they are in-memory streams, so contract tests run a whole session without a process. Another adapter (for example a Unix socket for a debug tool) could be added later without changing the rest.
+
+The message types are written once in Java, and the matching TypeScript types are generated from them, so the two sides can't drift apart.
 
 `pp-app` also has a **headless CLI** built with picocli subcommands (for example `pp devices`, `pp monitor <device>`, `pp random --hands=right`). `bin/pp` runs it on the module path. `PianoCli.create(CliEnvironment, out, err)` builds it from a `CliEnvironment` (input port, output port, clock, `Lifetime`), so CLI tests run against the virtual devices with a controlled clock. Long-running commands hand their open connections to `Lifetime`. `keepOpenUntilStopped` waits for Ctrl+C (`monitor`, `echo`). `keepOpenUntil(resource, done)` waits until a task completes (`detect-range`, `random`, `chords`). In production (`UntilShutdown`), a shutdown hook closes the connections if Ctrl+C comes first, so outputs always get their All Notes Off. In tests a scripted lifetime plays some key presses and returns. A missing device is reported as a one-line error with exit code 1, not a stack trace. `pp echo` closes the input before the output, so no event reaches an output that is already closed; the output then sends All Notes Off. It can be used to test the backend before the UI exists, and it is what Phase 1–3 testing relies on.
 
@@ -334,7 +343,7 @@ Security: the backend only listens on `127.0.0.1`, on a random port. It requires
 | Golden | MIDI → MusicXML, MusicXML → model | stored inputs and expected outputs in `src/test/resources` |
 | Engine scenarios | whole sessions from scripted input ("press C4 at 1000 ms…") | a scenario test runner that uses the manual clock |
 | Device integration | real ALSA path | a virtual MIDI port (`snd-virmidi` kernel module plus `aplaymidi`/`amidi`) to send in recorded MIDI |
-| API | REST + WebSocket contract | Javalin test tools, JSON snapshot tests |
+| API | JSON-RPC contract over stdio | In-memory streams in place of stdin/stdout, JSON snapshot tests |
 | UI | components, protocol handling | Vitest, plus Playwright with Electron for smoke tests |
 | Manual | with the real piano | a checklist for each phase (see `04-phases.md`) |
 
@@ -344,7 +353,7 @@ Security: the backend only listens on `127.0.0.1`, on a random port. It requires
 |---|---|
 | Java MIDI on Linux: device names or hot-plugging behave inconsistently | Device scanning in the background, matching remembered devices by name, and early testing on your piano (Phase 0) |
 | MIDI → notation produces messy rhythms | Adjustable quantisation, a preview step, golden-file tests on real songs |
-| Delay between backend and UI | Scoring uses backend timestamps; WebSocket on localhost is under 1 ms; measure in Phase 4 |
+| Delay between backend and UI | Scoring uses backend timestamps; pipes plus Electron IPC add well under 1 ms; measure in Phase 4 |
 | Electron package size (~150 MB with the Java runtime) | Acceptable for a desktop app; Tauri is the fallback if size matters |
 | Software synthesizer (Gervill) adds audio buffer latency (about 100 ms by default), so `echo` and playback may sound late | Measure with the piano. If noticeable, open Gervill with a smaller latency setting, or play through the piano's own sound engine (MIDI out) |
 | Rendering notation (v1) | Use VexFlow/OSMD instead of writing our own engraver |

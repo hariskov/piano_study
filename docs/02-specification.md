@@ -241,7 +241,7 @@ Level details:
 | NF-1 | **Latency:** from a key press arriving in the backend to the feedback appearing in the UI should take under 20 ms in normal conditions. Scoring itself does not depend on UI delay (DEV-8). |
 | NF-2 | **Platform:** Linux x86-64 (any modern distribution with ALSA). |
 | NF-3 | **Packaging:** one installable package (AppImage and/or .deb) that includes the Java runtime and the UI shell. No separate installs needed. |
-| NF-4 | **Offline:** works fully offline. The backend only listens on `127.0.0.1` (this computer). |
+| NF-4 | **Offline and private:** works fully offline. The backend opens no network port; the UI talks to it only through the pipes of the child process it started. |
 | NF-5 | **Startup:** the main window appears within 3 s on a normal laptop. |
 | NF-6 | **Robustness:** a broken or unsupported file must never crash the app. It produces an error or import report instead. |
 | NF-7 | **Storage:** settings in `~/.config/piano-player/`, and the library and progress in `~/.local/share/piano-player/`. |
