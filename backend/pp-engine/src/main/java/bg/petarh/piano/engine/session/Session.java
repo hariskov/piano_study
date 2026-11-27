@@ -4,6 +4,9 @@ import bg.petarh.piano.engine.targets.TargetSource;
 import bg.petarh.piano.engine.time.Clock;
 import bg.petarh.piano.engine.time.Stopwatch;
 import bg.petarh.piano.model.note.Target;
+import bg.petarh.piano.model.time.Fraction;
+import bg.petarh.piano.model.time.Tempo;
+import bg.petarh.piano.model.time.TempoMap;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,12 +20,14 @@ public final class Session {
     private SessionState state = SessionState.READY;
     private Optional<Target> current = Optional.empty();
     private long countInStartNanos;
+    private TempoMap tempoMap;
 
     public Session(TargetSource targets, SessionTiming timing, Clock clock) {
         this.targets = targets;
         this.timing = timing;
         this.clock = clock;
         this.stopwatch = new Stopwatch(clock);
+        this.tempoMap = TempoMap.constant(timing.tempo());
     }
 
     public SessionState state() {
@@ -43,6 +48,23 @@ public final class Session {
 
     public long elapsedNanos() {
         return stopwatch.elapsedNanos();
+    }
+
+    public Tempo tempo() {
+        return tempoMap.latestTempo();
+    }
+
+    public long nanosAt(Fraction position) {
+        return tempoMap.nanosAt(position);
+    }
+
+    public void changeTempo(Tempo tempo) {
+        if (state != SessionState.RUNNING && state != SessionState.PAUSED) {
+            throw new IllegalStateException("Cannot change the tempo of a session that is " + state);
+        }
+        Fraction beat = timing.meter().countedBeat();
+        Fraction now = tempoMap.positionAt(stopwatch.elapsedNanos());
+        tempoMap = tempoMap.withChangeAt(beat.times(now.dividedBy(beat).ceil()), tempo);
     }
 
     public long runningNanosAt(long timestampNanos) {

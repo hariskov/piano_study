@@ -1,10 +1,19 @@
 package bg.petarh.piano.engine.metronome;
 
+import bg.petarh.piano.engine.session.Session;
 import bg.petarh.piano.engine.session.SessionTiming;
+import bg.petarh.piano.engine.targets.TargetSource;
+import bg.petarh.piano.engine.time.ManualClock;
+import bg.petarh.piano.model.note.Hand;
+import bg.petarh.piano.model.note.NoteEvent;
+import bg.petarh.piano.model.note.Target;
+import bg.petarh.piano.model.pitch.Pitch;
+import bg.petarh.piano.model.time.Fraction;
 import bg.petarh.piano.model.time.Tempo;
 import bg.petarh.piano.model.time.TimeSignature;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,7 +87,31 @@ class MetronomeTest {
         assertThat(clicks).containsExactly(true);
     }
 
+    @Test
+    void followsATempoChange() {
+        ManualClock clock = new ManualClock();
+        Session session = session(clock, 120, "4/4", 0);
+        Metronome metronome = new Metronome(session, clicks::add);
+        session.start();
+        metronome.onPosition(0);
+        clock.advance(Duration.ofMillis(100));
+        session.changeTempo(Tempo.of(60));
+
+        metronome.onPosition(500 * MS);
+        metronome.onPosition(1499 * MS);
+        assertThat(clicks).containsExactly(true, false);
+
+        metronome.onPosition(1500 * MS);
+        assertThat(clicks).containsExactly(true, false, false);
+    }
+
     private Metronome metronome(int bpm, String meter, int countInBars) {
-        return new Metronome(new SessionTiming(Tempo.of(bpm), TimeSignature.parse(meter), countInBars), clicks::add);
+        return new Metronome(session(new ManualClock(), bpm, meter, countInBars), clicks::add);
+    }
+
+    private static Session session(ManualClock clock, int bpm, String meter, int countInBars) {
+        Target note = Target.of(List.of(new NoteEvent(Pitch.parse("C4"), Fraction.ZERO, Fraction.of(1, 4), Hand.RIGHT)));
+        return new Session(TargetSource.of(List.of(note)),
+                new SessionTiming(Tempo.of(bpm), TimeSignature.parse(meter), countInBars), clock);
     }
 }

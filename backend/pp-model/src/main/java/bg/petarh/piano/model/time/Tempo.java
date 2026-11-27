@@ -52,6 +52,10 @@ public final class Tempo {
         return withBpm(Math.clamp((long) bpm + deltaBpm, SLOWEST_BPM, FASTEST_BPM));
     }
 
+    public Fraction durationOf(long nanos) {
+        return Fraction.of(Math.multiplyExact(nanos, bpm), NANOS_PER_MINUTE).times(beatUnit);
+    }
+
     public long nanosFor(Fraction duration) {
         long numerator = Math.multiplyExact(
                 Math.multiplyExact(duration.numerator(), beatUnit.denominator()), NANOS_PER_MINUTE);

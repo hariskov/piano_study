@@ -81,4 +81,18 @@ class FractionTest {
         assertThat(Fraction.of(6, 8)).hasToString("3/4");
         assertThat(Fraction.whole(2)).hasToString("2");
     }
+
+    @ParameterizedTest
+    @CsvSource({
+            "7, 2, 3, 4",
+            "6, 2, 3, 3",
+            "-7, 2, -4, -3",
+            "0, 1, 0, 0"
+    })
+    void roundsDownAndUpToWholeNumbers(long numerator, long denominator, long floor, long ceil) {
+        Fraction fraction = Fraction.of(numerator, denominator);
+
+        assertThat(fraction.floor()).isEqualTo(floor);
+        assertThat(fraction.ceil()).isEqualTo(ceil);
+    }
 }

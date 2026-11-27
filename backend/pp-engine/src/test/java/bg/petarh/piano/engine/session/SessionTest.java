@@ -112,6 +112,51 @@ class SessionTest {
     }
 
     @Test
+    void tempoChangeTakesEffectFromTheNextBeat() {
+        Session session = session(0);
+        session.start();
+        clock.advance(Duration.ofMillis(700));
+
+        session.changeTempo(Tempo.of(60));
+
+        assertThat(session.tempo()).isEqualTo(Tempo.of(60));
+        assertThat(session.nanosAt(Fraction.of(1, 2))).isEqualTo(Duration.ofMillis(1000).toNanos());
+        assertThat(session.nanosAt(Fraction.of(3, 4))).isEqualTo(Duration.ofMillis(2000).toNanos());
+    }
+
+    @Test
+    void tempoChangeOnABeatTakesEffectThere() {
+        Session session = session(0);
+        session.start();
+        clock.advance(Duration.ofMillis(500));
+
+        session.changeTempo(Tempo.of(60));
+
+        assertThat(session.nanosAt(Fraction.of(1, 2))).isEqualTo(Duration.ofMillis(1500).toNanos());
+    }
+
+    @Test
+    void tempoCanChangeWhilePaused() {
+        Session session = session(0);
+        session.start();
+        clock.advance(Duration.ofMillis(200));
+        session.pause();
+
+        session.changeTempo(Tempo.of(60));
+
+        assertThat(session.nanosAt(Fraction.of(1, 2))).isEqualTo(Duration.ofMillis(1500).toNanos());
+    }
+
+    @Test
+    void tempoCannotChangeBeforeTheSessionRuns() {
+        Session session = session(1);
+
+        assertThatIllegalStateException().isThrownBy(() -> session.changeTempo(Tempo.of(60)));
+        session.start();
+        assertThatIllegalStateException().isThrownBy(() -> session.changeTempo(Tempo.of(60)));
+    }
+
+    @Test
     void movesThroughTheTargetsAndFinishesAfterTheLast() {
         Session session = session(0);
         session.start();

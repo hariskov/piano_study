@@ -58,6 +58,14 @@ public final class Fraction implements Comparable<Fraction> {
         return of(Math.multiplyExact(numerator, other.denominator), Math.multiplyExact(denominator, other.numerator));
     }
 
+    public long floor() {
+        return Math.floorDiv(numerator, denominator);
+    }
+
+    public long ceil() {
+        return Math.ceilDiv(numerator, denominator);
+    }
+
     public boolean isZero() {
         return numerator == 0;
     }

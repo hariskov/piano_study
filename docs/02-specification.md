@@ -53,7 +53,7 @@ Tempo is set the same way everywhere (random mode and songs).
 |---|---|
 | TMP-1 | The app MUST offer the standard tempo markings as quick presets:<br>Grave 40 · Largo 50 · Adagio 70 · Andante 90 · Moderato 110 · Allegro 130 · Vivace 160 · Presto 180 (BPM). |
 | TMP-2 | The app MUST offer a **slider** and a **number field** for any tempo from **20 to 240 BPM** in steps of 1, plus −/+ buttons (±1, and ±5 with Shift). The slider, the field and the presets always stay in sync, and the name of the matching tempo marking (for example "Andante") is shown for the current value. Marking ranges: Grave 20–44, Largo 45–59, Adagio 60–79, Andante 80–99, Moderato 100–119, Allegro 120–144, Vivace 145–169, Presto 170–240 BPM. |
-| TMP-3 | The tempo MUST be changeable during a session (while paused, and SHOULD also work while playing). The change takes effect from the next beat. |
+| TMP-3 | The tempo MUST be changeable during a session (while paused, and SHOULD also work while playing). The change takes effect from the next beat (the next counted beat of the time signature; if the session is exactly on a beat, from that beat). Notes before that keep their times. |
 | TMP-4 | The beat unit SHOULD be selectable (quarter note by default; half or dotted-quarter for some time signatures). |
 | TMP-5 | (v0.8) For songs, the song's own tempo is the default. The UI MUST show both the absolute BPM and the percentage of the original (for example "84 BPM · 70%"). When the song changes tempo, all its tempos are scaled by the same factor. |
 | TMP-6 | The metronome and count-in follow the current tempo. The metronome clicks on every counted beat (in compound meters such as 6/8, on each dotted beat) and accents the first beat of each bar. |
