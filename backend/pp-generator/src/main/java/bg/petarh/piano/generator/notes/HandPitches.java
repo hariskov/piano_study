@@ -20,8 +20,13 @@ final class HandPitches {
         return forHand(settings.playableRange(), settings.key(), settings.hands(), hand);
     }
 
+    static List<Pitch> allForHand(RandomNotesSettings settings, Hand hand) {
+        return handRange(settings.playableRange(), settings.hands(), hand)
+                .map(KeyboardRange::pitches).orElse(List.of());
+    }
+
     static List<Pitch> forHand(KeyboardRange range, KeySignature key, Set<Hand> hands, Hand hand) {
-        List<Pitch> pitches = (hands.size() > 1 ? hand.portionOf(range) : Optional.of(range))
+        List<Pitch> pitches = handRange(range, hands, hand)
                 .map(KeyboardRange::pitches).orElse(List.of()).stream()
                 .filter(key::contains)
                 .toList();
@@ -30,5 +35,9 @@ final class HandPitches {
                     + FEWEST_PITCHES + " notes of " + key + " for the " + hand + " hand");
         }
         return pitches;
+    }
+
+    private static Optional<KeyboardRange> handRange(KeyboardRange range, Set<Hand> hands, Hand hand) {
+        return hands.size() > 1 ? hand.portionOf(range) : Optional.of(range);
     }
 }

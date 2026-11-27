@@ -181,6 +181,10 @@ Before starting, the user chooses:
 Level details:
 - Level 1: the first note is anywhere in a window of 8 notes of the key (an octave). For the right hand the window starts at the bottom of the range; for the left hand it ends at the top. Each next note is a 2nd or 3rd away (one or two notes of the key), never the same note again.
 - Level 2: any note in the range, up to an octave (12 semitones) away from the previous one, never the same note again.
+- Level 3: like level 2, and about 1 in 4 notes gets a second note of the key played with it, a 3rd to a 6th away (below it for the right hand, above it for the left hand).
+- Level 4: like level 3, and about 1 in 4 notes is a 3-note chord built in 3rds from the notes of the key (below for the right hand, above for the left hand). If a 2nd or 3rd note doesn't fit in the range, the note is played alone.
+- **Sharps and flats** ("allow sharps and flats" in the Key setting) take effect from level 4: the melody can then use any key in the range. Added interval and chord notes stay in the key, and a note outside the key is played alone.
+- **Mixed note values** take effect from level 3: each measure is filled with a random mix of note values, none shorter than the chosen note value, and the measure is always filled exactly.
 - Levels 1–4 with both hands: the hands take turns, one measure each, starting with the right hand. The right hand plays middle C (C4) and above, the left hand below it. With one hand, that hand uses the whole range.
 - The chosen note value must fill a measure exactly (for example half notes don't fit 3/4); the setup only offers values that fit.
 - The range must hold at least two notes of the key for each hand being practised.
