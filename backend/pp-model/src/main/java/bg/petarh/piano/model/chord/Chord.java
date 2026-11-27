@@ -3,14 +3,12 @@ package bg.petarh.piano.model.chord;
 import bg.petarh.piano.model.key.KeySignature;
 import bg.petarh.piano.model.pitch.Pitch;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public final class Chord {
 
     private static final int HIGHEST_MIDI_NUMBER = 127;
-    private static final int SEMITONES_PER_OCTAVE = 12;
 
     private final Pitch root;
     private final ChordType type;
@@ -26,11 +24,7 @@ public final class Chord {
 
     public static Chord of(Pitch root, ChordType type, Inversion inversion) {
         Objects.requireNonNull(root, "root");
-        if (!type.allows(inversion)) {
-            throw new IllegalArgumentException("A " + type.noteCount() + "-note chord has no "
-                    + inversion + " inversion");
-        }
-        List<Integer> semitones = voicing(type, inversion);
+        List<Integer> semitones = type.voicing(inversion);
         if (root.midiNumber() + semitones.getLast() > HIGHEST_MIDI_NUMBER) {
             throw new IllegalArgumentException("Chord on " + root + " goes above the highest MIDI note");
         }
@@ -83,13 +77,5 @@ public final class Chord {
     @Override
     public String toString() {
         return name(KeySignature.major("C")) + " " + pitches;
-    }
-
-    private static List<Integer> voicing(ChordType type, Inversion inversion) {
-        List<Integer> rootPosition = type.semitonesAboveRoot();
-        int movedUp = inversion.number();
-        List<Integer> semitones = new ArrayList<>(rootPosition.subList(movedUp, rootPosition.size()));
-        rootPosition.subList(0, movedUp).forEach(semitone -> semitones.add(semitone + SEMITONES_PER_OCTAVE));
-        return List.copyOf(semitones);
     }
 }
