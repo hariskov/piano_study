@@ -350,6 +350,14 @@ Implemented so far (`pp-api`, using Jackson 3):
 ~/.local/share/piano-player/progress.db        (v1) session results, SQLite
 ```
 
+Implemented so far (`pp-library`, settings part):
+- `library.settings.Settings` is an immutable value. It holds the input and output device ids, a keyboard range for each device (KEY-4), the last tempo for each follow mode (TMP-7) and a latency offset of ±500 ms (DEV-9). Changes go through `with…` methods.
+- `SettingsStore` (`load`/`save`) is implemented by `JsonSettingsFile`:
+  - **Saving** writes pretty-printed JSON to a temporary file in the same folder and then moves it into place. A crash can't leave a half-written file.
+  - **Loading** ignores unknown fields and values it can't use, such as an unreadable range or an out-of-range offset.
+  - **A corrupt file** is moved to `settings.json.bad`, and loading returns the defaults, so a broken file never stops the app from starting.
+- `SettingsLocation.defaultSettingsFile()` follows XDG: `$XDG_CONFIG_HOME/piano-player/settings.json`, otherwise `~/.config/piano-player/settings.json` (NF-7).
+
 ## 9. Testing strategy
 
 | Level | What | How |

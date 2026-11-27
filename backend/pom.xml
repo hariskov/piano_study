@@ -19,6 +19,7 @@
         <module>pp-midi-jdk</module>
         <module>pp-generator</module>
         <module>pp-engine</module>
+        <module>pp-library</module>
         <module>pp-api</module>
         <module>pp-app</module>
     </modules>
@@ -61,6 +62,11 @@
             <dependency>
                 <groupId>bg.petarh.piano</groupId>
                 <artifactId>pp-generator</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>bg.petarh.piano</groupId>
+                <artifactId>pp-library</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
