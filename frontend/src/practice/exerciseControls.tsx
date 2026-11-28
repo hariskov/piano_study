@@ -1,3 +1,4 @@
+import type { ChordLabels } from "./chordLabel";
 import type { Hands } from "./setupForm";
 
 export const CHORD_TYPES = [
@@ -87,5 +88,18 @@ export function ChordTypeChecks({ value, onChange }: { value: readonly string[];
         </label>
       ))}
     </fieldset>
+  );
+}
+
+export function ChordLabelSelect({ value, onChange }: { value: ChordLabels; onChange: (labels: ChordLabels) => void }) {
+  return (
+    <label className="field">
+      <span>Show</span>
+      <select aria-label="Show" value={value} onChange={(event) => onChange(event.target.value as ChordLabels)}>
+        <option value="both">Chord name and notes</option>
+        <option value="name">Chord name only</option>
+        <option value="notes">Notes only</option>
+      </select>
+    </label>
   );
 }

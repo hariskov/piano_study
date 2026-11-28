@@ -56,6 +56,30 @@ describe("PracticeScreen", () => {
     expect(screen.getByLabelText("Now playing").textContent).toContain("Dm/F");
   });
 
+  it("switches between chord names and notes while playing, without telling the backend", async () => {
+    const fake = backend();
+    const { onSetupChange } = show(fake, vi.fn(), { ...SETUP, exercise: "chords", chordLabels: "name" });
+    await waitFor(() => expect(fake.callsOf("session.start")).toHaveLength(1));
+    act(() =>
+      fake.emit("session.target", {
+        start: "0",
+        name: "C",
+        notes: [
+          { pitch: "C4", midi: 60, hand: "RIGHT" },
+          { pitch: "E4", midi: 64, hand: "RIGHT" },
+          { pitch: "G4", midi: 67, hand: "RIGHT" },
+        ],
+      }),
+    );
+    expect(screen.getByLabelText("Now playing").textContent).toBe("C");
+
+    fireEvent.change(screen.getByLabelText("Show"), { target: { value: "notes" } });
+
+    expect(screen.getByLabelText("Now playing").textContent).toBe("C4 E4 G4");
+    expect(fake.callsOf("session.adjust")).toEqual([]);
+    expect(onSetupChange).toHaveBeenCalledWith(expect.objectContaining({ chordLabels: "notes" }));
+  });
+
   it("pauses, resumes and stops", async () => {
     const fake = backend();
     show(fake);

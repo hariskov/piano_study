@@ -384,7 +384,7 @@ The renderer never talks to the backend directly:
 - `practice/exerciseControls`: the hands, level, sharps and flats, mixed values and chord-type controls, shared by the setup and practice screens (at least one chord type stays ticked).
 - `practice/PracticeScreen`: an "Adjust while playing" panel (random notes: hands, level, sharps and flats, mixed values; chords: hands, chord types) sends `session.adjust` and passes the changed setup back up, so "Change settings" shows it. The screen starts `session.start` with the setup's params, sends every session event to the pure `practiceReducer` (`practiceState.ts`), and stops the session if the screen closes early. It shows:
   - the tempo control (`session.changeTempo` while playing), a beat light, Pause/Resume and Stop
-  - the current target in large type (the chord name, or the notes)
+  - the current target in large type: for chords the name, the notes or both, chosen with **Show** in the setup and switchable in the adjust panel (`practice/chordLabel.ts`; display only, so nothing is sent to the backend)
   - `NoteLanes`: one lane per hand, past targets sliding off to the left in green (correct) or grey (missed), the current target at the "now" line
   - the last timing grade, and overlays for the count-in, pause and a disconnected piano
   - the keyboard with target hints and keys coloured while held (green for correct, red for wrong)

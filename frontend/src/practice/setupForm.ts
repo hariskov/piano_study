@@ -1,3 +1,4 @@
+import type { ChordLabels } from "./chordLabel";
 import type { SessionStartParams, SettingsView } from "../api/protocol";
 
 export type Exercise = "random" | "chords";
@@ -22,6 +23,7 @@ export interface Setup {
   mixed: boolean;
   chordTypes: string[];
   inversions: number[];
+  chordLabels: ChordLabels;
   range: string;
 }
 
@@ -49,6 +51,7 @@ export function defaultSetup(settings: SettingsView): Setup {
     mixed: false,
     chordTypes: ["maj", "min"],
     inversions: [0],
+    chordLabels: "both",
     range: "",
   };
 }

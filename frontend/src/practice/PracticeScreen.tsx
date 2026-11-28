@@ -6,8 +6,9 @@ import { keyboardRange, type KeyRange } from "../keyboard/presets";
 import { pitchName } from "../music/pitch";
 import { TempoControl } from "../tempo/TempoControl";
 import { midiForKey } from "./computerKeys";
-import { AccidentalsCheck, ChordTypeChecks, HandsSelect, LevelSelect, MixedCheck } from "./exerciseControls";
+import { AccidentalsCheck, ChordLabelSelect, ChordTypeChecks, HandsSelect, LevelSelect, MixedCheck } from "./exerciseControls";
 import { NoteLanes } from "./NoteLanes";
+import { targetLabel, type ChordLabels } from "./chordLabel";
 import { initialPractice, practiceReducer, type PracticeAction } from "./practiceState";
 import { ResultsView } from "./ResultsView";
 import type { Setup } from "./setupForm";
@@ -135,13 +136,20 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
     onSetupChange?.(next);
     void client.request("session.adjust", change).catch((error: Error) => setProblem(error.message));
   };
+  const showLabels = (chordLabels: ChordLabels) => {
+    if (current !== undefined) {
+      const next = { ...current, chordLabels };
+      setCurrent(next);
+      onSetupChange?.(next);
+    }
+  };
   const changeTempo = (bpm: number) => {
     setTempo(bpm);
     void client.request("session.changeTempo", { bpm }).catch(() => undefined);
   };
   const target = practice.target;
   const targets = new Set(target?.notes.map((note) => note.midi) ?? []);
-  const nowPlaying = target ? (target.name ?? target.notes.map((note) => note.pitch).join(" ")) : "";
+  const nowPlaying = target ? targetLabel(target, current?.chordLabels ?? "both") : "";
 
   return (
     <section className="screen practice">
@@ -206,7 +214,10 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
             <MixedCheck checked={current.mixed} onChange={(mixed) => adjust({ mixed })} />
           </>
         ) : (
-          <ChordTypeChecks value={current.chordTypes} onChange={(chordTypes) => adjust({ chordTypes })} />
+          <>
+            <ChordTypeChecks value={current.chordTypes} onChange={(chordTypes) => adjust({ chordTypes })} />
+            <ChordLabelSelect value={current.chordLabels} onChange={(chordLabels) => showLabels(chordLabels)} />
+          </>
         )}
         <p className="muted small">Changes apply from the next bar.</p>
       </aside>

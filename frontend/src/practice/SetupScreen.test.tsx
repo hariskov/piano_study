@@ -59,6 +59,7 @@ describe("SetupScreen", () => {
     fireEvent.click(screen.getByLabelText("Chords"));
 
     expect(screen.getByLabelText("Dominant 7th")).toBeTruthy();
+    expect((screen.getByLabelText("Show") as HTMLSelectElement).value).toBe("both");
     expect(screen.queryByLabelText("Level")).toBeNull();
   });
 
