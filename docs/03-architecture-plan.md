@@ -33,22 +33,22 @@ The backend does all the work: device handling, importing, generating notes, tim
 | Build | **Maven** (multi-module) | Your preference |
 | MIDI | **`javax.sound.midi`** (built into Java) | Device listing, input/output, MIDI file reading, built-in synthesiser. Uses ALSA on Linux. |
 | MusicXML | **ProxyMusic** (MusicXML 4.0 Java binding, used by Audiveris), with a hand-written StAX reader as a fallback | Full MusicXML support; the same library Audiveris uses, which makes v2 easier |
-| Backend ↔ UI | **stdin/stdout pipes**, one JSON-RPC 2.0 message per line | No network port, only Electron can talk to the backend, the backend stops when Electron does, no HTTP server dependency |
+| Backend ↔ UI | **stdin/stdout pipes**, one JSON-RPC 2.0 message per line | No network port, only the window shell can talk to the backend, the backend stops when the window closes, no HTTP server dependency |
 | JSON | Jackson | Standard choice |
 | Logging | SLF4J + Logback | Standard choice |
 | Tests | JUnit 5, AssertJ | Standard choice |
 | UI language | **TypeScript** | Type safety for the protocol with the backend |
 | UI framework | **React + Vite** | Widely used, lots of tooling. Drawing done directly on canvas/SVG |
-| Desktop window | **Electron** | A predictable Chromium engine, good canvas performance, mature Linux packaging |
+| Desktop window | **WebKitGTK 6.0**, opened by a ~130-line GJS script (`frontend/shell/piano-player.js`) | Uses the system's web engine, so the app ships no browser: Electron was 274 of the 340 MB unpacked. Needs `gjs` and `typelib-1_0-WebKit-6_0` installed (decided 2026-11-28). Until the follow-up PR, the bundle and the end-to-end test still use Electron |
 | Notation (v1) | **VexFlow** or **OpenSheetMusicDisplay** (renders MusicXML directly, built on VexFlow) | Proper staff notation in canvas/SVG without writing a music engraver ourselves |
 | Packaging | **jlink** (trimmed Java runtime) + a self-extracting shell script | One self-contained executable built by a short script with only `tar` and `xz` (electron-builder was dropped: it added 266 npm packages; then the AppImage, which needed appimagetool) |
 | OMR (v2) | **Audiveris** | Open-source Java OMR, outputs MusicXML |
 
 ### 2.1 Why a web UI in a desktop window, and not a browser
 
-The UI is built with web technology (HTML5 canvas/SVG and a JS framework) but runs inside **Electron**, which is a desktop window with its own bundled browser engine. The user never opens a browser, and the app installs and starts like any desktop program.
+The UI is built with web technology (HTML5 canvas/SVG and a JS framework) but runs inside a desktop window that uses the system's WebKitGTK engine. The user never opens a browser, and the app installs and starts like any desktop program.
 
-At startup, Electron's main process launches the Java backend as a hidden child process and talks to it through the process's stdin and stdout (see §7). The renderer (the React UI) reaches the main process through Electron's IPC bridge. When the window closes, stdin closes and the backend stops.
+At startup, the window shell launches the Java backend as a hidden child process and talks to it through the process's stdin and stdout (see §7). The page (the React UI) reaches the shell through a WebKit script message handler. When the window closes, stdin closes and the backend stops.
 
 Alternatives we considered:
 - **Tauri**: much smaller package, but on Linux it relies on the system's WebKitGTK, whose canvas performance and behaviour vary between distributions.
@@ -374,19 +374,19 @@ Implemented so far (`pp-import-midi`, step 1):
 
 ## 7. API (backend ↔ UI)
 
-**Transport: stdin/stdout pipes.** Electron's main process starts the backend (`java … --api`) as a child process. Every message is one line of JSON (UTF-8, ending with `\n`): Electron writes requests to the backend's stdin and reads responses and events from its stdout. stderr is for logs only, and nothing else may be written to stdout. When stdin reaches end-of-file (Electron exited or closed it), the backend stops the session, closes the MIDI devices and exits. The backend opens no network port, so no other program can talk to it and no token is needed.
+**Transport: stdin/stdout pipes.** The window shell starts the backend (`java … --api`) as a child process. Every message is one line of JSON (UTF-8, ending with `\n`): the shell writes requests to the backend's stdin and reads responses and events from its stdout. stderr is for logs only, and nothing else may be written to stdout. When stdin reaches end-of-file (the window closed), the backend stops the session, closes the MIDI devices and exits. The backend opens no network port, so no other program can talk to it and no token is needed.
 
 The renderer never talks to the backend directly:
-- **Main process** (`frontend/electron/main.cts`): starts `bin/pp api`, or `$PP_BACKEND`. It passes each stdout line to the window (`backend:line`) and each line from the window to the backend's stdin, writes the backend's stderr to its own, and reports the backend's exit (`backend:exit`). When the last window closes it ends the backend's stdin and quits.
-- **Preload** (`preload.cts`): exposes `window.backend = { send, onLine, onExit }` through `contextBridge`. The window runs with context isolation, the sandbox and no Node integration.
-- **Renderer** (`src/api/rpcClient.ts`): JSON-RPC is handled here. `RpcClient.request(method, params)` is typed from `protocol.ts` and resolves with the result or rejects with `RpcError(code, message)`. `on(event, listener)` returns an unsubscribe function. `disconnect(reason)`, called on `backend:exit`, fails every pending request. `connectToBackend()` returns nothing outside Electron, for example in a plain browser during development.
+- **Window shell** (`frontend/shell/piano-player.js`, GJS with GTK 4 and WebKitGTK 6.0, run by `bin/ui`): starts `pp api` (`$PP_BACKEND`, else `backend/bin/pp` next to the script when bundled, else the checkout's `bin/pp`). The backend's stderr goes to the shell's. The page is served from a private `piano://app/` scheme that only reads files inside the renderer folder, because WebKit won't run module scripts from `file://`. Page messages arrive on the `shell` script message handler as JSON: `{type:"line", line}` goes to the backend's stdin, and `{type:"chooseSong", id}` opens a GTK file dialog. The shell answers by calling `window.piano.line(line)`, `window.piano.exit(code)` and `window.piano.chosen(id, path)`. Closing the window closes the backend's stdin. `PP_DEVTOOLS=1` turns on the WebKit inspector and prints console messages; `VITE_DEV_SERVER_URL` loads the Vite dev server instead.
+- **Page bridge** (`src/api/webkitBridge.ts`): `installWebKitBridge()` runs before React starts. Inside the shell it sets `window.backend = { send, onLine, onExit, chooseSongFile }` and `window.piano`. Elsewhere it does nothing.
+- **Renderer** (`src/api/rpcClient.ts`): JSON-RPC is handled here. `RpcClient.request(method, params)` is typed from `protocol.ts` and resolves with the result or rejects with `RpcError(code, message)`. `on(event, listener)` returns an unsubscribe function. `disconnect(reason)`, called on `backend:exit`, fails every pending request. `connectToBackend()` returns nothing outside the app window, for example in a plain browser during development.
 
 **Renderer structure** (`frontend/src/`, one folder per feature):
-- `app/`: `App` (navigation; the current screen is kept in the URL hash, and `PP_SCREEN` opens Electron on a given screen), `HomeScreen`, and `BackendContext` / `useBackend()`, which give every screen the `RpcClient`.
+- `app/`: `App` (navigation; the current screen is kept in the URL hash, and `PP_SCREEN` opens the window on a given screen), `HomeScreen`, and `BackendContext` / `useBackend()`, which give every screen the `RpcClient`.
 - `progress/history`: `previousOf(sessions)` (the session before the one just saved) and `troubleBars(session)` (up to three bars with the most mistakes). When a scored session ends, `PracticeScreen` loads `progress.history` for the song or exercise; `ResultsView` then shows "Last time 70% · now 88%" and "Most mistakes in bars 6, 7". The Library's song details list the last 10 sessions (date, hands, section, tempo %, accuracy), newest first.
 - `sheet/SheetMusic`: draws a song's MusicXML (from `library.musicXml`) with **OpenSheetMusicDisplay** 3.0.0 (BSD-3). OSMD is imported lazily into its own chunk (about 1.5 MB) so the other screens start quickly. It is shown in the Library details on **Show sheet music**, and above the lanes when practising a song. There OSMD's cursor follows the current target: `scorePosition` maps the target's start into the score (`sectionStart + start mod passLength`, so repeats of a section go back to its start), and `followTo` steps the cursor forward to that position, starting again from the top when it has to go back. Tests replace OSMD with a fake (`testing/osmdMock.ts`, a Vitest setup file), since jsdom can't lay out SVG; the Electron smoke test checks the real drawing.
 - `library/SongSetup`: opened by **Practise** on a song. Follow modes include Listen and Play along; **Play the other parts** (on by default) sends `playback` with the saved output. **Section**: from bar, to bar (kept within the song and in order), **Whole song**, and **Play it** once, 2, 3, 5, 10 or 20 times or "until I stop" (99 passes). `ResultsView` lists the accuracy of each pass when there was more than one. Part, hands (only the right hand for a one-staff part), follow mode, count-in, notes outside the keyboard (move by an octave, or skip), metronome, and tempo as 25–150% of the song with the BPM shown. It starts `session.start` with `exercise: "song"`. On the practice screen a song hides the adjust panel, shows "N% of the song" under the tempo, and lists the start notices.
-- `library/`: `LibraryScreen`. Search by name; **Import…** opens the system file dialog (Electron main `dialog:chooseSong`, exposed as `window.backend.chooseSongFile()`), with optional MIDI options (grid, triplets, split point; sent only when changed), and calls `library.import`. Clicking a song calls `library.open` and shows its bars, time, key, tempo, parts with staves, notes and range, the MusicXML and MIDI paths and the import notes. **Delete** asks first. **Practise** opens `SongSetup`.
+- `library/`: `LibraryScreen`. Search by name; **Import…** opens the system file dialog (the shell's GTK file dialog, exposed as `window.backend.chooseSongFile()`), with optional MIDI options (grid, triplets, split point; sent only when changed), and calls `library.import`. Clicking a song calls `library.open` and shows its bars, time, key, tempo, parts with staves, notes and range, the MusicXML and MIDI paths and the import notes. **Delete** asks first. **Practise** opens `SongSetup`.
 - `devices/`: `DevicesScreen` (choose the input and output, keyboard size preset or custom range saved per input, a live keyboard through `devices.monitor`; with `virtual:keyboard`, clicking keys plays it).
 - `practice/`: `SetupScreen` (the exercise, random notes or chords, as tabs above the settings; then follow mode, tempo, hands, level or chord types and inversions, key, note value, time signature, count-in, length or endless, optional range, metronome, sharps and flats, mixed values) and `setupForm` (pure: `defaultSetup(settings)` with the saved tempo per mode, `toStartParams(setup, input, output)` building `session.start` params, sending only what applies to the exercise).
 - `practice/exerciseControls`: the hands, level, sharps and flats, mixed values and chord-type controls, shared by the setup and practice screens (at least one chord type stays ticked).
@@ -404,7 +404,7 @@ The renderer never talks to the backend directly:
 - `testing/FakeBackend`: an in-memory `Transport` that answers requests and sends events, used by the screen tests.
 - `styles.css`: one dark theme with CSS variables.
 
-The main and preload sources are `.cts` files, compiled by `tsconfig.electron.json` to CommonJS `.cjs` (Electron's sandboxed preload needs CommonJS). The renderer is built by Vite. Electron 45 downloads its binary on first start, not at `npm install`. `bin/ui` starts the app with Maven's Node.
+The main and preload sources are `.cts` files, compiled by `tsconfig.electron.json` to CommonJS `.cjs` (Electron's sandboxed preload needs CommonJS). The renderer is built by Vite. Electron 45 downloads its binary on first start, not at `npm install`. Electron is still used by the bundle and the end-to-end test until the follow-up PR; `bin/ui` already uses the WebKitGTK shell.
 
 **Protocol: JSON-RPC 2.0.**
 - A **request** has an `id`, a `method` and `params`, and gets exactly one **response** with the same `id`: either `result` or `error` (`code`, `message`).
@@ -505,8 +505,8 @@ Implemented so far (`pp-library`, song part, `library.songs`):
 |---|---|
 | Java MIDI on Linux: device names or hot-plugging behave inconsistently | Device scanning in the background, matching remembered devices by name, and early testing on your piano (Phase 0) |
 | MIDI → notation produces messy rhythms | Adjustable quantisation, a preview step, golden-file tests on real songs |
-| Delay between backend and UI | Scoring uses backend timestamps; pipes plus Electron IPC add well under 1 ms; measure in Phase 4 |
-| Electron package size (~150 MB with the Java runtime) | Acceptable for a desktop app; Tauri is the fallback if size matters |
+| Delay between backend and UI | Scoring uses backend timestamps; pipes plus the WebKit message handler add well under 1 ms; measure in Phase 4 |
+| WebKitGTK missing or older on the user's system | `bin/ui` says what to install; WebKitGTK 6.0 is in current distributions |
 | Software synthesizer (Gervill) adds audio buffer latency (about 100 ms by default), so `echo` and playback may sound late | Measure with the piano. If noticeable, open Gervill with a smaller latency setting, or play through the piano's own sound engine (MIDI out) |
 | Rendering notation (v1) | Use VexFlow/OSMD instead of writing our own engraver |
 | OMR quality (v2) | Review screen; MusicXML from notation software stays the recommended way to add songs |

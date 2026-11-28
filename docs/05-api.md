@@ -1,6 +1,6 @@
 # Piano Player: backend API reference
 
-The UI's Electron main process starts `pp api` (optionally `--settings <file>`, default `~/.config/piano-player/settings.json`, and `--library <dir>`, default `~/.local/share/piano-player/musicFiles`) and exchanges JSON-RPC 2.0 messages with it, one per line, over the process's stdin (requests) and stdout (responses and events). See architecture §7 for the design.
+The UI's window shell (`frontend/shell/piano-player.js`) starts `pp api` (optionally `--settings <file>`, default `~/.config/piano-player/settings.json`, and `--library <dir>`, default `~/.local/share/piano-player/musicFiles`) and exchanges JSON-RPC 2.0 messages with it, one per line, over the process's stdin (requests) and stdout (responses and events). See architecture §7 for the design.
 
 Optional fields can be left out. Fields without a value are left out of events too.
 
