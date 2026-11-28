@@ -2,6 +2,8 @@ package bg.petarh.piano.api.session;
 
 import bg.petarh.piano.engine.evaluation.FollowMode;
 import bg.petarh.piano.engine.session.SessionTiming;
+import bg.petarh.piano.engine.songs.OutOfRange;
+import bg.petarh.piano.engine.songs.SongSelection;
 import bg.petarh.piano.engine.targets.TargetSource;
 import bg.petarh.piano.generator.chords.ChordEvent;
 import bg.petarh.piano.generator.chords.ChordSettings;
@@ -19,11 +21,15 @@ import bg.petarh.piano.model.keyboard.KeyboardRange;
 import bg.petarh.piano.model.note.Hand;
 import bg.petarh.piano.model.note.NoteEvent;
 import bg.petarh.piano.model.note.Target;
+import bg.petarh.piano.model.note.Targets;
+import bg.petarh.piano.model.score.Part;
+import bg.petarh.piano.model.score.Score;
 import bg.petarh.piano.model.time.Fraction;
 import bg.petarh.piano.model.time.NoteValue;
 import bg.petarh.piano.model.time.Tempo;
 import bg.petarh.piano.model.time.TimeSignature;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -41,6 +47,7 @@ final class PracticePlan {
     private static final int DEFAULT_TEMPO = 90;
     private static final int DEFAULT_NOTES = 50;
     private static final int DEFAULT_COUNT_IN_BARS = 1;
+    private static final int FULL_TEMPO_PERCENT = 100;
 
     private final Settings settings;
     private final SessionTiming timing;
@@ -50,6 +57,9 @@ final class PracticePlan {
     private final Map<Fraction, Chord> chordsByStart = new ConcurrentHashMap<>();
     private final SwitchingMeasures measures;
     private final TargetSource targets;
+    private final Integer songTempo;
+    private final List<String> notices;
+    private final List<NoteEvent> accompaniment;
     private volatile SessionStartParams params;
 
     private PracticePlan(SessionStartParams params, Settings settings, SessionTiming timing, FollowMode mode,
@@ -64,6 +74,78 @@ final class PracticePlan {
         TargetSource source = TargetSource.fromMeasures(measures);
         int notes = or(params.notes(), DEFAULT_NOTES);
         this.targets = notes > 0 ? source.limitedTo(notes) : source;
+        this.songTempo = null;
+        this.notices = List.of();
+        this.accompaniment = List.of();
+    }
+
+    private PracticePlan(SessionStartParams params, Settings settings, SessionTiming timing, FollowMode mode,
+                         Score song, SongSelection selection, List<String> notices) {
+        this.params = params;
+        this.settings = settings;
+        this.timing = timing;
+        this.mode = mode;
+        this.seed = 0;
+        this.key = song.keyAt(Fraction.ZERO);
+        this.measures = null;
+        this.targets = TargetSource.of(Targets.from(selection.played()));
+        this.songTempo = song.tempoMap().tempoAt(Fraction.ZERO).bpm();
+        this.notices = List.copyOf(notices);
+        this.accompaniment = selection.accompaniment();
+    }
+
+    static PracticePlan fromSong(SessionStartParams params, Settings settings, Score song) {
+        if (params.input() == null) {
+            throw new IllegalArgumentException("input is required: the MIDI input device id");
+        }
+        FollowMode mode = FollowMode.valueOf(or(params.mode(), "wait").toUpperCase(Locale.ROOT));
+        int percent = or(params.tempoPercent(), FULL_TEMPO_PERCENT);
+        if (percent < 1) {
+            throw new IllegalArgumentException("tempoPercent must be positive: " + percent);
+        }
+        SessionTiming timing = new SessionTiming(song.tempoMap().scaledBy(percent / 100.0),
+                song.timeSignatureAt(Fraction.ZERO), or(params.countIn(), DEFAULT_COUNT_IN_BARS));
+        String partId = params.part() != null ? params.part()
+                : song.parts().stream().findFirst().map(Part::id)
+                .orElseThrow(() -> new IllegalArgumentException("The song has no parts"));
+        KeyboardRange keyboard = params.keyboard() != null
+                ? KeyboardRange.parseKeyboard(params.keyboard())
+                : settings.keyboardFor(params.input()).orElse(KeyboardRange.fullPiano());
+        OutOfRange outOfRange = "skip".equalsIgnoreCase(params.outOfRange()) ? OutOfRange.SKIP : OutOfRange.SHIFT_OCTAVE;
+        SongSelection selection = SongSelection.of(song, partId, hands(or(params.hands(), "right")), keyboard, outOfRange);
+        List<String> notices = new ArrayList<>();
+        if (selection.shifted() > 0) {
+            notices.add(count(selection.shifted()) + " outside your keyboard " + was(selection.shifted())
+                    + " moved by an octave");
+        }
+        if (selection.skipped() > 0) {
+            notices.add(count(selection.skipped()) + " outside your keyboard " + was(selection.skipped()) + " skipped");
+        }
+        return new PracticePlan(params, settings, timing, mode, song, selection, notices);
+    }
+
+    private static String count(int notes) {
+        return notes + (notes == 1 ? " note" : " notes");
+    }
+
+    private static String was(int notes) {
+        return notes == 1 ? "was" : "were";
+    }
+
+    boolean isSong() {
+        return measures == null;
+    }
+
+    Integer songTempo() {
+        return songTempo;
+    }
+
+    List<String> notices() {
+        return notices;
+    }
+
+    List<NoteEvent> accompaniment() {
+        return accompaniment;
     }
 
     static PracticePlan from(SessionStartParams params, Settings settings) {
@@ -103,6 +185,9 @@ final class PracticePlan {
     }
 
     Consumer<Optional<Target>> adjust(AdjustParams change) {
+        if (isSong()) {
+            throw new IllegalArgumentException("A song's hands and notes can't be changed while playing; start it again");
+        }
         SessionStartParams adjusted = params.adjustedBy(change);
         measuresFor(adjusted, seed, 0);
         return current -> {

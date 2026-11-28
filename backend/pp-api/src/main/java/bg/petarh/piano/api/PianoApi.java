@@ -15,13 +15,17 @@ import bg.petarh.piano.api.session.SessionMethods;
 import bg.petarh.piano.api.settings.SettingsMethods;
 import bg.petarh.piano.api.settings.SettingsService;
 import bg.petarh.piano.library.settings.SettingsStore;
+import bg.petarh.piano.library.songs.LoadedSong;
 import bg.petarh.piano.library.songs.SongLibrary;
+import bg.petarh.piano.model.score.Score;
 import bg.petarh.piano.midi.input.MidiInputPort;
 import bg.petarh.piano.midi.input.TimestampSource;
 import bg.petarh.piano.midi.output.MidiOutputPort;
 import bg.petarh.piano.midi.virtual.input.VirtualKeyboard;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 
 public final class PianoApi implements AutoCloseable {
 
@@ -46,18 +50,26 @@ public final class PianoApi implements AutoCloseable {
                                   TimestampSource clock, EventSink events, SettingsStore store,
                                   VirtualKeyboard keyboard, SongLibrary library) {
         LibraryMethods.register(server, library);
-        return create(server, inputs, outputs, clock, events, store, keyboard);
+        return create(server, inputs, outputs, clock, events, store, keyboard,
+                id -> library.load(id).map(LoadedSong::score));
     }
 
     public static PianoApi create(RpcServer server, MidiInputPort inputs, MidiOutputPort outputs,
                                   TimestampSource clock, EventSink events, SettingsStore store,
                                   VirtualKeyboard keyboard) {
+        return create(server, inputs, outputs, clock, events, store, keyboard, id -> Optional.empty());
+    }
+
+    private static PianoApi create(RpcServer server, MidiInputPort inputs, MidiOutputPort outputs,
+                                   TimestampSource clock, EventSink events, SettingsStore store,
+                                   VirtualKeyboard keyboard, Function<String, Optional<Score>> songs) {
         SettingsService settings = new SettingsService(store);
         DeviceMonitor monitor = new DeviceMonitor(inputs, events);
         DeviceMethods.register(server, inputs, outputs, monitor);
         KeyboardMethods.register(server, keyboard);
         SettingsMethods.register(server, settings);
-        SessionMethods sessions = SessionMethods.register(server, inputs, outputs, clock, events, settings, monitor);
+        SessionMethods sessions = SessionMethods.register(server, inputs, outputs, clock, events, settings, monitor,
+                songs);
         DeviceScanner scanner = new DeviceScanner(inputs, outputs, events, sessions::inputsChanged);
         server.register("devices.rescan", Void.class, DeviceList.class, ignored -> scanner.rescan());
         return new PianoApi(sessions, monitor);

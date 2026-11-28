@@ -22,7 +22,7 @@ public final class Messages {
     private Messages() {
     }
 
-    public record SessionStarted(long seed, int tempo) {
+    public record SessionStarted(long seed, int tempo, @MayBeAbsent Integer songTempo, List<String> notices) {
     }
 
     public record TempoParams(int bpm) {
