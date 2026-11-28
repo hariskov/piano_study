@@ -69,7 +69,7 @@ Tempo is set the same way everywhere (random mode and songs).
 |---|---|
 | LIB-1 | Every song in the library MUST be stored as MusicXML. |
 | LIB-2 | The app MUST open `.musicxml`, `.xml` (uncompressed MusicXML) and `.mxl` (compressed) files, MusicXML version 3.1 or 4.0. |
-| LIB-3 | Imported songs MUST be copied into the library folder (`~/.local/share/piano-player/library/`) together with a small metadata file (title, source file, import date, original format). |
+| LIB-3 | Imported songs MUST be saved in the `musicFiles` folder (`~/.local/share/piano-player/musicFiles/`): MusicXML in `xml/`, named after the song so it can be opened later by name (also in other programs), the original MIDI file of a MIDI import in `midi/`, and `sheets/` kept for sheet music (v2). One `index.json` file (no database) lists every song with its title, files, parts, measures, source file, format, import date and import warnings. |
 | LIB-4 | The library screen MUST list songs with their title, number of parts, length and source format, and SHOULD allow search and delete. |
 | LIB-5 | The supported MusicXML subset (v1) is: parts, staves (1 or 2 per part), measures, notes, rests, chords, ties, voices, time signatures, key signatures, tempo markings, repeats (played straight through in v1), and tuplets. Ornaments, grace notes, dynamics and lyrics are read but ignored. Anything not supported MUST be skipped without crashing and noted in an import report. In v0.8 the report lists grace notes, unpitched (percussion) notes, repeats, quarter tones, staves after the second, unsupported time or key signatures, and tempos outside 20–240 BPM. Only partwise MusicXML is read; a timewise file is refused with a message. |
 
@@ -246,5 +246,5 @@ Level details:
 | NF-4 | **Offline and private:** works fully offline. The backend opens no network port; the UI talks to it only through the pipes of the child process it started. |
 | NF-5 | **Startup:** the main window appears within 3 s on a normal laptop. |
 | NF-6 | **Robustness:** a broken or unsupported file must never crash the app. It produces an error or import report instead. |
-| NF-7 | **Storage:** settings in `~/.config/piano-player/`, and the library and progress in `~/.local/share/piano-player/`. |
+| NF-7 | **Storage:** settings in `~/.config/piano-player/`, and the songs (`musicFiles/`) and progress in `~/.local/share/piano-player/`. Plain files and JSON, no database. |
 | NF-8 | **Testability:** the engine, importers and generator have automated tests that run without a MIDI device. |

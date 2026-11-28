@@ -431,14 +431,19 @@ Implemented so far (`pp-api`, using Jackson 3):
 
 `pp-app` also has a **headless CLI** built with picocli subcommands (for example `pp devices`, `pp monitor <device>`, `pp random --hands=right`). `bin/pp` runs it on the module path. `PianoCli.create(CliEnvironment, out, err)` builds it from a `CliEnvironment` (input port, output port, clock, `Lifetime`), so CLI tests run against the virtual devices with a controlled clock. Long-running commands hand their open connections to `Lifetime`. `keepOpenUntilStopped` waits for Ctrl+C (`monitor`, `echo`). `keepOpenUntil(resource, done)` waits until a task completes (`detect-range`, `random`, `chords`). In production (`UntilShutdown`), a shutdown hook closes the connections if Ctrl+C comes first, so outputs always get their All Notes Off. In tests a scripted lifetime plays some key presses and returns. A missing device is reported as a one-line error with exit code 1, not a stack trace. `pp echo` closes the input before the output, so no event reaches an output that is already closed; the output then sends All Notes Off. It can be used to test the backend before the UI exists, and it is what Phase 1–3 testing relies on.
 
-`pp random` takes the shared practice options (`PracticeOptions`, a picocli mixin: input, hands, mode, tempo, key, range, keyboard, note value, time signature, number of targets, count-in, seed) plus level, `--accidentals` and `--mixed`. Text values are read by `PracticeConverters`, which call the model's parsers (`KeySignature.parse`, `KeyboardRange.parse`, `KeyboardRange.parseKeyboard`, `TimeSignature.parse`, `ChordType.forCode`), the same ones the API uses. Settings that can't be played (an invalid tempo, or a range without enough notes) become a usage error with exit code 2. `PracticeRunner` builds the targets from `TargetSource.fromMeasures(generator::nextMeasure)` (limited to `--notes`, or endless with 0) and runs them with `Practice`, whose input listener receives the MIDI input. `app.practice.PracticePrinter` is the `SessionListener`: it prints `Play: …`, one line per press (`ok`, `wrong`, `perfect C4 12 ms late`, `missed`) and state changes. The closing summary comes from the engine's `Results` and is turned into text by `PracticeSummary`. `--metronome <output>` (e.g. `jdk:Gervill`) adds a `Metronome` with `MidiClicks` on that output for the count-in and the whole session. The output closes last. `pp import <file>` converts a MIDI file (`MidiFileReader` + `MidiToScore`, with `--grid 4|8|16|32`, `--triplets`, `--split <pitch>`) and adds it to the `SongLibrary`, or writes it as MusicXML with `--out`. It adds `.musicxml`/`.xml`/`.mxl` files as they are. It prints each part (staves, notes, range) and the warnings. Files it can't read give exit code 1 with the reason. `pp songs` lists the library; both take `--library <dir>`. `pp chords` uses the same options plus `--types`, `--inversions` and `--show both|name|notes`. It remembers each generated `ChordEvent` by start time, so its target can be printed as `Dm/F  (F4 A4 D5)`, as the name only, or as the notes only (spec 4.3).
+`pp random` takes the shared practice options (`PracticeOptions`, a picocli mixin: input, hands, mode, tempo, key, range, keyboard, note value, time signature, number of targets, count-in, seed) plus level, `--accidentals` and `--mixed`. Text values are read by `PracticeConverters`, which call the model's parsers (`KeySignature.parse`, `KeyboardRange.parse`, `KeyboardRange.parseKeyboard`, `TimeSignature.parse`, `ChordType.forCode`), the same ones the API uses. Settings that can't be played (an invalid tempo, or a range without enough notes) become a usage error with exit code 2. `PracticeRunner` builds the targets from `TargetSource.fromMeasures(generator::nextMeasure)` (limited to `--notes`, or endless with 0) and runs them with `Practice`, whose input listener receives the MIDI input. `app.practice.PracticePrinter` is the `SessionListener`: it prints `Play: …`, one line per press (`ok`, `wrong`, `perfect C4 12 ms late`, `missed`) and state changes. The closing summary comes from the engine's `Results` and is turned into text by `PracticeSummary`. `--metronome <output>` (e.g. `jdk:Gervill`) adds a `Metronome` with `MidiClicks` on that output for the count-in and the whole session. The output closes last. `pp import <file>` converts a MIDI file (`MidiFileReader` + `MidiToScore`, with `--grid 4|8|16|32`, `--triplets`, `--split <pitch>`) and adds it to the `SongLibrary`, or writes it as MusicXML with `--out`. It adds `.musicxml`/`.xml`/`.mxl` files as they are. It prints each part (staves, notes, range) and the warnings. Files it can't read give exit code 1 with the reason. `pp songs` lists the library, `pp songs <name>` opens one song by title, id or file name (files, format, measures, time signature, key, tempo, parts, warnings), and `pp songs --delete <name>` removes it; both commands take `--library <dir>`. `pp chords` uses the same options plus `--types`, `--inversions` and `--show both|name|notes`. It remembers each generated `ChordEvent` by start time, so its target can be printed as `Dm/F  (F4 A4 D5)`, as the name only, or as the notes only (spec 4.3).
 
 ## 8. Storage
 
 ```
 ~/.config/piano-player/settings.json          devices, keyboard range for each device, latency offset,
                                                last tempo for each mode, UI preferences
-~/.local/share/piano-player/library/<id>/      score.musicxml, meta.json, import-report.json
+~/.local/share/piano-player/musicFiles/
+    index.json                                 every song: id, title, files, parts, measures, source, format,
+                                               import date, warnings
+    xml/<Song title>.musicxml                  the songs, named after their title
+    midi/<Song title>.mid                      the original file of each MIDI import
+    sheets/                                    for sheet music (v2)
 ~/.local/share/piano-player/progress.db        (v1) session results, SQLite
 ```
 
@@ -451,15 +456,14 @@ Implemented so far (`pp-library`, settings part):
 - `SettingsLocation.defaultSettingsFile()` follows XDG: `$XDG_CONFIG_HOME/piano-player/settings.json`, otherwise `~/.config/piano-player/settings.json` (NF-7).
 
 Implemented so far (`pp-library`, song part, `library.songs`):
-- `SongLibrary(folder, clock)` stores each song in `<folder>/<id>/`:
-  - `score.musicxml`: the original MusicXML, copied as is; for `.mxl`, the score XML from inside it, through `MusicXmlReader.scoreXml`. Nothing the reader skips is lost for the later sheet-music display.
-  - `meta.json`: title, number of parts and measures, source file, format, import time and import warnings.
+- `SongLibrary(folder, clock)` keeps songs in the `musicFiles` layout above. The index is plain JSON, read on every call and written to a temporary file that is then moved into place. A corrupt `index.json` is moved to `index.json.bad` and the library starts empty, and an index entry whose MusicXML file has gone is left out.
 - Methods:
-  - `importMusicXml(file)` reads the file first, so a broken file stores nothing and throws `MusicXmlException`.
-  - `add(score, sourceFile, format, warnings)` writes a `Score` with `MusicXmlWriter`, for MIDI imports.
-  - `list()` (sorted by title, skipping folders without valid metadata), `load(id)` (entry plus `Score`) and `delete(id)`.
-- Ids come from the title, made plain (`Für Elise / WoO 59!` → `fur-elise-woo-59`) and numbered when taken (`-2`, `-3`). Anything else, such as `../`, is refused.
-- `SongLibrary.defaultFolder()` is `$XDG_DATA_HOME/piano-player/library`, or else `~/.local/share/piano-player/library` (LIB-3, NF-7).
+  - `importMusicXml(file)` saves the original MusicXML as is (for `.mxl`, the score XML inside it); a broken file saves nothing.
+  - `addMidi(score, midiFile, warnings)` saves the converted score through `MusicXmlWriter` and a copy of the MIDI file.
+  - `add(score, sourceFile, format, warnings)` saves any other `Score`.
+  - `list()` (by title), `find(name)` (title, id or file name, ignoring case), `load(id)` (entry plus `Score`) and `delete(id)` (index entry and files).
+- File names come from the title with characters that aren't allowed in file names replaced (`AC/DC: Live?` → `AC-DC- Live-.musicxml`), numbered when taken (`Simple Melody (2)`). Ids are a plain form of the title (`fur-elise-woo-59`, then `-2`).
+- `SongLibrary.defaultFolder()` is `$XDG_DATA_HOME/piano-player/musicFiles`, or else `~/.local/share/piano-player/musicFiles`.
 
 ## 9. Testing strategy
 
