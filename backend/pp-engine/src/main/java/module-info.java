@@ -8,4 +8,5 @@ module bg.petarh.piano.engine {
     exports bg.petarh.piano.engine.evaluation;
     exports bg.petarh.piano.engine.run;
     exports bg.petarh.piano.engine.metronome;
+    exports bg.petarh.piano.engine.songs;
 }
