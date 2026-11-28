@@ -97,7 +97,7 @@ public final class MidiToScore {
         }
 
         Fraction length = roundedUpToMeasure(lastEnd, times);
-        Score.Builder score = Score.builder(raw.trackName(0).filter(name -> !name.isBlank()).orElse(fileTitle));
+        Score.Builder score = Score.builder(raw.trackName(0).filter(MidiToScore::isTitle).orElse(fileTitle));
         parts.forEach(score::part);
         times.forEach((at, time) -> inside(at, length, () -> score.timeSignature(at, time)));
         keys.forEach((at, key) -> inside(at, length, () -> score.key(at, key)));
@@ -169,6 +169,11 @@ public final class MidiToScore {
             warnings.add("A tempo of " + bpm + " BPM was changed to " + clamped + " BPM, the closest that can be played");
         }
         return Tempo.of(clamped);
+    }
+
+    // LilyPond calls the first track "control track" rather than giving it the piece's title.
+    private static boolean isTitle(String trackName) {
+        return !trackName.isBlank() && !trackName.strip().equalsIgnoreCase("control track");
     }
 
     private static boolean isPiano(RawMidi raw, RawMidi.TrackChannel part) {
