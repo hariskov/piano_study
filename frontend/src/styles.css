@@ -696,20 +696,17 @@ button:disabled {
 }
 
 .midi-options {
-  margin-bottom: 1rem;
-  color: var(--muted);
-}
-
-.midi-options summary {
-  cursor: pointer;
-  margin-bottom: 0.5rem;
-}
-
-.midi-options[open] {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem 1.5rem;
   align-items: center;
+  margin: 0.75rem 0 1rem;
+  color: var(--muted);
+}
+
+.midi-import h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.4rem;
 }
 
 .notice {

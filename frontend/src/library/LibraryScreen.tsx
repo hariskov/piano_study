@@ -1,20 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { useBackend } from "../app/backendContext";
 import { SheetMusic } from "../sheet/SheetMusic";
-import type { PastSession, ImportParams, SongDetails, SongSummary } from "../api/protocol";
+import type { PastSession, SongDetails, SongSummary } from "../api/protocol";
+import { isMidiFile, MidiImport } from "./MidiImport";
 
 interface Props {
   chooseFile: () => Promise<string | undefined>;
   onPractise: (song: SongDetails) => void;
 }
-
-interface MidiOptions {
-  grid: number;
-  triplets: boolean;
-  splitPoint: string;
-}
-
-const DEFAULT_MIDI: MidiOptions = { grid: 16, triplets: false, splitPoint: "C4" };
 
 export function LibraryScreen({ chooseFile, onPractise }: Props) {
   const client = useBackend();
@@ -24,8 +17,7 @@ export function LibraryScreen({ chooseFile, onPractise }: Props) {
   const [imported, setImported] = useState<SongSummary>();
   const [problem, setProblem] = useState<string>();
   const [busy, setBusy] = useState(false);
-  const [midi, setMidi] = useState<MidiOptions>(DEFAULT_MIDI);
-  const [midiChanged, setMidiChanged] = useState(false);
+  const [midiFile, setMidiFile] = useState<string>();
 
   const refresh = useCallback(
     () => client.request("library.list", {}).then((list) => setSongs(list.songs)),
@@ -45,20 +37,27 @@ export function LibraryScreen({ chooseFile, onPractise }: Props) {
     if (path === undefined) {
       return;
     }
-    setBusy(true);
     setProblem(undefined);
     setImported(undefined);
+    if (isMidiFile(path)) {
+      setMidiFile(path);
+      return;
+    }
+    setBusy(true);
     try {
-      const params: ImportParams = midiChanged ? { path, ...midi } : { path };
-      const song = await client.request("library.import", params);
-      setImported(song);
-      await refresh();
-      await open(song.id);
+      await showImported(await client.request("library.import", { path }));
     } catch (error) {
       setProblem((error as Error).message);
     } finally {
       setBusy(false);
     }
+  };
+
+  const showImported = async (song: SongSummary) => {
+    setMidiFile(undefined);
+    setImported(song);
+    await refresh();
+    await open(song.id);
   };
 
   const remove = async (song: SongDetails) => {
@@ -69,11 +68,6 @@ export function LibraryScreen({ chooseFile, onPractise }: Props) {
     setDetails(undefined);
     setImported(undefined);
     await refresh();
-  };
-
-  const changeMidi = (change: Partial<MidiOptions>) => {
-    setMidi({ ...midi, ...change });
-    setMidiChanged(true);
   };
 
   const shown = (songs ?? []).filter((song) => song.title.toLowerCase().includes(search.trim().toLowerCase()));
@@ -93,27 +87,6 @@ export function LibraryScreen({ chooseFile, onPractise }: Props) {
           Import…
         </button>
       </div>
-      <details className="midi-options">
-        <summary>MIDI options</summary>
-        <label className="field inline">
-          <span>Snap notes to</span>
-          <select aria-label="Grid" value={midi.grid} onChange={(event) => changeMidi({ grid: Number(event.target.value) })}>
-            {[4, 8, 16, 32].map((grid) => (
-              <option key={grid} value={grid}>
-                1/{grid}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="check">
-          <input type="checkbox" aria-label="Triplets" checked={midi.triplets} onChange={(event) => changeMidi({ triplets: event.target.checked })} />
-          Triplets
-        </label>
-        <label className="field inline">
-          <span>Split hands at</span>
-          <input aria-label="Split hands at" value={midi.splitPoint} onChange={(event) => changeMidi({ splitPoint: event.target.value })} />
-        </label>
-      </details>
       {problem && (
         <p role="alert" className="problem">
           {problem}
@@ -152,7 +125,9 @@ export function LibraryScreen({ chooseFile, onPractise }: Props) {
             </li>
           ))}
         </ul>
-        {details ? <SongView key={details.id} song={details} onDelete={() => void remove(details)} onPractise={() => onPractise(details)} /> : (
+        {midiFile ? (
+          <MidiImport key={midiFile} path={midiFile} onImported={(song) => void showImported(song)} onCancel={() => setMidiFile(undefined)} />
+        ) : details ? <SongView key={details.id} song={details} onDelete={() => void remove(details)} onPractise={() => onPractise(details)} /> : (
           <div className="card muted song-details">Choose a song to see its details.</div>
         )}
       </div>
