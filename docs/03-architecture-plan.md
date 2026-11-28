@@ -461,8 +461,11 @@ Implemented so far (`pp-api`, using Jackson 3):
     xml/<Song title>.musicxml                  the songs, named after their title
     midi/<Song title>.mid                      the original file of each MIDI import
     sheets/                                    for sheet music (v2)
-~/.local/share/piano-player/progress.db        (v1) session results, SQLite
+~/.local/share/piano-player/progress/
+    song-<id>.json, random.json, chords.json   finished sessions, newest last (up to 500 each)
 ```
+
+Progress (`pp-library`, `library.progress`): `ProgressLog` keeps one JSON file per song (`song-<id>.json`) and per exercise (`random.json`, `chords.json`), each a list of `SessionRecord`s: when, what was practised (exercise, song, part, hands, mode, tempo, tempo %, section), the summary (accuracy, wrong keys, timing grades, passes, time) and mistakes per bar. Files are written to a temporary file and moved into place; an unreadable file is renamed to `.bad` and the history starts again; only the newest 500 sessions are kept per file. Names must be plain (`[a-z0-9-]`), so a key can't point outside the folder. JSON rather than SQLite, as decided on 2026-11-28 (NF-7): the data is small, append-mostly and read per song.
 
 Implemented so far (`pp-library`, settings part):
 - `library.settings.Settings` is an immutable value. It holds the input and output device ids, a keyboard range for each device (KEY-4), the last tempo for each follow mode (TMP-7) and a latency offset of ±500 ms (DEV-9). Changes go through `with…` methods.

@@ -6,7 +6,9 @@ module bg.petarh.piano.library {
 
     exports bg.petarh.piano.library.settings;
     exports bg.petarh.piano.library.songs;
+    exports bg.petarh.piano.library.progress;
 
     opens bg.petarh.piano.library.settings to tools.jackson.databind;
     opens bg.petarh.piano.library.songs to tools.jackson.databind;
+    opens bg.petarh.piano.library.progress to tools.jackson.databind;
 }
