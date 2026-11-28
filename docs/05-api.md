@@ -59,7 +59,7 @@ Starts a random-notes or chord session. Only one session runs at a time. Leaving
 | Param | Default | Notes |
 |---|---|---|
 | `input` | required | input device id from `devices.list` |
-| `exercise` | required | `"random"` or `"chords"` |
+| `exercise` | required | `"random"`, `"chords"` or `"song"` |
 | `mode` | `"wait"` | `"wait"` or `"tempo"` |
 | `tempo` | saved for the mode, else 90 | BPM, 20–240 |
 | `key` | `"C"` | e.g. `"Bb"`, `"F#m"` |
@@ -77,8 +77,12 @@ Starts a random-notes or chord session. Only one session runs at a time. Leaving
 | `mixed` | false | random: mixed note values (level 3+) |
 | `chordTypes` | `["maj","min"]` | chords: `maj`, `min`, `dim`, `aug`, `maj7`, `min7`, `dom7` |
 | `inversions` | `[0]` | chords: 0–3 |
+| `songId` | required for songs | song id from `library.list` |
+| `part` | first part | songs: part id from `library.open` |
+| `tempoPercent` | 100 | songs: the song's own tempos, scaled (its tempo changes stay in proportion) |
+| `outOfRange` | `"shift"` | songs: notes outside the keyboard are moved by octaves (`"shift"`) or left out (`"skip"`) |
 
-Result: `{"seed":42,"tempo":90}`.
+Result: `{"seed":42,"tempo":90,"songTempo":100,"notices":[]}`. For songs, `songTempo` is the song's starting tempo, so the UI can show "84 BPM · 84%", and `notices` says how many notes were moved or skipped. Songs use their own time signature for the count-in and metronome, ignore `tempo`, `key`, `range`, `noteValue`, `time`, `notes` and the random/chord fields, and don't change the saved tempo for the mode. `session.adjust` is refused for songs.
 
 ### `session.pause`, `session.resume`, `session.stop`
 No params. Result `null`. Error -32001 if no session is running. Pause and resume are ignored in states where they don't apply. Stop finishes the session and sends `session.summary`.

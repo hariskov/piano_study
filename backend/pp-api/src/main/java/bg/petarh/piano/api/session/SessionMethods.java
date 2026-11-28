@@ -25,12 +25,14 @@ import bg.petarh.piano.midi.input.TimestampSource;
 import bg.petarh.piano.midi.output.MidiOutputPort;
 import bg.petarh.piano.midi.output.OutputConnection;
 import bg.petarh.piano.model.note.Target;
+import bg.petarh.piano.model.score.Score;
 import bg.petarh.piano.model.time.Tempo;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public final class SessionMethods implements AutoCloseable {
 
@@ -64,11 +66,13 @@ public final class SessionMethods implements AutoCloseable {
     private final EventSink events;
     private final SettingsService settings;
     private final DeviceMonitor monitor;
+    private final Function<String, Optional<Score>> songs;
     private Active active;
 
     private SessionMethods(MidiInputPort inputs, MidiOutputPort outputs, TimestampSource clock, EventSink events,
-                           SettingsService settings, DeviceMonitor monitor) {
+                           SettingsService settings, DeviceMonitor monitor, Function<String, Optional<Score>> songs) {
         this.monitor = monitor;
+        this.songs = songs;
         this.inputs = inputs;
         this.outputs = outputs;
         this.clock = clock;
@@ -78,8 +82,8 @@ public final class SessionMethods implements AutoCloseable {
 
     public static SessionMethods register(RpcServer server, MidiInputPort inputs, MidiOutputPort outputs,
                                           TimestampSource clock, EventSink events, SettingsService settings,
-                                          DeviceMonitor monitor) {
-        SessionMethods methods = new SessionMethods(inputs, outputs, clock, events, settings, monitor);
+                                          DeviceMonitor monitor, Function<String, Optional<Score>> songs) {
+        SessionMethods methods = new SessionMethods(inputs, outputs, clock, events, settings, monitor, songs);
         server.register("session.start", SessionStartParams.class, SessionStarted.class, methods::start);
         server.register("session.pause", Void.class, Void.class, ignored -> methods.control(Practice::pause));
         server.register("session.resume", Void.class, Void.class, ignored -> methods.control(Practice::resume));
@@ -99,7 +103,7 @@ public final class SessionMethods implements AutoCloseable {
             throw new RpcException(RpcException.SESSION_ERROR, "A session is already running; stop it first");
         }
         Settings saved = settings.current();
-        PracticePlan plan = PracticePlan.from(params, saved);
+        PracticePlan plan = "song".equals(params.exercise()) ? songPlan(params, saved) : PracticePlan.from(params, saved);
         monitor.stop();
         LatencyOffset latency = LatencyOffset.ofMillis(saved.latencyOffsetMs());
         Optional<OutputConnection> metronome = Optional.ofNullable(params.metronome()).map(this::openOutput);
@@ -119,9 +123,10 @@ public final class SessionMethods implements AutoCloseable {
         session.input = openInput(params.input(), listener, metronome);
         active = session;
         int bpm = plan.timing().tempo().bpm();
-        settings.update(current -> current.withInput(params.input()).withTempo(plan.modeKey(), bpm));
+        settings.update(current -> plan.isSong() ? current.withInput(params.input())
+                : current.withInput(params.input()).withTempo(plan.modeKey(), bpm));
         practice.start().whenComplete((ignored, failure) -> finished(session, results));
-        return new SessionStarted(plan.seed(), bpm);
+        return new SessionStarted(plan.seed(), bpm, plan.songTempo(), plan.notices());
     }
 
     private Object adjust(AdjustParams change) {
@@ -132,12 +137,23 @@ public final class SessionMethods implements AutoCloseable {
         return null;
     }
 
+    private PracticePlan songPlan(SessionStartParams params, Settings saved) {
+        if (params.songId() == null) {
+            throw new IllegalArgumentException("songId is required for a song session");
+        }
+        Score song = songs.apply(params.songId())
+                .orElseThrow(() -> new RpcException(RpcException.NOT_FOUND, "No song with id " + params.songId()));
+        return PracticePlan.fromSong(params, saved, song);
+    }
+
     private Object changeTempo(TempoParams params) {
         Tempo tempo = Tempo.of(params.bpm());
         Active session = currentSession().orElseThrow(
                 () -> new RpcException(RpcException.SESSION_ERROR, "No session is running"));
         session.practice.changeTempo(tempo);
-        settings.update(current -> current.withTempo(session.modeKey, tempo.bpm()));
+        if (!session.plan.isSong()) {
+            settings.update(current -> current.withTempo(session.modeKey, tempo.bpm()));
+        }
         return null;
     }
 

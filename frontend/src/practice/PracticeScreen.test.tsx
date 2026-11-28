@@ -10,7 +10,7 @@ const PARAMS: SessionStartParams = { input: "virtual:keyboard", exercise: "rando
 
 function backend(): FakeBackend {
   return new FakeBackend()
-    .answer("session.start", () => ({ seed: 42, tempo: 80 }))
+    .answer("session.start", () => ({ seed: 42, tempo: 80, notices: [] }))
     .answer("settings.get", () => ({ input: "virtual:keyboard", keyboards: {}, tempos: {}, latencyOffsetMs: 0 }));
 }
 

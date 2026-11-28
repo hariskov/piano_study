@@ -96,11 +96,17 @@ export interface SessionStartParams {
   mixed?: boolean;
   chordTypes?: string[];
   inversions?: number[];
+  songId?: string;
+  part?: string;
+  outOfRange?: string;
+  tempoPercent?: number;
 }
 
 export interface SessionStarted {
   seed: number;
   tempo: number;
+  songTempo?: number;
+  notices: string[];
 }
 
 export interface SettingsUpdate {

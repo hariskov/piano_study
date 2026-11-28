@@ -1,0 +1,138 @@
+package bg.petarh.piano.api.session;
+
+import bg.petarh.piano.api.PianoApi;
+import bg.petarh.piano.api.rpc.RpcServer;
+import bg.petarh.piano.api.settings.InMemorySettings;
+import bg.petarh.piano.library.songs.SongLibrary;
+import bg.petarh.piano.midi.value.Velocity;
+import bg.petarh.piano.midi.virtual.input.VirtualKeyboard;
+import bg.petarh.piano.midi.virtual.output.SilentOutput;
+import bg.petarh.piano.model.pitch.Pitch;
+import bg.petarh.piano.model.score.Part;
+import bg.petarh.piano.model.score.Score;
+import bg.petarh.piano.model.score.ScoreNote;
+import bg.petarh.piano.model.score.Spelling;
+import bg.petarh.piano.model.score.Tie;
+import bg.petarh.piano.model.time.Fraction;
+import bg.petarh.piano.model.time.Tempo;
+import bg.petarh.piano.model.time.TimeSignature;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@Timeout(10)
+class SongSessionTest {
+
+    private static final JsonMapper JSON = JsonMapper.builder().build();
+
+    @TempDir
+    Path folder;
+
+    private final VirtualKeyboard keyboard = VirtualKeyboard.withClock(System::nanoTime);
+    private final RpcServer server = new RpcServer();
+    private final List<JsonNode> events = new CopyOnWriteArrayList<>();
+    private PianoApi api;
+    private String songId;
+
+    @BeforeEach
+    void createApi() {
+        SongLibrary library = new SongLibrary(folder.resolve("musicFiles"), () -> Instant.EPOCH);
+        Score song = Score.builder("Duet").length(Fraction.whole(1))
+                .tempo(Fraction.ZERO, Tempo.of(100))
+                .timeSignature(Fraction.ZERO, TimeSignature.parse("3/4"))
+                .part(new Part("P1", "Piano", 2, List.of(
+                        note("E5", 0, 1), note("G5", 1, 1), note("C3", 0, 2), note("C8", 2, 1))))
+                .part(new Part("P2", "Flute", 1, List.of(note("C6", 0, 1))))
+                .build();
+        songId = library.add(song, "duet.musicxml", "MusicXML", List.of()).id();
+        api = PianoApi.create(server, keyboard.port(), SilentOutput.create().port(), System::nanoTime,
+                (method, params) -> events.add(JSON.readTree(server.notification(method, params))),
+                new InMemorySettings(), keyboard, library);
+    }
+
+    @AfterEach
+    void closeApi() {
+        api.close();
+    }
+
+    @Test
+    void playsTheChosenPartAndHandOfASongToTheEnd() {
+        JsonNode started = call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\""
+                + songId + "\",\"part\":\"P1\",\"hands\":\"right\",\"keyboard\":\"61\",\"countIn\":0}").get("result");
+
+        assertThat(started.get("songTempo").asInt()).isEqualTo(100);
+        assertThat(started.get("tempo").asInt()).isEqualTo(100);
+        assertThat(started.get("notices").toString()).contains("1 note outside your keyboard was moved by an octave");
+        for (int i = 1; i <= 3; i++) {
+            JsonNode target = await("session.target", i);
+            Pitch pitch = Pitch.parse(target.at("/params/notes/0/pitch").asString());
+            keyboard.press(pitch, Velocity.of(64));
+            keyboard.release(pitch);
+        }
+        assertThat(await("session.summary", 1).at("/params/completedTargets").asInt()).isEqualTo(3);
+        assertThat(events).filteredOn(event -> event.get("method").asString().equals("session.target"))
+                .extracting(event -> event.at("/params/notes/0/pitch").asString())
+                .containsExactly("E5", "G5", "C7");
+    }
+
+    @Test
+    void scalesTheSongsTempo() {
+        JsonNode started = call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\""
+                + songId + "\",\"tempoPercent\":50,\"countIn\":0}").get("result");
+
+        assertThat(started.get("tempo").asInt()).isEqualTo(50);
+        assertThat(started.get("songTempo").asInt()).isEqualTo(100);
+    }
+
+    @Test
+    void skipsNotesOutsideTheKeyboardWhenAsked() {
+        JsonNode started = call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\""
+                + songId + "\",\"keyboard\":\"61\",\"outOfRange\":\"skip\",\"countIn\":0}").get("result");
+
+        assertThat(started.get("notices").toString()).contains("1 note outside your keyboard was skipped");
+    }
+
+    @Test
+    void refusesUnknownSongsPartsAndAdjusting() {
+        assertThat(call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\"nope\"}")
+                .at("/error/code").asInt()).isEqualTo(-32004);
+        assertThat(call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\"" + songId
+                + "\",\"part\":\"P2\",\"hands\":\"left\"}").at("/error/message").asString()).contains("Flute");
+
+        call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\"" + songId
+                + "\",\"countIn\":0}");
+        assertThat(call("session.adjust", "{\"hands\":\"left\"}").at("/error/code").asInt()).isEqualTo(-32602);
+    }
+
+    private JsonNode call(String method, String params) {
+        String request = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"" + method + "\",\"params\":" + params + "}";
+        return JSON.readTree(server.handle(request).orElseThrow());
+    }
+
+    private JsonNode await(String method, int occurrence) {
+        while (true) {
+            List<JsonNode> matching = events.stream()
+                    .filter(event -> event.get("method").asString().equals(method)).toList();
+            if (matching.size() >= occurrence) {
+                return matching.get(occurrence - 1);
+            }
+            Thread.onSpinWait();
+        }
+    }
+
+    private static ScoreNote note(String pitch, int quarter, int staff) {
+        return new ScoreNote(Spelling.of(Pitch.parse(pitch), false), Fraction.of(quarter, 4), Fraction.of(1, 4), staff, 1,
+                Tie.NONE);
+    }
+}
