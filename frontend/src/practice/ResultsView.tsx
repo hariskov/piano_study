@@ -1,3 +1,4 @@
+import { Icon } from "../icons/Icon";
 import type { PastSession, SummaryEvent } from "../api/protocol";
 import { previousOf, troubleBars } from "../progress/history";
 
@@ -33,7 +34,10 @@ export function ResultsView({ summary, history = [], onAgain, onChangeSettings }
       ];
   return (
     <section className="screen results">
-      <h2>Well played</h2>
+      <h2 className="with-icon">
+        <Icon name="star" />
+        Well played
+      </h2>
       <div className="card results-card">
         <div className="accuracy">
           <span aria-label="Accuracy">{summary.accuracyPercent}%</span>
@@ -71,9 +75,11 @@ export function ResultsView({ summary, history = [], onAgain, onChangeSettings }
       )}
       <div className="actions">
         <button type="button" onClick={onChangeSettings}>
+          <Icon name="settings" />
           Change settings
         </button>
         <button type="button" className="primary big" onClick={onAgain}>
+          <Icon name="again" />
           Practise again
         </button>
       </div>

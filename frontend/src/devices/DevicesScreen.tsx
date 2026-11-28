@@ -1,3 +1,4 @@
+import { Icon } from "../icons/Icon";
 import { useEffect, useRef, useState } from "react";
 import { useBackend } from "../app/backendContext";
 import type { DeviceList, SettingsView } from "../api/protocol";
@@ -136,6 +137,7 @@ export function DevicesScreen() {
         <fieldset className="card">
           <legend>Piano (input)</legend>
           <button type="button" className="rescan" disabled={rescanning} onClick={() => void rescan()}>
+            <Icon name="again" />
             {rescanning ? "Looking…" : "Rescan"}
           </button>
           {devices.inputs.length === 0 && (
@@ -188,6 +190,7 @@ export function DevicesScreen() {
           </label>
           <div className="field inline">
             <button type="button" onClick={() => setDetection(detection ? undefined : START_DETECTION)}>
+              <Icon name={detection ? "cancel" : "wand"} />
               {detection ? "Cancel" : "Detect from the piano"}
             </button>
             {detection?.step === "lowest" && <span className="prompt">Press the lowest key on your piano.</span>}
@@ -204,6 +207,7 @@ export function DevicesScreen() {
                 onKeyDown={(event) => event.key === "Enter" && applyCustomRange()}
               />
               <button type="button" onClick={applyCustomRange}>
+                <Icon name="ok" />
                 Use range
               </button>
               {rangeProblem && <span className="problem">{rangeProblem}</span>}

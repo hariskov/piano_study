@@ -1,3 +1,4 @@
+import { Icon } from "../icons/Icon";
 import { useEffect, useState } from "react";
 import { useBackend } from "../app/backendContext";
 import type { SessionStartParams, SettingsView, SongDetails } from "../api/protocol";
@@ -227,9 +228,11 @@ export function SongSetup({ song, onStart, onBack }: Props) {
       </div>
       <div className="actions">
         <button type="button" onClick={onBack}>
+          <Icon name="back" />
           Back
         </button>
         <button type="button" className="primary big" disabled={settings.input === undefined} onClick={start}>
+          <Icon name="play" />
           Start
         </button>
       </div>

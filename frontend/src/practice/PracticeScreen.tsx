@@ -1,3 +1,4 @@
+import { Icon } from "../icons/Icon";
 import { useEffect, useReducer, useState } from "react";
 import { useBackend } from "../app/backendContext";
 import type { AdjustParams, ApiEvents, PastSession, SessionStartParams, TargetEvent } from "../api/protocol";
@@ -153,6 +154,7 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
           {problem}
         </p>
         <button type="button" onClick={onChangeSettings}>
+          <Icon name="settings" />
           Change settings
         </button>
       </section>
@@ -198,14 +200,17 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
         <div className="practice-buttons">
           {practice.state === "PAUSED" ? (
             <button type="button" className="primary" onClick={() => void client.request("session.resume", {})}>
+              <Icon name="play" />
               Resume
             </button>
           ) : (
             <button type="button" onClick={() => void client.request("session.pause", {})}>
+              <Icon name="pause" />
               Pause
             </button>
           )}
           <button type="button" onClick={() => void client.request("session.stop", {})}>
+            <Icon name="stop" />
             Stop
           </button>
         </div>

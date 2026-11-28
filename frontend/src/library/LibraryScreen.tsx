@@ -1,3 +1,4 @@
+import { Icon } from "../icons/Icon";
 import { useCallback, useEffect, useState } from "react";
 import { useBackend } from "../app/backendContext";
 import { SheetMusic } from "../sheet/SheetMusic";
@@ -84,6 +85,7 @@ export function LibraryScreen({ chooseFile, onPractise }: Props) {
           onChange={(event) => setSearch(event.target.value)}
         />
         <button type="button" className="primary" disabled={busy} onClick={() => void importSong()}>
+          <Icon name="import" />
           Import…
         </button>
       </div>
@@ -215,14 +217,17 @@ function SongView({ song, onDelete, onPractise }: { song: SongDetails; onDelete:
       )}
       <div className="actions">
         <button type="button" onClick={onDelete}>
+          <Icon name="trash" />
           Delete
         </button>
         {xml === undefined && (
           <button type="button" onClick={showSheet}>
+            <Icon name="sheet" />
             Show sheet music
           </button>
         )}
         <button type="button" className="primary" onClick={onPractise}>
+          <Icon name="play" />
           Practise
         </button>
       </div>

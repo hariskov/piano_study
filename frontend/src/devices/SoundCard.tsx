@@ -1,3 +1,4 @@
+import { Icon } from "../icons/Icon";
 import type { SettingsUpdate, SettingsView } from "../api/protocol";
 import { INSTRUMENT_GROUPS } from "./instruments";
 
@@ -38,6 +39,7 @@ export function SoundCard({ settings, onSave, onTry }: Props) {
       </label>
       <div className="sound-try">
         <button type="button" disabled={noOutput} onClick={() => onTry(settings.instrument)}>
+          <Icon name="speaker" />
           Try it
         </button>
         <small className="muted">

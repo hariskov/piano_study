@@ -1,3 +1,4 @@
+import { Icon } from "../icons/Icon";
 import { useEffect, useState } from "react";
 import { useBackend } from "../app/backendContext";
 import type { ImportParams, MidiPreview, SongSummary } from "../api/protocol";
@@ -158,9 +159,11 @@ export function MidiImport({ path, onImported, onCancel }: Props) {
       )}
       <div className="actions">
         <button type="button" onClick={onCancel}>
+          <Icon name="cancel" />
           Cancel
         </button>
         <button type="button" className="primary" disabled={busy || included === 0} onClick={() => void importFile()}>
+          <Icon name="import" />
           Import {included} {included === 1 ? "part" : "parts"}
         </button>
       </div>
