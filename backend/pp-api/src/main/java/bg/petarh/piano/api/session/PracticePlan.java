@@ -60,6 +60,7 @@ final class PracticePlan {
     private final Integer songTempo;
     private final List<String> notices;
     private final List<NoteEvent> accompaniment;
+    private final List<NoteEvent> songNotes;
     private volatile SessionStartParams params;
 
     private PracticePlan(SessionStartParams params, Settings settings, SessionTiming timing, FollowMode mode,
@@ -77,6 +78,7 @@ final class PracticePlan {
         this.songTempo = null;
         this.notices = List.of();
         this.accompaniment = List.of();
+        this.songNotes = List.of();
     }
 
     private PracticePlan(SessionStartParams params, Settings settings, SessionTiming timing, FollowMode mode,
@@ -92,13 +94,16 @@ final class PracticePlan {
         this.songTempo = song.tempoMap().tempoAt(Fraction.ZERO).bpm();
         this.notices = List.copyOf(notices);
         this.accompaniment = selection.accompaniment();
+        List<NoteEvent> whole = new ArrayList<>(selection.played());
+        whole.addAll(selection.accompaniment());
+        this.songNotes = List.copyOf(whole);
     }
 
     static PracticePlan fromSong(SessionStartParams params, Settings settings, Score song) {
         if (params.input() == null) {
             throw new IllegalArgumentException("input is required: the MIDI input device id");
         }
-        FollowMode mode = FollowMode.valueOf(or(params.mode(), "wait").toUpperCase(Locale.ROOT));
+        FollowMode mode = followMode(params.mode());
         int percent = or(params.tempoPercent(), FULL_TEMPO_PERCENT);
         if (percent < 1) {
             throw new IllegalArgumentException("tempoPercent must be positive: " + percent);
@@ -144,15 +149,24 @@ final class PracticePlan {
         return notices;
     }
 
-    List<NoteEvent> accompaniment() {
-        return accompaniment;
+    List<NoteEvent> playbackNotes() {
+        return mode == FollowMode.LISTEN ? songNotes : accompaniment;
+    }
+
+    private static FollowMode followMode(String mode) {
+        String name = or(mode, "wait").toUpperCase(Locale.ROOT).replace('-', '_');
+        try {
+            return FollowMode.valueOf(name);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("mode must be wait, tempo, listen or play-along: " + mode);
+        }
     }
 
     static PracticePlan from(SessionStartParams params, Settings settings) {
         if (params.input() == null) {
             throw new IllegalArgumentException("input is required: the MIDI input device id");
         }
-        FollowMode mode = FollowMode.valueOf(or(params.mode(), "wait").toUpperCase(Locale.ROOT));
+        FollowMode mode = followMode(params.mode());
         int bpm = params.tempo() != null ? params.tempo() : settings.tempoFor(modeKey(mode)).orElse(DEFAULT_TEMPO);
         SessionTiming timing = new SessionTiming(Tempo.of(bpm),
                 TimeSignature.parse(or(params.time(), "4/4")), or(params.countIn(), DEFAULT_COUNT_IN_BARS));

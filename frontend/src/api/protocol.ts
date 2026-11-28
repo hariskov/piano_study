@@ -100,6 +100,7 @@ export interface SessionStartParams {
   part?: string;
   outOfRange?: string;
   tempoPercent?: number;
+  playback?: string;
 }
 
 export interface SessionStarted {

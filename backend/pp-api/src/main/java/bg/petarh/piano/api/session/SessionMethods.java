@@ -11,7 +11,10 @@ import bg.petarh.piano.api.session.Messages.SessionStarted;
 import bg.petarh.piano.api.session.Messages.SummaryEvent;
 import bg.petarh.piano.api.session.Messages.TempoParams;
 import bg.petarh.piano.api.settings.SettingsService;
+import bg.petarh.piano.engine.evaluation.FollowMode;
 import bg.petarh.piano.engine.metronome.MidiClicks;
+import bg.petarh.piano.engine.playback.MidiNotes;
+import bg.petarh.piano.engine.playback.Playback;
 import bg.petarh.piano.engine.run.Practice;
 import bg.petarh.piano.engine.run.Results;
 import bg.petarh.piano.engine.run.SessionListener;
@@ -28,7 +31,10 @@ import bg.petarh.piano.model.note.Target;
 import bg.petarh.piano.model.score.Score;
 import bg.petarh.piano.model.time.Tempo;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -40,19 +46,19 @@ public final class SessionMethods implements AutoCloseable {
 
         private final Practice practice;
         private final String inputId;
-        private final Optional<OutputConnection> metronome;
+        private final List<OutputConnection> outputs;
         private final String modeKey;
         private final PracticePlan plan;
         private final InputListener listener;
         private InputConnection input;
         private boolean inputLost;
 
-        private Active(Practice practice, String inputId, Optional<OutputConnection> metronome, PracticePlan plan,
+        private Active(Practice practice, String inputId, List<OutputConnection> outputs, PracticePlan plan,
                        InputListener listener) {
             this.practice = practice;
             this.plan = plan;
             this.inputId = inputId;
-            this.metronome = metronome;
+            this.outputs = outputs;
             this.modeKey = plan.modeKey();
             this.listener = listener;
         }
@@ -106,21 +112,24 @@ public final class SessionMethods implements AutoCloseable {
         PracticePlan plan = "song".equals(params.exercise()) ? songPlan(params, saved) : PracticePlan.from(params, saved);
         monitor.stop();
         LatencyOffset latency = LatencyOffset.ofMillis(saved.latencyOffsetMs());
-        Optional<OutputConnection> metronome = Optional.ofNullable(params.metronome()).map(this::openOutput);
-        Optional<MidiClicks> clicks = metronome.map(MidiClicks::new);
+        Map<String, OutputConnection> outputs = openOutputs(params, plan);
+        Optional<MidiClicks> clicks = Optional.ofNullable(params.metronome()).map(outputs::get).map(MidiClicks::new);
+        Optional<Playback> playback = Optional.ofNullable(params.playback()).filter(id -> plan.isSong())
+                .map(id -> new Playback(plan.playbackNotes(), new MidiNotes(outputs.get(id)), plan.mode() == FollowMode.WAIT));
         Results results = new Results();
         Practice practice = Practice.prepare(plan.targets(), plan.timing(), plan.mode(), clock::nanos,
                 SessionListener.all(List.of(new SessionEvents(events, plan::nameOf), results)),
                 Optional.of(accent -> {
                     Messages.BEAT.send(events, new BeatEvent(accent));
                     clicks.ifPresent(output -> output.click(accent));
-                }));
+                }), playback);
         InputListener listener = event -> {
             InputMessage.EVENT.send(events, InputMessage.of(event));
             practice.input().onEvent(latency.apply(event));
         };
-        Active session = new Active(practice, params.input(), metronome, plan, listener);
-        session.input = openInput(params.input(), listener, metronome);
+        List<OutputConnection> opened = List.copyOf(outputs.values());
+        Active session = new Active(practice, params.input(), opened, plan, listener);
+        session.input = openInput(params.input(), listener, opened);
         active = session;
         int bpm = plan.timing().tempo().bpm();
         settings.update(current -> plan.isSong() ? current.withInput(params.input())
@@ -201,7 +210,7 @@ public final class SessionMethods implements AutoCloseable {
                 active = null;
             }
         }
-        session.metronome.ifPresent(OutputConnection::close);
+        session.outputs.forEach(OutputConnection::close);
         Messages.SUMMARY.send(events, SummaryEvent.of(results.summary(), session.practice.elapsedNanos()));
     }
 
@@ -213,13 +222,31 @@ public final class SessionMethods implements AutoCloseable {
         }
     }
 
-    private InputConnection openInput(String id, InputListener listener, Optional<OutputConnection> metronome) {
+    private InputConnection openInput(String id, InputListener listener, List<OutputConnection> outputs) {
         try {
             return inputs.open(DeviceId.of(id), listener);
         } catch (DeviceUnavailableException e) {
-            metronome.ifPresent(OutputConnection::close);
+            outputs.forEach(OutputConnection::close);
             throw new RpcException(RpcException.DEVICE_ERROR, e.getMessage());
         }
+    }
+
+    private Map<String, OutputConnection> openOutputs(SessionStartParams params, PracticePlan plan) {
+        Map<String, OutputConnection> outputs = new LinkedHashMap<>();
+        List<String> wanted = new ArrayList<>();
+        Optional.ofNullable(params.metronome()).ifPresent(wanted::add);
+        Optional.ofNullable(params.playback()).filter(id -> plan.isSong()).ifPresent(wanted::add);
+        try {
+            for (String id : wanted) {
+                if (!outputs.containsKey(id)) {
+                    outputs.put(id, openOutput(id));
+                }
+            }
+        } catch (RuntimeException e) {
+            outputs.values().forEach(OutputConnection::close);
+            throw e;
+        }
+        return outputs;
     }
 
     private OutputConnection openOutput(String id) {

@@ -88,4 +88,27 @@ describe("SongSetup", () => {
 
     expect(onStart).toHaveBeenCalledWith(expect.objectContaining({ outOfRange: "skip" }));
   });
+
+  it("plays the other parts through the output unless turned off", async () => {
+    const onStart = show();
+    await screen.findByText("Sonatina");
+
+    fireEvent.click(screen.getByRole("button", { name: "Start" }));
+    expect(onStart).toHaveBeenLastCalledWith(expect.objectContaining({ playback: "jdk:Gervill" }));
+
+    fireEvent.click(screen.getByLabelText("Play the other parts"));
+    fireEvent.click(screen.getByRole("button", { name: "Start" }));
+    expect(onStart.mock.lastCall?.[0].playback).toBeUndefined();
+  });
+
+  it("offers listening and playing along", async () => {
+    const onStart = show();
+    await screen.findByText("Sonatina");
+
+    fireEvent.change(screen.getByLabelText("Follow mode"), { target: { value: "listen" } });
+    fireEvent.click(screen.getByRole("button", { name: "Start" }));
+
+    expect(onStart).toHaveBeenCalledWith(expect.objectContaining({ mode: "listen", playback: "jdk:Gervill" }));
+    expect(screen.getByRole("option", { name: "Play along (no scoring)" })).toBeTruthy();
+  });
 });
