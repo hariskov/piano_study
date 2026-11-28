@@ -23,6 +23,7 @@ import bg.petarh.piano.model.chord.Inversion;
 import bg.petarh.piano.model.key.KeySignature;
 import bg.petarh.piano.model.keyboard.KeyboardRange;
 import bg.petarh.piano.model.note.Hand;
+import bg.petarh.piano.midi.value.Velocity;
 import bg.petarh.piano.model.note.NoteEvent;
 import bg.petarh.piano.model.note.Target;
 import bg.petarh.piano.model.note.Targets;
@@ -48,6 +49,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 final class PracticePlan {
+
+    private static final int DEFAULT_PLAYBACK_VOLUME = 57;
 
     private static final int DEFAULT_TEMPO = 90;
     private static final int DEFAULT_NOTES = 50;
@@ -136,7 +139,8 @@ final class PracticePlan {
                 ? KeyboardRange.parseKeyboard(params.keyboard())
                 : settings.keyboardFor(params.input()).orElse(KeyboardRange.fullPiano());
         OutOfRange outOfRange = "skip".equalsIgnoreCase(params.outOfRange()) ? OutOfRange.SKIP : OutOfRange.SHIFT_OCTAVE;
-        SongSelection selection = SongSelection.of(song, partId, hands(or(params.hands(), "right")), keyboard, outOfRange);
+        SongSelection selection = SongSelection.of(song, partId, hands(or(params.hands(), "right")), keyboard, outOfRange,
+                or(params.playOtherHand(), true));
         SongSection section = new SongSection(or(params.fromBar(), 1), or(params.toBar(), song.measureCount()));
         SectionLoop loop = section.loop(song, selection, or(params.repeats(), 1));
         Fraction sectionStart = song.measureStarts().get(section.firstBar() - 1);
@@ -204,6 +208,15 @@ final class PracticePlan {
 
     List<String> notices() {
         return notices;
+    }
+
+    // 57 % gives velocity 72, which playback used before its volume could be set.
+    Velocity playbackVelocity() {
+        int volume = or(params.playbackVolume(), DEFAULT_PLAYBACK_VOLUME);
+        if (volume < 1 || volume > 100) {
+            throw new IllegalArgumentException("playbackVolume must be 1-100: " + volume);
+        }
+        return Velocity.of((int) Math.max(1, Math.round(127 * volume / 100.0)));
     }
 
     List<NoteEvent> playbackNotes() {

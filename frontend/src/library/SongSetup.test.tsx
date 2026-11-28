@@ -103,6 +103,36 @@ describe("SongSetup", () => {
     expect(onStart.mock.lastCall?.[0].playback).toBeUndefined();
   });
 
+  it("leaves the other hand silent when asked", async () => {
+    const onStart = show();
+    await screen.findByText("Sonatina");
+    expect((screen.getByLabelText("Play the other hand") as HTMLInputElement).checked).toBe(true);
+
+    fireEvent.click(screen.getByLabelText("Play the other hand"));
+    fireEvent.click(screen.getByRole("button", { name: "Start" }));
+
+    expect(onStart).toHaveBeenLastCalledWith(expect.objectContaining({ playOtherHand: false }));
+  });
+
+  it("has no other hand to play when both hands are yours", async () => {
+    show();
+    await screen.findByText("Sonatina");
+
+    fireEvent.change(screen.getByLabelText("Hands"), { target: { value: "both" } });
+
+    expect(screen.queryByLabelText("Play the other hand")).toBeNull();
+  });
+
+  it("sets how loud the accompaniment plays", async () => {
+    const onStart = show();
+    await screen.findByText("Sonatina");
+
+    fireEvent.change(screen.getByLabelText("Accompaniment volume"), { target: { value: "90" } });
+    fireEvent.click(screen.getByRole("button", { name: "Start" }));
+
+    expect(onStart).toHaveBeenLastCalledWith(expect.objectContaining({ playback: "jdk:Gervill", playbackVolume: 90 }));
+  });
+
   it("offers listening and playing along", async () => {
     const onStart = show();
     await screen.findByText("Sonatina");

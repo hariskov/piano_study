@@ -9,17 +9,23 @@ import bg.petarh.piano.model.pitch.Pitch;
 public final class MidiNotes implements NoteOutput {
 
     private static final MidiChannel ACCOMPANIMENT = MidiChannel.of(1);
-    private static final Velocity VELOCITY = Velocity.of(72);
+    private static final Velocity DEFAULT_VELOCITY = Velocity.of(72);
 
     private final OutputConnection output;
+    private final Velocity velocity;
 
     public MidiNotes(OutputConnection output) {
+        this(output, DEFAULT_VELOCITY);
+    }
+
+    public MidiNotes(OutputConnection output, Velocity velocity) {
         this.output = output;
+        this.velocity = velocity;
     }
 
     @Override
     public void noteOn(Pitch pitch) {
-        output.send(new OutputEvent.NoteOn(pitch, VELOCITY, ACCOMPANIMENT));
+        output.send(new OutputEvent.NoteOn(pitch, velocity, ACCOMPANIMENT));
     }
 
     @Override

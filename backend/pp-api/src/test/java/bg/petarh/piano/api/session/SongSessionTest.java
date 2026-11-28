@@ -125,6 +125,29 @@ class SongSessionTest {
     }
 
     @Test
+    void leavesTheOtherHandToYouAndPlaysAsLoudlyAsAsked() {
+        call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\"" + songId
+                + "\",\"mode\":\"tempo\",\"tempoPercent\":240,\"countIn\":0,\"playback\":\"virtual:silent\","
+                + "\"playOtherHand\":false,\"playbackVolume\":100}");
+
+        await("session.summary", 1);
+
+        List<OutputEvent.NoteOn> played = silent.sentEvents().stream()
+                .filter(event -> event instanceof OutputEvent.NoteOn on && on.channel().equals(MidiChannel.of(1)))
+                .map(OutputEvent.NoteOn.class::cast).toList();
+        assertThat(played).extracting(on -> on.pitch().name()).contains("C6").doesNotContain("C3", "E5", "G5");
+        assertThat(played).extracting(OutputEvent.NoteOn::velocity).containsOnly(Velocity.of(127));
+    }
+
+    @Test
+    void refusesAPlaybackVolumeOutsideOneToAHundred() {
+        JsonNode error = call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\""
+                + songId + "\",\"playback\":\"virtual:silent\",\"playbackVolume\":0}").get("error");
+
+        assertThat(error.get("code").asInt()).isEqualTo(-32602);
+    }
+
+    @Test
     void listenPlaysTheWholeSongAndEndsOnItsOwn() {
         call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\"" + songId
                 + "\",\"mode\":\"listen\",\"tempoPercent\":240,\"countIn\":0,\"playback\":\"virtual:silent\"}");
