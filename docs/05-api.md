@@ -64,6 +64,11 @@ No params. Result: `{"input":"jdk:Piano","output":"jdk:Gervill","keyboards":{"jd
 ### `settings.update`
 Params: any of `input`, `output`, `keyboards` (device id → preset size or range), `tempos` (`"wait"`/`"tempo"` → BPM), `latencyOffsetMs` (−500…500), `instrument` (0–127), `keySound`. Only the given fields change, and the result is saved straight away. Result: the updated settings, as in `settings.get`. A value that can't be used gives -32602, and nothing is saved.
 
+### `sound.test`
+Params: optional `instrument` (0–127; default the saved one). Plays a short phrase (C4 E4 G4 C5, then the chord) in that instrument on the saved output, on channel 1, and returns `null` straight away while it plays. -32002 when no output is saved or it can't be opened.
+
+Your own keys: when `keySound` is on and an output is saved, the keys of the monitored input (`devices.monitor`) and of a running session are played through that output on channel 1, after a program change to the saved `instrument`. Playback uses channel 2 and the metronome channel 10.
+
 ### `session.start`
 Starts a random-notes or chord session. Only one session runs at a time. Leaving out `tempo` uses the saved tempo for the mode, and leaving out `keyboard` uses the saved keyboard of the input device. A started session saves its input and its tempo for its mode (DEV-4, TMP-7). Key press times are moved earlier by the saved latency offset before scoring (DEV-9).
 
