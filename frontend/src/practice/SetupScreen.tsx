@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useBackend } from "../app/backendContext";
 import type { SessionStartParams, SettingsView } from "../api/protocol";
 import { TempoControl } from "../tempo/TempoControl";
-import { AccidentalsCheck, ChordTypeChecks, HandsSelect, LevelSelect, MixedCheck } from "./exerciseControls";
+import { AccidentalsCheck, ChordLabelSelect, ChordTypeChecks, HandsSelect, LevelSelect, MixedCheck } from "./exerciseControls";
 import { defaultSetup, savedTempo, toStartParams, type Mode, type Setup } from "./setupForm";
 
 interface Props {
@@ -154,6 +154,7 @@ export function SetupScreen({ onStart, onChooseDevice, previous }: Props) {
         {!random && (
           <div className="card">
             <ChordTypeChecks value={setup.chordTypes} onChange={(chordTypes) => change({ chordTypes })} />
+            <ChordLabelSelect value={setup.chordLabels} onChange={(chordLabels) => change({ chordLabels })} />
             <fieldset className="plain">
               <legend>Inversions</legend>
               {INVERSIONS.map((name, inversion) => (
