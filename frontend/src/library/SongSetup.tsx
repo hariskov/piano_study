@@ -16,6 +16,8 @@ function clamp(value: number, lowest: number, highest: number): number {
 }
 const FASTEST_PERCENT = 150;
 
+const DEFAULT_VOLUME = 60;
+
 export function SongSetup({ song, onStart, onBack }: Props) {
   const client = useBackend();
   const [settings, setSettings] = useState<SettingsView>();
@@ -27,6 +29,8 @@ export function SongSetup({ song, onStart, onBack }: Props) {
   const [metronome, setMetronome] = useState(true);
   const [outOfRange, setOutOfRange] = useState("shift");
   const [accompany, setAccompany] = useState(true);
+  const [otherHand, setOtherHand] = useState(true);
+  const [volume, setVolume] = useState(DEFAULT_VOLUME);
   const [fromBar, setFromBar] = useState(1);
   const [toBar, setToBar] = useState(song.measureCount);
   const [repeats, setRepeats] = useState(1);
@@ -69,6 +73,10 @@ export function SongSetup({ song, onStart, onBack }: Props) {
     }
     if ((accompany || mode === "listen") && settings.output) {
       params.playback = settings.output;
+      params.playbackVolume = volume;
+      if (!otherHand) {
+        params.playOtherHand = false;
+      }
     }
     onStart(params);
   };
@@ -141,6 +149,34 @@ export function SongSetup({ song, onStart, onBack }: Props) {
               onChange={(event) => setAccompany(event.target.checked)}
             />
             Play the other parts
+          </label>
+          {twoStaves && hands !== "both" && (
+            <label className="check">
+              <input
+                type="checkbox"
+                aria-label="Play the other hand"
+                checked={otherHand && accompany && settings.output !== undefined}
+                disabled={settings.output === undefined || !accompany || mode === "listen"}
+                onChange={(event) => setOtherHand(event.target.checked)}
+              />
+              Play the other hand
+            </label>
+          )}
+          <label className="field">
+            <span>Accompaniment volume</span>
+            <span className="inline">
+              <input
+                type="range"
+                aria-label="Accompaniment volume"
+                min={10}
+                max={100}
+                step={5}
+                value={volume}
+                disabled={settings.output === undefined || (!accompany && mode !== "listen")}
+                onChange={(event) => setVolume(Number(event.target.value))}
+              />
+              <span className="muted">{volume}%</span>
+            </span>
           </label>
         </div>
         <div className="card">

@@ -29,14 +29,16 @@ public record SessionStartParams(
         String playback,
         Integer fromBar,
         Integer toBar,
-        Integer repeats) {
+        Integer repeats,
+        Boolean playOtherHand,
+        Integer playbackVolume) {
 
     SessionStartParams adjustedBy(AdjustParams change) {
         return new SessionStartParams(input, exercise, mode, tempo, key, or(change.hands(), hands), range, keyboard,
                 noteValue, time, notes, countIn, seed, metronome, or(change.level(), level),
                 or(change.accidentals(), accidentals), or(change.mixed(), mixed),
                 or(change.chordTypes(), chordTypes), or(change.inversions(), inversions), songId, part, outOfRange,
-                tempoPercent, playback, fromBar, toBar, repeats);
+                tempoPercent, playback, fromBar, toBar, repeats, playOtherHand, playbackVolume);
     }
 
     private static <T> T or(T value, T fallback) {

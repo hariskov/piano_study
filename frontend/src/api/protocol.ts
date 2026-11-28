@@ -162,6 +162,8 @@ export interface SessionStartParams {
   fromBar?: number;
   toBar?: number;
   repeats?: number;
+  playOtherHand?: boolean;
+  playbackVolume?: number;
 }
 
 export interface SessionStarted {

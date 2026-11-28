@@ -31,6 +31,7 @@ import bg.petarh.piano.midi.input.TimestampSource;
 import bg.petarh.piano.midi.output.MidiOutputPort;
 import bg.petarh.piano.midi.output.InputEcho;
 import bg.petarh.piano.midi.output.OutputConnection;
+import bg.petarh.piano.midi.value.Velocity;
 import bg.petarh.piano.api.sound.KeySound;
 import bg.petarh.piano.model.note.Target;
 import bg.petarh.piano.library.progress.SessionHistory;
@@ -127,11 +128,12 @@ public final class SessionMethods implements AutoCloseable {
         PracticePlan plan = "song".equals(params.exercise()) ? songPlan(params, saved) : PracticePlan.from(params, saved);
         monitor.stop();
         LatencyOffset latency = LatencyOffset.ofMillis(saved.latencyOffsetMs());
+        Velocity playbackVelocity = plan.playbackVelocity();
         Map<String, OutputConnection> outputs = openOutputs(params, plan, saved);
         Optional<InputEcho> keySound = KeySound.echo(saved, outputs::get);
         Optional<MidiClicks> clicks = Optional.ofNullable(params.metronome()).map(outputs::get).map(MidiClicks::new);
         Optional<Playback> playback = Optional.ofNullable(params.playback()).filter(id -> plan.isSong())
-                .map(id -> new Playback(plan.playbackNotes(), new MidiNotes(outputs.get(id)), plan.mode() == FollowMode.WAIT));
+                .map(id -> new Playback(plan.playbackNotes(), new MidiNotes(outputs.get(id), playbackVelocity), plan.mode() == FollowMode.WAIT));
         Results results = new Results();
         PassResults passes = new PassResults(position -> plan.loop().map(loop -> loop.passAt(position)).orElse(1));
         BarMistakes mistakes = new BarMistakes(plan::barAt);

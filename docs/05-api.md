@@ -98,6 +98,8 @@ Starts a random-notes or chord session. Only one session runs at a time. Leaving
 | `tempoPercent` | 100 | songs: the song's own tempos, scaled (its tempo changes stay in proportion) |
 | `outOfRange` | `"shift"` | songs: notes outside the keyboard are moved by octaves (`"shift"`) or left out (`"skip"`) |
 | `playback` | none | songs: output id that plays the other hand and other parts (the whole song in `listen`). Can be the same output as `metronome` |
+| `playOtherHand` | true | songs: false leaves the hand you don't play silent; the other parts still play |
+| `playbackVolume` | 57 | songs: loudness of the playback, 1–100 (velocity 127 × volume / 100); anything else gives -32602 |
 | `fromBar`, `toBar` | the whole song | songs: the section to play, bars counted from 1 (a pickup is bar 1) |
 | `repeats` | 1 | songs: play the section this many times in a row (1–99) |
 

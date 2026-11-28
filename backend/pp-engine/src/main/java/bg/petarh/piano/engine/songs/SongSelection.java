@@ -24,6 +24,12 @@ public record SongSelection(List<NoteEvent> played, List<NoteEvent> accompanimen
 
     public static SongSelection of(Score score, String partId, Set<Hand> hands, KeyboardRange keyboard,
                                    OutOfRange outOfRange) {
+        return of(score, partId, hands, keyboard, outOfRange, true);
+    }
+
+    /** With {@code playOtherHand} false, the hand you don't play is left out instead of accompanying you. */
+    public static SongSelection of(Score score, String partId, Set<Hand> hands, KeyboardRange keyboard,
+                                   OutOfRange outOfRange, boolean playOtherHand) {
         if (hands.isEmpty()) {
             throw new IllegalArgumentException("Choose at least one hand");
         }
@@ -34,7 +40,9 @@ public record SongSelection(List<NoteEvent> played, List<NoteEvent> accompanimen
         int skipped = 0;
         for (NoteEvent note : part.playableNotes()) {
             if (!hands.contains(note.hand())) {
-                accompaniment.add(note);
+                if (playOtherHand) {
+                    accompaniment.add(note);
+                }
                 continue;
             }
             Optional<NoteEvent> fitted = fitted(note, keyboard, outOfRange);

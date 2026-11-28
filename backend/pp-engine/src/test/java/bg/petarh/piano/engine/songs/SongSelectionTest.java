@@ -46,6 +46,13 @@ class SongSelectionTest {
     }
 
     @Test
+    void leavesTheOtherHandOutOfTheAccompanimentWhenAsked() {
+        SongSelection left = SongSelection.of(song, "P1", Set.of(Hand.LEFT), PIANO, OutOfRange.SHIFT_OCTAVE, false);
+
+        assertThat(left.accompaniment()).extracting(note -> note.pitch().name()).containsExactly("C6");
+    }
+
+    @Test
     void shiftsNotesOutsideTheKeyboardByOctaves() {
         KeyboardRange small = KeyboardRange.parse("C3-C5");
 
