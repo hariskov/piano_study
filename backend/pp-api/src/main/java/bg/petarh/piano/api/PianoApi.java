@@ -14,6 +14,7 @@ import bg.petarh.piano.api.session.Messages;
 import bg.petarh.piano.api.session.SessionMethods;
 import bg.petarh.piano.api.settings.SettingsMethods;
 import bg.petarh.piano.api.settings.SettingsService;
+import bg.petarh.piano.api.sound.SoundMethods;
 import bg.petarh.piano.library.settings.SettingsStore;
 import bg.petarh.piano.api.progress.ProgressMethods;
 import bg.petarh.piano.library.progress.SessionHistory;
@@ -78,10 +79,11 @@ public final class PianoApi implements AutoCloseable {
                                    VirtualKeyboard keyboard, Function<String, Optional<Score>> songs,
                                    SessionHistory history, InstantSource now) {
         SettingsService settings = new SettingsService(store);
-        DeviceMonitor monitor = new DeviceMonitor(inputs, events);
+        DeviceMonitor monitor = new DeviceMonitor(inputs, outputs, events, settings::current);
         DeviceMethods.register(server, inputs, outputs, monitor);
         KeyboardMethods.register(server, keyboard);
         SettingsMethods.register(server, settings);
+        SoundMethods.register(server, outputs, settings);
         SessionMethods sessions = SessionMethods.register(server, inputs, outputs, clock, events, settings, monitor,
                 songs, history, now);
         DeviceScanner scanner = new DeviceScanner(inputs, outputs, events, sessions::inputsChanged);

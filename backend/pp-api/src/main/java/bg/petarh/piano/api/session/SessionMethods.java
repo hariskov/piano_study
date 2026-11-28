@@ -29,7 +29,9 @@ import bg.petarh.piano.midi.input.InputListener;
 import bg.petarh.piano.midi.input.MidiInputPort;
 import bg.petarh.piano.midi.input.TimestampSource;
 import bg.petarh.piano.midi.output.MidiOutputPort;
+import bg.petarh.piano.midi.output.InputEcho;
 import bg.petarh.piano.midi.output.OutputConnection;
+import bg.petarh.piano.api.sound.KeySound;
 import bg.petarh.piano.model.note.Target;
 import bg.petarh.piano.library.progress.SessionHistory;
 import bg.petarh.piano.model.score.Score;
@@ -125,7 +127,8 @@ public final class SessionMethods implements AutoCloseable {
         PracticePlan plan = "song".equals(params.exercise()) ? songPlan(params, saved) : PracticePlan.from(params, saved);
         monitor.stop();
         LatencyOffset latency = LatencyOffset.ofMillis(saved.latencyOffsetMs());
-        Map<String, OutputConnection> outputs = openOutputs(params, plan);
+        Map<String, OutputConnection> outputs = openOutputs(params, plan, saved);
+        Optional<InputEcho> keySound = KeySound.echo(saved, outputs::get);
         Optional<MidiClicks> clicks = Optional.ofNullable(params.metronome()).map(outputs::get).map(MidiClicks::new);
         Optional<Playback> playback = Optional.ofNullable(params.playback()).filter(id -> plan.isSong())
                 .map(id -> new Playback(plan.playbackNotes(), new MidiNotes(outputs.get(id)), plan.mode() == FollowMode.WAIT));
@@ -140,6 +143,7 @@ public final class SessionMethods implements AutoCloseable {
                 }), playback);
         InputListener listener = event -> {
             InputMessage.EVENT.send(events, InputMessage.of(event));
+            keySound.ifPresent(sound -> sound.onEvent(event));
             practice.input().onEvent(latency.apply(event));
         };
         List<OutputConnection> opened = List.copyOf(outputs.values());
@@ -256,11 +260,12 @@ public final class SessionMethods implements AutoCloseable {
         }
     }
 
-    private Map<String, OutputConnection> openOutputs(SessionStartParams params, PracticePlan plan) {
+    private Map<String, OutputConnection> openOutputs(SessionStartParams params, PracticePlan plan, Settings saved) {
         Map<String, OutputConnection> outputs = new LinkedHashMap<>();
         List<String> wanted = new ArrayList<>();
         Optional.ofNullable(params.metronome()).ifPresent(wanted::add);
         Optional.ofNullable(params.playback()).filter(id -> plan.isSong()).ifPresent(wanted::add);
+        KeySound.output(saved).ifPresent(wanted::add);
         try {
             for (String id : wanted) {
                 if (!outputs.containsKey(id)) {

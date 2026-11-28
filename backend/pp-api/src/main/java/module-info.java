@@ -18,4 +18,5 @@ module bg.petarh.piano.api {
     opens bg.petarh.piano.api.keyboard to tools.jackson.databind;
     opens bg.petarh.piano.api.library to tools.jackson.databind;
     opens bg.petarh.piano.api.progress to tools.jackson.databind;
+    opens bg.petarh.piano.api.sound to tools.jackson.databind;
 }

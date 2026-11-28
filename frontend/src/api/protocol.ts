@@ -228,6 +228,10 @@ export interface SongSummary {
   warnings: string[];
 }
 
+export interface SoundTestParams {
+  instrument?: number;
+}
+
 export interface StateEvent {
   state: string;
 }
@@ -278,6 +282,7 @@ export interface ApiMethods {
   "session.stop": { params: Record<string, never>; result: null };
   "settings.get": { params: Record<string, never>; result: SettingsView };
   "settings.update": { params: SettingsUpdate; result: SettingsView };
+  "sound.test": { params: SoundTestParams; result: null };
 }
 
 export interface ApiEvents {
