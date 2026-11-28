@@ -273,6 +273,8 @@ The rest of the backend only uses the interfaces in `pp-midi`. `javax.sound.midi
 - **Output:**
   - `OutputMessageEncoder` sends events immediately. Velocity is passed through unchanged. `SustainPedal` becomes CC 64 with value 127 (down) or 0 (up).
   - Closing an output first sends All Notes Off on all 16 channels (DEV-10).
+  - `ProgramChange` becomes a MIDI program change.
+- **SoundFont:** when the opened output is a `Synthesizer` (Gervill), its built-in sounds are replaced by a General MIDI SoundFont if one is found (`SoundFonts`): the file in `PP_SOUNDFONT`, else the first `.sf2` in `${XDG_DATA_HOME:-~/.local/share}/piano-player/soundfonts`, else `FluidR3_GM.sf2` or any other `.sf2` in `/usr/share/sounds/sf2` or `/usr/share/soundfonts` (openSUSE, Fedora and Debian install FluidR3 with `fluid-soundfont-gm`). `SoundFontLoader` reads it once, on first use, because a full set is over 100 MB; a file it can't read is reported on stderr and the built-in sounds are used.
 - **Resource handling:**
   - If anything fails after `device.open()`, the device is closed again.
   - Connections close their parts with `try (device; transmitter/receiver; …)`, so every part is released even if one of them throws.

@@ -4,6 +4,8 @@ import bg.petarh.piano.midi.input.MidiInputPort;
 import bg.petarh.piano.midi.input.TimestampSource;
 import bg.petarh.piano.midi.output.MidiOutputPort;
 
+import java.nio.file.Path;
+
 public final class JdkMidi {
 
     private JdkMidi() {
@@ -18,7 +20,8 @@ public final class JdkMidi {
     }
 
     public static MidiOutputPort outputPort() {
-        return new JdkMidiOutputPort(systemCatalog());
+        return new JdkMidiOutputPort(systemCatalog(), new SoundFontLoader(
+                () -> SoundFonts.find(System::getenv, Path.of(System.getProperty("user.home")), SoundFonts.SYSTEM_FOLDERS)));
     }
 
     private static JdkDeviceCatalog systemCatalog() {

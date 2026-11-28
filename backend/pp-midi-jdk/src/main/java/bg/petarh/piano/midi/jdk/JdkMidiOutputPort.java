@@ -9,15 +9,25 @@ import bg.petarh.piano.midi.output.OutputConnection;
 
 import javax.sound.midi.MidiDevice;
 import javax.sound.midi.MidiUnavailableException;
+import javax.sound.midi.Soundbank;
+import javax.sound.midi.Synthesizer;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 final class JdkMidiOutputPort implements MidiOutputPort {
 
     private final JdkDeviceCatalog catalog;
+    private final Supplier<Optional<Soundbank>> soundFont;
     private final OutputMessageEncoder encoder = new OutputMessageEncoder();
 
     JdkMidiOutputPort(JdkDeviceCatalog catalog) {
+        this(catalog, Optional::empty);
+    }
+
+    JdkMidiOutputPort(JdkDeviceCatalog catalog, Supplier<Optional<Soundbank>> soundFont) {
         this.catalog = catalog;
+        this.soundFont = soundFont;
     }
 
     @Override
@@ -31,6 +41,9 @@ final class JdkMidiOutputPort implements MidiOutputPort {
         MidiDevice device = entry.device();
         try {
             device.open();
+            if (device instanceof Synthesizer synthesizer) {
+                soundFont.get().ifPresent(bank -> play(synthesizer, bank));
+            }
             return new JdkOutputConnection(entry.descriptor(), device, device.getReceiver(), encoder);
         } catch (MidiUnavailableException e) {
             device.close();
@@ -39,5 +52,16 @@ final class JdkMidiOutputPort implements MidiOutputPort {
             device.close();
             throw e;
         }
+    }
+
+    private static void play(Synthesizer synthesizer, Soundbank bank) {
+        if (!synthesizer.isSoundbankSupported(bank)) {
+            return;
+        }
+        Soundbank builtIn = synthesizer.getDefaultSoundbank();
+        if (builtIn != null) {
+            synthesizer.unloadAllInstruments(builtIn);
+        }
+        synthesizer.loadAllInstruments(bank);
     }
 }

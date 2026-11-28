@@ -11,7 +11,9 @@ import org.junit.jupiter.api.Test;
 
 import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.ShortMessage;
+import javax.sound.midi.Soundbank;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,6 +29,28 @@ class JdkMidiOutputPortTest {
 
     private final FakeMidiDevice synth = FakeMidiDevice.output("Synth");
     private final JdkMidiOutputPort port = new JdkMidiOutputPort(new JdkDeviceCatalog(() -> List.of(synth)));
+
+    @Test
+    void playsASynthesizerWithTheSoundFontInsteadOfItsBuiltInSounds() {
+        FakeSynthesizer gervill = new FakeSynthesizer();
+        Soundbank fluid = FakeSynthesizer.soundbank("FluidR3");
+        JdkMidiOutputPort withSoundFont = new JdkMidiOutputPort(new JdkDeviceCatalog(() -> List.of(gervill)),
+                () -> Optional.of(fluid));
+
+        withSoundFont.open(DeviceId.of("jdk:Gervill"));
+
+        assertThat(gervill.loaded()).containsExactly(fluid);
+    }
+
+    @Test
+    void keepsTheBuiltInSoundsWithoutASoundFont() {
+        FakeSynthesizer gervill = new FakeSynthesizer();
+        JdkMidiOutputPort without = new JdkMidiOutputPort(new JdkDeviceCatalog(() -> List.of(gervill)), Optional::empty);
+
+        without.open(DeviceId.of("jdk:Gervill"));
+
+        assertThat(gervill.loaded()).containsExactly(FakeSynthesizer.BUILT_IN);
+    }
 
     @Test
     void listsOutputDevices() {
