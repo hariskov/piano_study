@@ -12,6 +12,7 @@
     "dist": "electron-builder --linux AppImage --publish never"
   },
   "dependencies": {
+    "opensheetmusicdisplay": "3.0.0",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },

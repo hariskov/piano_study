@@ -46,7 +46,7 @@ Params `{"id":"simple-melody"}`. Result: `{"id","title","composer","file","midiF
 
 ### `library.musicXml`
 
-Params: `{"id":"simple-melody"}`. Result: `{"xml":"<?xml …"}`, the song's saved MusicXML (always uncompressed), for drawing the score. -32004 if there is no such song, -32003 if the file can't be read.
+Params: `{"id":"simple-melody"}`. Result: `{"xml":"<?xml …"}`, the song's saved MusicXML, for drawing the score. It is always plain text: a MusicXML import keeps the original score (unzipped from `.mxl`), and a MIDI import is written by `MusicXmlWriter`. -32004 if there is no such song, -32003 if the file can't be read.
 
 ### `library.delete`
 Params `{"id":"simple-melody"}`. Removes the song, its MusicXML and its MIDI file. Result `null`; -32004 if there is no such song.

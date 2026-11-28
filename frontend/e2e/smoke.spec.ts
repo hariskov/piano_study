@@ -116,6 +116,9 @@ test("practises the imported song to the results", async () => {
     60: "a", 61: "w", 62: "s", 63: "e", 64: "d", 65: "f", 66: "t", 67: "g",
     68: "y", 69: "h", 70: "u", 71: "j", 72: "k", 73: "o", 74: "l", 75: "p", 76: ";",
   };
+  await page.getByRole("button", { name: "Show sheet music" }).click();
+  await expect(page.getByLabel("Sheet music").locator("svg").first()).toBeVisible();
+  await page.screenshot({ path: path.join(screenshots, "6b-library-sheet.png") });
   await page.getByRole("button", { name: "Practise" }).click();
   await page.getByLabel("Count-in").selectOption("0");
   await page.getByLabel("Play it").selectOption("2");
@@ -125,6 +128,7 @@ test("practises the imported song to the results", async () => {
   for (let played = 0; played < 4; played++) {
     await expect(page.getByLabel("Now playing")).not.toHaveText("…");
     if (played === 0) {
+      await expect(page.getByLabel("Sheet music").locator("svg").first()).toBeVisible();
       await page.screenshot({ path: path.join(screenshots, "8-song-practice.png") });
     }
     const shown = (await page.getByLabel("Now playing").textContent())!;

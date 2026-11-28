@@ -898,3 +898,16 @@ fieldset.card {
   color: var(--accent);
   font-weight: 600;
 }
+
+.sheet-music {
+  margin-bottom: 1rem;
+  max-height: 22rem;
+  overflow-y: auto;
+  background: #f7f5ef;
+  color: #14161b;
+}
+
+.song-details .sheet-music {
+  margin-top: 1rem;
+  max-height: 32rem;
+}

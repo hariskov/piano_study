@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { LibraryScreen } from "./LibraryScreen";
 import { BackendContext } from "../app/backendContext";
 import { FakeBackend } from "../testing/fakeBackend";
+import { osmdInstances } from "../testing/osmdMock";
 import type { SongSummary } from "../api/protocol";
 
 const MELODY: SongSummary = {
@@ -122,6 +123,20 @@ describe("LibraryScreen", () => {
     fireEvent.click(screen.getByRole("button", { name: "Import…" }));
 
     expect((await screen.findByRole("alert")).textContent).toContain("not a readable MIDI file");
+  });
+
+  it("shows the sheet music of the opened song when asked", async () => {
+    const fake = backend().answer("library.musicXml", () => ({ xml: "<score-partwise>melody</score-partwise>" }));
+    show(fake);
+    fireEvent.click(await screen.findByText("Simple Melody"));
+    await screen.findByText("G major");
+    expect(screen.queryByLabelText("Sheet music")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show sheet music" }));
+
+    expect(await screen.findByLabelText("Sheet music")).toBeTruthy();
+    expect(fake.callsOf("library.musicXml")).toEqual([{ id: "simple-melody" }]);
+    await waitFor(() => expect(osmdInstances.at(-1)?.loaded).toBe("<score-partwise>melody</score-partwise>"));
   });
 
   it("practises the opened song", async () => {

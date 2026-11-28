@@ -5,6 +5,6 @@ export default defineConfig({
   plugins: [react()],
   base: "./",
   oxc: { include: /\.[cm]?tsx?$/ },
-  build: { outDir: "dist/renderer", emptyOutDir: true },
-  test: { environment: "jsdom", globals: true, include: ["src/**/*.test.{ts,tsx}", "electron/**/*.test.ts"] },
+  build: { outDir: "dist/renderer", emptyOutDir: true, chunkSizeWarningLimit: 1600 },
+  test: { environment: "jsdom", globals: true, setupFiles: ["src/testing/osmdMock.ts"], include: ["src/**/*.test.{ts,tsx}", "electron/**/*.test.ts"] },
 });

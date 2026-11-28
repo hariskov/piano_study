@@ -8,6 +8,8 @@ import { TempoControl } from "../tempo/TempoControl";
 import { midiForKey } from "./computerKeys";
 import { AccidentalsCheck, ChordLabelSelect, ChordTypeChecks, HandsSelect, LevelSelect, MixedCheck } from "./exerciseControls";
 import { NoteLanes } from "./NoteLanes";
+import { SheetMusic } from "../sheet/SheetMusic";
+import { scorePosition } from "../sheet/scorePosition";
 import { targetLabel, type ChordLabels } from "./chordLabel";
 import { initialPractice, practiceReducer, type PracticeAction } from "./practiceState";
 import { ResultsView } from "./ResultsView";
@@ -44,9 +46,20 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
   const [current, setCurrent] = useState(setup);
   const [songTempo, setSongTempo] = useState<number>();
   const [notices, setNotices] = useState<string[]>([]);
+  const [section, setSection] = useState<{ start?: string; passLength?: string }>({});
+  const [sheet, setSheet] = useState<string>();
   const [problem, setProblem] = useState<string>();
   const [range, setRange] = useState<KeyRange>(keyboardRange(undefined));
   const virtual = params.input === VIRTUAL_KEYBOARD;
+
+  useEffect(() => {
+    if (params.exercise === "song" && params.songId) {
+      void client.request("library.musicXml", { id: params.songId }).then(
+        (result) => setSheet(result.xml),
+        () => setSheet(undefined),
+      );
+    }
+  }, [client, params.exercise, params.songId]);
 
   useEffect(() => {
     void client.request("settings.get", {}).then((settings) => {
@@ -71,6 +84,7 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
         setTempo(started.tempo);
         setSongTempo(started.songTempo);
         setNotices(started.notices);
+        setSection({ start: started.sectionStart, passLength: started.passLength });
       },
       (error: Error) => {
         finished = true;
@@ -180,6 +194,9 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
             <li key={notice}>{notice}</li>
           ))}
         </ul>
+      )}
+      {sheet !== undefined && (
+        <SheetMusic xml={sheet} position={target ? scorePosition(target.start, section.start, section.passLength) : undefined} />
       )}
       <div className="practice-main">
       <div className="stage card">
