@@ -111,3 +111,35 @@ test("imports a song into the library and opens it", async () => {
   await page.screenshot({ path: path.join(screenshots, "6-library.png") });
 });
 
+test("practises the imported song to the results", async () => {
+  const keys: Record<number, string> = {
+    60: "a", 61: "w", 62: "s", 63: "e", 64: "d", 65: "f", 66: "t", 67: "g",
+    68: "y", 69: "h", 70: "u", 71: "j", 72: "k", 73: "o", 74: "l", 75: "p", 76: ";",
+  };
+  await page.getByRole("button", { name: "Practise" }).click();
+  await page.getByLabel("Count-in").selectOption("0");
+  await page.screenshot({ path: path.join(screenshots, "7-song-setup.png") });
+  await page.getByRole("button", { name: "Start" }).click();
+
+  for (let played = 0; played < 2; played++) {
+    await expect(page.getByLabel("Now playing")).not.toHaveText("…");
+    if (played === 0) {
+      await page.screenshot({ path: path.join(screenshots, "8-song-practice.png") });
+    }
+    const shown = (await page.getByLabel("Now playing").textContent())!;
+    const targets = await page.locator(".key.target").evaluateAll((elements) =>
+      elements.map((element) => Number(element.getAttribute("data-midi"))),
+    );
+    for (const midi of targets) {
+      await page.keyboard.down(keys[midi]);
+    }
+    for (const midi of targets) {
+      await page.keyboard.up(keys[midi]);
+    }
+    if (played === 0) {
+      await expect(page.getByLabel("Now playing")).not.toHaveText(shown);
+    }
+  }
+
+  await expect(page.getByLabel("Accuracy")).toHaveText("100%");
+});

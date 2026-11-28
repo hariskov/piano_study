@@ -4,6 +4,7 @@ import type { ImportParams, SongDetails, SongSummary } from "../api/protocol";
 
 interface Props {
   chooseFile: () => Promise<string | undefined>;
+  onPractise: (song: SongDetails) => void;
 }
 
 interface MidiOptions {
@@ -14,7 +15,7 @@ interface MidiOptions {
 
 const DEFAULT_MIDI: MidiOptions = { grid: 16, triplets: false, splitPoint: "C4" };
 
-export function LibraryScreen({ chooseFile }: Props) {
+export function LibraryScreen({ chooseFile, onPractise }: Props) {
   const client = useBackend();
   const [songs, setSongs] = useState<SongSummary[]>();
   const [search, setSearch] = useState("");
@@ -150,7 +151,7 @@ export function LibraryScreen({ chooseFile }: Props) {
             </li>
           ))}
         </ul>
-        {details ? <SongView song={details} onDelete={() => void remove(details)} /> : (
+        {details ? <SongView song={details} onDelete={() => void remove(details)} onPractise={() => onPractise(details)} /> : (
           <div className="card muted song-details">Choose a song to see its details.</div>
         )}
       </div>
@@ -158,7 +159,7 @@ export function LibraryScreen({ chooseFile }: Props) {
   );
 }
 
-function SongView({ song, onDelete }: { song: SongDetails; onDelete: () => void }) {
+function SongView({ song, onDelete, onPractise }: { song: SongDetails; onDelete: () => void; onPractise: () => void }) {
   return (
     <div className="card song-details">
       <h3>{song.title}</h3>
@@ -225,7 +226,7 @@ function SongView({ song, onDelete }: { song: SongDetails; onDelete: () => void 
         <button type="button" onClick={onDelete}>
           Delete
         </button>
-        <button type="button" className="primary" disabled title="Practising songs comes next">
+        <button type="button" className="primary" onClick={onPractise}>
           Practise
         </button>
       </div>
