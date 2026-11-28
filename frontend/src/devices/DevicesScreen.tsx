@@ -6,6 +6,7 @@ import { KEYBOARD_PRESETS, keyboardRange } from "../keyboard/presets";
 import { pitchName } from "../music/pitch";
 import { START_DETECTION, detectStep, type Detection } from "../keyboard/rangeDetection";
 import { LatencyOffsetField } from "./LatencyOffsetField";
+import { SoundCard } from "./SoundCard";
 
 const VIRTUAL_KEYBOARD = "virtual:keyboard";
 const CUSTOM = "custom";
@@ -36,6 +37,8 @@ export function DevicesScreen() {
     return client.on("devices.changed", setDevices);
   }, [client]);
 
+  // The backend reads the sound settings when monitoring starts, so a change of sound starts it again.
+  const sound = settings && `${settings.output}|${settings.instrument}|${settings.keySound}`;
   useEffect(() => {
     if (input === undefined) {
       return;
@@ -64,7 +67,7 @@ export function DevicesScreen() {
       unsubscribe();
       void client.request("devices.stopMonitor", {}).catch(() => undefined);
     };
-  }, [client, input]);
+  }, [client, input, sound]);
 
   useEffect(() => {
     if (detection?.step === "done" && input !== undefined) {
@@ -206,6 +209,11 @@ export function DevicesScreen() {
           )}
         </div>
       </div>
+      <SoundCard
+        settings={settings}
+        onSave={(update) => void save(update)}
+        onTry={(instrument) => void client.request("sound.test", { instrument }).catch(() => undefined)}
+      />
       <div className="card keyboard-card">
         <p className="muted">
           {input === VIRTUAL_KEYBOARD
