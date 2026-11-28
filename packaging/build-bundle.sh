@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Builds one self-extracting shell executable from what Maven built: the UI (frontend/dist),
-# Electron's own files and the jlink runtime (backend/pp-app/target/runtime).
+# Builds one self-extracting shell executable from what Maven built: the UI (frontend/dist/renderer),
+# the window shell (frontend/shell) and the jlink runtime (backend/pp-app/target/runtime).
 # Run through ./mvnw -Pbundle package.
 set -euo pipefail
 
@@ -16,23 +16,14 @@ fail() {
     exit 1
 }
 
-[[ -f "$frontend/dist/electron/main.cjs" ]] || fail "the UI isn't built; run ./mvnw package first"
+[[ -f "$frontend/dist/renderer/index.html" ]] || fail "the UI isn't built; run ./mvnw package first"
 [[ -x "$runtime/bin/pp" ]] || fail "the Java runtime isn't linked; run ./mvnw -Pbundle package"
-
-electron="$frontend/node_modules/electron/dist"
-if [[ ! -x "$electron/electron" ]]; then
-    (cd "$frontend" && node node_modules/electron/install.js)
-fi
 
 rm -rf "$out"
 mkdir -p "$app"
-cp -a "$electron/." "$app/"
-mv "$app/electron" "$app/piano-player"
-rm -f "$app/resources/default_app.asar"
-mkdir -p "$app/resources/app"
-cp -a "$frontend/dist" "$app/resources/app/"
-cp "$frontend/package.json" "$app/resources/app/"
-cp -a "$runtime" "$app/resources/backend"
+cp "$frontend/shell/piano-player" "$frontend/shell/piano-player.js" "$app/"
+cp -a "$frontend/dist/renderer" "$app/renderer"
+cp -a "$runtime" "$app/backend"
 
 payload="$out/payload.tar.xz"
 tar -C "$out" -c piano-player | xz -T0 -6 > "$payload"

@@ -39,7 +39,7 @@ The backend does all the work: device handling, importing, generating notes, tim
 | Tests | JUnit 5, AssertJ | Standard choice |
 | UI language | **TypeScript** | Type safety for the protocol with the backend |
 | UI framework | **React + Vite** | Widely used, lots of tooling. Drawing done directly on canvas/SVG |
-| Desktop window | **WebKitGTK 6.0**, opened by a ~130-line GJS script (`frontend/shell/piano-player.js`) | Uses the system's web engine, so the app ships no browser: Electron was 274 of the 340 MB unpacked. Needs `gjs` and `typelib-1_0-WebKit-6_0` installed (decided 2026-11-28). Until the follow-up PR, the bundle still uses Electron |
+| Desktop window | **WebKitGTK 6.0**, opened by a ~130-line GJS script (`frontend/shell/piano-player.js`) | Uses the system's web engine, so the app ships no browser: Electron was 274 of the 340 MB unpacked. Needs `gjs` and WebKitGTK 6.0 installed on the user's system (openSUSE `typelib-1_0-WebKit-6_0`); decided 2026-11-28, when Electron was removed |
 | Notation (v1) | **VexFlow** or **OpenSheetMusicDisplay** (renders MusicXML directly, built on VexFlow) | Proper staff notation in canvas/SVG without writing a music engraver ourselves |
 | Packaging | **jlink** (trimmed Java runtime) + a self-extracting shell script | One self-contained executable built by a short script with only `tar` and `xz` (electron-builder was dropped: it added 266 npm packages; then the AppImage, which needed appimagetool) |
 | OMR (v2) | **Audiveris** | Open-source Java OMR, outputs MusicXML |
@@ -58,13 +58,13 @@ The backend doesn't depend on the window shell, so switching later only affects 
 
 ### 2.2 jpackage vs jlink
 
-`jpackage` is a JDK tool that bundles a Java app and a Java runtime into a Linux package (.deb/.rpm/app image). Because Electron is the app here, we only need its building block, **`jlink`**, which produces a trimmed-down Java runtime (~40–60 MB). `packaging/build-bundle.sh` then packs that runtime, Electron and the UI into one executable file. jpackage is still useful for a backend-only build (for example, a headless/CLI test build).
+`jpackage` is a JDK tool that bundles a Java app and a Java runtime into a Linux package (.deb/.rpm/app image). Because the window shell is the app here, we only need its building block, **`jlink`**, which produces a trimmed-down Java runtime (~40–60 MB). `packaging/build-bundle.sh` then packs that runtime, the window shell and the UI into one executable file. jpackage is still useful for a backend-only build (for example, a headless/CLI test build).
 
 As built (P4), with the opt-in Maven profile `bundle`:
 - `pp-app` runs `jlink` on `pp-app.jar` and its `lib/` modules. Every dependency is a named module, so the backend itself is linked in, with a `pp` launcher. The result is `backend/pp-app/target/runtime`, about 60 MB. It uses `--strip-java-debug-attributes` rather than `--strip-debug`, because the latter also strips native symbols and needs `objcopy`. The build stops with an install hint when the JDK has no `jmods` (on openSUSE: `java-25-openjdk-jmods`).
-- `frontend` runs `packaging/build-bundle.sh`. It assembles the app folder: Electron's own files from `node_modules/electron/dist` (unpacked by Electron's `install.js` if needed, binary renamed `piano-player`), the UI and `package.json` in `resources/app`, the runtime in `resources/backend`. It packs the folder as `tar.xz` and appends it to a short `sh` header, giving `frontend/target/bundle/piano-player-<version>-x86_64.sh` (about 130 MB). On start the header unpacks the payload into `${XDG_CACHE_HOME:-~/.cache}/piano-player/app/<version>-<payload hash>` unless it is already there, removes other unpacked builds, and runs it. Only `sh`, `tail`, `xz` and `tar` are needed on the target. electron-builder was used at first and dropped on 2026-11-28 (266 npm packages, a 344 MB unpacked copy left behind); an AppImage built with appimagetool followed and was replaced the same day, because appimagetool had to be fetched by hand.
-- The Electron main process picks the backend with `backendCommand`: `PP_BACKEND` if set, otherwise `resources/backend/bin/pp` when packaged, or the checkout's `bin/pp` when run from source.
-- No desktop entry or menu icon yet; the file runs on any distribution without installing.
+- `frontend` runs `packaging/build-bundle.sh`. It assembles the app folder: the window shell (`piano-player`, which checks for GJS and WebKitGTK and runs `piano-player.js`), the UI in `renderer/` and the runtime in `backend/`, about 64 MB in all. It packs the folder as `tar.xz` and appends it to a short `sh` header, giving `frontend/target/bundle/piano-player-<version>-x86_64.sh` (about 37 MB; 130 MB while it carried Electron). On start the header unpacks the payload into `${XDG_CACHE_HOME:-~/.cache}/piano-player/app/<version>-<payload hash>` unless it is already there, removes other unpacked builds, and runs it. The target needs `sh`, `tail`, `xz` and `tar` to unpack it, and GJS with WebKitGTK 6.0 to show the window. electron-builder was used at first and dropped on 2026-11-28 (266 npm packages, a 344 MB unpacked copy left behind); an AppImage built with appimagetool followed and was replaced the same day, because appimagetool had to be fetched by hand.
+- The window shell picks the backend: `PP_BACKEND` if set, otherwise `backend/bin/pp` next to it when bundled (it has a `renderer/` folder beside it), or the checkout's `bin/pp` when run from source.
+- No desktop entry or menu icon yet; the file runs without installing on any distribution that has WebKitGTK 6.0.
 
 ## 2A. Code principles
 
@@ -404,7 +404,7 @@ The renderer never talks to the backend directly:
 - `testing/FakeBackend`: an in-memory `Transport` that answers requests and sends events, used by the screen tests.
 - `styles.css`: one dark theme with CSS variables.
 
-The main and preload sources are `.cts` files, compiled by `tsconfig.electron.json` to CommonJS `.cjs` (Electron's sandboxed preload needs CommonJS). The renderer is built by Vite. Electron 45 downloads its binary on first start, not at `npm install`. Electron is still used by the bundle until the follow-up PR; `bin/ui` already uses the WebKitGTK shell.
+The page is built by Vite into `dist/renderer`. The shell is plain JavaScript run by GJS, with no build step. `bin/ui` runs `frontend/shell/piano-player`, which checks that GJS and WebKitGTK 6.0 are installed and says what to install if not. Electron 45 was used until 2026-11-28 and removed because it was 274 of the 340 MB unpacked app.
 
 **Protocol: JSON-RPC 2.0.**
 - A **request** has an `id`, a `method` and `params`, and gets exactly one **response** with the same `id`: either `result` or `error` (`code`, `message`).

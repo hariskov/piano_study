@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { connectToBackend, type BackendBridge } from "./backend";
 
 describe("connectToBackend", () => {
-  it("has nothing to connect to outside Electron", () => {
+  it("has nothing to connect to outside the app window", () => {
     expect(connectToBackend(undefined)).toBeUndefined();
   });
 

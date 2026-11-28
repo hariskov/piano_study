@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+if ! command -v gjs >/dev/null || ! gjs -c 'imports.gi.versions.WebKit = "6.0"; imports.gi.WebKit' 2>/dev/null; then
+    echo "Piano Player needs GJS and WebKitGTK 6.0. On openSUSE: sudo zypper in gjs typelib-1_0-WebKit-6_0" >&2
+    echo "(Fedora: gjs webkitgtk6.0, Debian/Ubuntu: gjs gir1.2-webkit-6.0)" >&2
+    exit 1
+fi
+exec gjs -m "$(dirname "$(readlink -f "$0")")/piano-player.js" "$@"
