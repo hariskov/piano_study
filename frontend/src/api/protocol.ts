@@ -184,6 +184,7 @@ export interface TempoParams {
 export interface ApiMethods {
   "devices.list": { params: Record<string, never>; result: DeviceList };
   "devices.monitor": { params: MonitorParams; result: null };
+  "devices.rescan": { params: Record<string, never>; result: DeviceList };
   "devices.stopMonitor": { params: Record<string, never>; result: null };
   "keyboard.press": { params: KeyParams; result: null };
   "keyboard.release": { params: KeyParams; result: null };

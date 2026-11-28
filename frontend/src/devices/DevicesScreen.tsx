@@ -16,6 +16,7 @@ export function DevicesScreen() {
   const [customRange, setCustomRange] = useState("");
   const [rangeProblem, setRangeProblem] = useState<string>();
   const [pressed, setPressed] = useState<ReadonlySet<number>>(new Set());
+  const [rescanning, setRescanning] = useState(false);
 
   useEffect(() => {
     void Promise.all([client.request("devices.list", {}), client.request("settings.get", {})]).then(([list, saved]) => {
@@ -64,6 +65,15 @@ export function DevicesScreen() {
   const save = async (update: Parameters<typeof client.request<"settings.update">>[1]) =>
     setSettings(await client.request("settings.update", update));
 
+  const rescan = async () => {
+    setRescanning(true);
+    try {
+      setDevices(await client.request("devices.rescan", {}));
+    } finally {
+      setRescanning(false);
+    }
+  };
+
   const chooseInput = (id: string) => {
     setInput(id);
     void save({ input: id });
@@ -104,7 +114,12 @@ export function DevicesScreen() {
       <div className="columns">
         <fieldset className="card">
           <legend>Piano (input)</legend>
-          {devices.inputs.length === 0 && <p className="muted">No MIDI input found. Plug in the piano.</p>}
+          <button type="button" className="rescan" disabled={rescanning} onClick={() => void rescan()}>
+            {rescanning ? "Looking…" : "Rescan"}
+          </button>
+          {devices.inputs.length === 0 && (
+            <p className="muted">No MIDI input found. Plug in the piano, then press Rescan.</p>
+          )}
           {devices.inputs.map((device) => (
             <label key={device.id} className="choice">
               <input

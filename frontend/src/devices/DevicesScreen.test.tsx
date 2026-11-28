@@ -67,6 +67,26 @@ describe("DevicesScreen", () => {
     await waitFor(() => expect(fake.callsOf("settings.update")).toEqual([{ input: "jdk:Piano" }]));
   });
 
+  it("rescans for devices when asked", async () => {
+    const fake = backend().answer("devices.rescan", () => ({
+      inputs: [{ id: "jdk:Piano2", name: "Piano 2", description: "Plugged in later" }],
+      outputs: [],
+    }));
+    show(fake);
+    await screen.findByLabelText("Piano");
+
+    fireEvent.click(screen.getByRole("button", { name: "Rescan" }));
+
+    expect(await screen.findByLabelText("Piano 2")).toBeTruthy();
+    expect(fake.callsOf("devices.rescan")).toHaveLength(1);
+  });
+
+  it("tells you to plug in the piano and rescan when there is no input", async () => {
+    show(backend().answer("devices.list", () => ({ inputs: [], outputs: [] })));
+
+    expect(await screen.findByText(/Plug in the piano, then press Rescan/)).toBeTruthy();
+  });
+
   it("shows the saved keyboard size of the input", async () => {
     show(backend());
     await screen.findByLabelText("Piano");
