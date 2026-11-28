@@ -55,6 +55,10 @@ public final class Session {
         return tempoMap.latestTempo();
     }
 
+    public Fraction positionAt(long runningNanos) {
+        return tempoMap.positionAt(runningNanos);
+    }
+
     public long nanosAt(Fraction position) {
         return tempoMap.nanosAt(position);
     }

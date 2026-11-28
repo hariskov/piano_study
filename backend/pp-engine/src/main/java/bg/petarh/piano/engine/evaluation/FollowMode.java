@@ -4,12 +4,15 @@ import bg.petarh.piano.engine.session.Session;
 
 public enum FollowMode {
     WAIT,
-    TEMPO;
+    TEMPO,
+    LISTEN,
+    PLAY_ALONG;
 
     public Evaluator evaluatorFor(Session session) {
         return switch (this) {
             case WAIT -> new WaitEvaluator(session);
             case TEMPO -> new TempoEvaluator(session);
+            case LISTEN, PLAY_ALONG -> new NoScoreEvaluator(session);
         };
     }
 }

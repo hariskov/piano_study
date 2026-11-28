@@ -3,6 +3,8 @@ package bg.petarh.piano.engine.run;
 import bg.petarh.piano.engine.evaluation.FollowMode;
 import bg.petarh.piano.engine.metronome.ClickOutput;
 import bg.petarh.piano.engine.metronome.Metronome;
+import bg.petarh.piano.engine.playback.Playback;
+import bg.petarh.piano.engine.playback.PlaybackScheduler;
 import bg.petarh.piano.engine.session.Session;
 import bg.petarh.piano.engine.session.SessionTiming;
 import bg.petarh.piano.engine.targets.TargetSource;
@@ -31,9 +33,16 @@ public final class Practice implements AutoCloseable {
 
     public static Practice prepare(TargetSource targets, SessionTiming timing, FollowMode mode, Clock clock,
                                    SessionListener listener, Optional<ClickOutput> clicks) {
+        return prepare(targets, timing, mode, clock, listener, clicks, Optional.empty());
+    }
+
+    public static Practice prepare(TargetSource targets, SessionTiming timing, FollowMode mode, Clock clock,
+                                   SessionListener listener, Optional<ClickOutput> clicks,
+                                   Optional<Playback> playback) {
         Session session = new Session(targets, timing, clock);
         List<SessionListener> listeners = new ArrayList<>(List.of(listener));
         clicks.ifPresent(output -> listeners.add(new Metronome(session, output)));
+        playback.ifPresent(plan -> listeners.add(new PlaybackScheduler(session, plan.notes(), plan.output(), plan.gated())));
         SessionDriver driver = new SessionDriver(session, mode.evaluatorFor(session), clock,
                 SessionListener.all(listeners));
         return new Practice(session, new SessionThread(driver, TICK));
