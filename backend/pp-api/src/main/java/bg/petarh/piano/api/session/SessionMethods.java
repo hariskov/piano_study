@@ -15,7 +15,9 @@ import bg.petarh.piano.engine.evaluation.FollowMode;
 import bg.petarh.piano.engine.metronome.MidiClicks;
 import bg.petarh.piano.engine.playback.MidiNotes;
 import bg.petarh.piano.engine.playback.Playback;
+import bg.petarh.piano.engine.run.BarMistakes;
 import bg.petarh.piano.engine.run.PassResults;
+import bg.petarh.piano.engine.run.Summary;
 import bg.petarh.piano.engine.run.Practice;
 import bg.petarh.piano.engine.run.Results;
 import bg.petarh.piano.engine.run.SessionListener;
@@ -29,10 +31,12 @@ import bg.petarh.piano.midi.input.TimestampSource;
 import bg.petarh.piano.midi.output.MidiOutputPort;
 import bg.petarh.piano.midi.output.OutputConnection;
 import bg.petarh.piano.model.note.Target;
+import bg.petarh.piano.library.progress.SessionHistory;
 import bg.petarh.piano.model.score.Score;
 import bg.petarh.piano.model.time.Fraction;
 import bg.petarh.piano.model.time.Tempo;
 
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -75,12 +79,17 @@ public final class SessionMethods implements AutoCloseable {
     private final SettingsService settings;
     private final DeviceMonitor monitor;
     private final Function<String, Optional<Score>> songs;
+    private final SessionHistory history;
+    private final InstantSource now;
     private Active active;
 
     private SessionMethods(MidiInputPort inputs, MidiOutputPort outputs, TimestampSource clock, EventSink events,
-                           SettingsService settings, DeviceMonitor monitor, Function<String, Optional<Score>> songs) {
+                           SettingsService settings, DeviceMonitor monitor, Function<String, Optional<Score>> songs,
+                           SessionHistory history, InstantSource now) {
         this.monitor = monitor;
         this.songs = songs;
+        this.history = history;
+        this.now = now;
         this.inputs = inputs;
         this.outputs = outputs;
         this.clock = clock;
@@ -90,8 +99,10 @@ public final class SessionMethods implements AutoCloseable {
 
     public static SessionMethods register(RpcServer server, MidiInputPort inputs, MidiOutputPort outputs,
                                           TimestampSource clock, EventSink events, SettingsService settings,
-                                          DeviceMonitor monitor, Function<String, Optional<Score>> songs) {
-        SessionMethods methods = new SessionMethods(inputs, outputs, clock, events, settings, monitor, songs);
+                                          DeviceMonitor monitor, Function<String, Optional<Score>> songs,
+                                          SessionHistory history, InstantSource now) {
+        SessionMethods methods = new SessionMethods(inputs, outputs, clock, events, settings, monitor, songs, history,
+                now);
         server.register("session.start", SessionStartParams.class, SessionStarted.class, methods::start);
         server.register("session.pause", Void.class, Void.class, ignored -> methods.control(Practice::pause));
         server.register("session.resume", Void.class, Void.class, ignored -> methods.control(Practice::resume));
@@ -120,8 +131,9 @@ public final class SessionMethods implements AutoCloseable {
                 .map(id -> new Playback(plan.playbackNotes(), new MidiNotes(outputs.get(id)), plan.mode() == FollowMode.WAIT));
         Results results = new Results();
         PassResults passes = new PassResults(position -> plan.loop().map(loop -> loop.passAt(position)).orElse(1));
+        BarMistakes mistakes = new BarMistakes(plan::barAt);
         Practice practice = Practice.prepare(plan.targets(), plan.timing(), plan.mode(), clock::nanos,
-                SessionListener.all(List.of(new SessionEvents(events, plan::nameOf), results, passes)),
+                SessionListener.all(List.of(new SessionEvents(events, plan::nameOf), results, passes, mistakes)),
                 Optional.of(accent -> {
                     Messages.BEAT.send(events, new BeatEvent(accent));
                     clicks.ifPresent(output -> output.click(accent));
@@ -137,7 +149,7 @@ public final class SessionMethods implements AutoCloseable {
         int bpm = plan.timing().tempo().bpm();
         settings.update(current -> plan.isSong() ? current.withInput(params.input())
                 : current.withInput(params.input()).withTempo(plan.modeKey(), bpm));
-        practice.start().whenComplete((ignored, failure) -> finished(session, results, passes));
+        practice.start().whenComplete((ignored, failure) -> finished(session, results, passes, mistakes));
         return new SessionStarted(plan.seed(), bpm, plan.songTempo(), plan.notices(),
                 plan.sectionStart().map(Fraction::toString).orElse(null),
                 plan.loop().map(loop -> loop.passLength().toString()).orElse(null));
@@ -206,7 +218,7 @@ public final class SessionMethods implements AutoCloseable {
         return Optional.ofNullable(active);
     }
 
-    private void finished(Active session, Results results, PassResults passes) {
+    private void finished(Active session, Results results, PassResults passes, BarMistakes mistakes) {
         synchronized (this) {
             if (!session.inputLost) {
                 closeQuietly(session.input);
@@ -216,8 +228,15 @@ public final class SessionMethods implements AutoCloseable {
             }
         }
         session.outputs.forEach(OutputConnection::close);
-        Messages.SUMMARY.send(events, SummaryEvent.of(results.summary(), session.practice.elapsedNanos(),
-                session.plan.loop().filter(loop -> loop.passes() > 1).map(loop -> passes.passes()).orElse(List.of())));
+        Summary summary = results.summary();
+        List<Summary> passSummaries = session.plan.loop().filter(loop -> loop.passes() > 1)
+                .map(loop -> passes.passes()).orElse(List.of());
+        long elapsedMs = session.practice.elapsedNanos() / 1_000_000L;
+        if (session.plan.scored() && summary.completedTargets() + summary.missed() > 0) {
+            history.record(session.plan.record(now.instant(), summary, elapsedMs,
+                    passSummaries.stream().map(Summary::accuracyPercent).toList(), mistakes.byBar()));
+        }
+        Messages.SUMMARY.send(events, SummaryEvent.of(summary, session.practice.elapsedNanos(), passSummaries));
     }
 
     private static void closeQuietly(InputConnection input) {

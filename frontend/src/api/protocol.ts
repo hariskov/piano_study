@@ -32,6 +32,15 @@ export interface EvalEvent {
   offsetMs?: number;
 }
 
+export interface History {
+  sessions: PastSession[];
+}
+
+export interface HistoryParams {
+  songId?: string;
+  exercise?: string;
+}
+
 export interface ImportParams {
   path?: string;
   grid?: number;
@@ -78,6 +87,30 @@ export interface PartSummary {
   noteCount: number;
   lowest?: string;
   highest?: string;
+}
+
+export interface PastSession {
+  finishedAt: string;
+  exercise: string;
+  songId?: string;
+  part?: string;
+  hands: string;
+  mode: string;
+  tempo: number;
+  tempoPercent?: number;
+  fromBar?: number;
+  toBar?: number;
+  accuracyPercent: number;
+  timed: boolean;
+  completedTargets: number;
+  wrongKeys: number;
+  perfect: number;
+  good: number;
+  ok: number;
+  missed: number;
+  elapsedMs: number;
+  passes: number[];
+  mistakesByBar: Record<string, number>;
 }
 
 export interface SessionStartParams {
@@ -210,6 +243,7 @@ export interface ApiMethods {
   "library.list": { params: Record<string, never>; result: SongList };
   "library.musicXml": { params: SongId; result: MusicXml };
   "library.open": { params: SongId; result: SongDetails };
+  "progress.history": { params: HistoryParams; result: History };
   "session.adjust": { params: AdjustParams; result: null };
   "session.changeTempo": { params: TempoParams; result: null };
   "session.pause": { params: Record<string, never>; result: null };

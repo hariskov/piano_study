@@ -3,6 +3,7 @@ package bg.petarh.piano.api.session;
 import bg.petarh.piano.api.PianoApi;
 import bg.petarh.piano.api.rpc.RpcServer;
 import bg.petarh.piano.api.settings.InMemorySettings;
+import bg.petarh.piano.library.progress.ProgressLog;
 import bg.petarh.piano.library.songs.SongLibrary;
 import bg.petarh.piano.midi.output.OutputEvent;
 import bg.petarh.piano.midi.value.MidiChannel;
@@ -61,7 +62,8 @@ class SongSessionTest {
         songId = library.add(song, "duet.musicxml", "MusicXML", List.of()).id();
         api = PianoApi.create(server, keyboard.port(), silent.port(), System::nanoTime,
                 (method, params) -> events.add(JSON.readTree(server.notification(method, params))),
-                new InMemorySettings(), keyboard, library);
+                new InMemorySettings(), keyboard, library, new ProgressLog(folder.resolve("progress")),
+                () -> Instant.parse("2026-11-28T10:00:00Z"));
     }
 
     @AfterEach
@@ -170,6 +172,51 @@ class SongSessionTest {
     }
 
     @Test
+    void savesEachFinishedSessionWithItsMistakesPerBar() {
+        call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\"" + songId
+                + "\",\"keyboard\":\"61\",\"tempoPercent\":80,\"countIn\":0}");
+        for (int i = 1; i <= 3; i++) {
+            Pitch pitch = Pitch.parse(await("session.target", i).at("/params/notes/0/pitch").asString());
+            if (i == 2) {
+                keyboard.press(Pitch.parse("A0"), Velocity.of(64));
+                keyboard.release(Pitch.parse("A0"));
+            }
+            keyboard.press(pitch, Velocity.of(64));
+            keyboard.release(pitch);
+        }
+        await("session.summary", 1);
+
+        JsonNode sessions = call("progress.history", "{\"songId\":\"" + songId + "\"}").at("/result/sessions");
+
+        assertThat(sessions).hasSize(1);
+        JsonNode saved = sessions.get(0);
+        assertThat(saved.get("finishedAt").asString()).isEqualTo("2026-11-28T10:00:00Z");
+        assertThat(saved.get("exercise").asString()).isEqualTo("song");
+        assertThat(saved.get("part").asString()).isEqualTo("P1");
+        assertThat(saved.get("tempoPercent").asInt()).isEqualTo(80);
+        assertThat(saved.get("accuracyPercent").asInt()).isEqualTo(75);
+        assertThat(saved.get("mistakesByBar").toString()).isEqualTo("{\"1\":1}");
+    }
+
+    @Test
+    void doesNotSaveListeningAndKeepsRandomPracticeApart() {
+        call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\"" + songId
+                + "\",\"mode\":\"listen\",\"tempoPercent\":240,\"countIn\":0}");
+        await("session.summary", 1);
+        int targetsSoFar = (int) events.stream().filter(event -> event.get("method").asString().equals("session.target"))
+                .count();
+        call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"random\",\"notes\":1,\"countIn\":0}");
+        Pitch pitch = Pitch.parse(await("session.target", targetsSoFar + 1).at("/params/notes/0/pitch").asString());
+        keyboard.press(pitch, Velocity.of(64));
+        keyboard.release(pitch);
+        await("session.summary", 2);
+
+        assertThat(call("progress.history", "{\"songId\":\"" + songId + "\"}").at("/result/sessions")).isEmpty();
+        assertThat(call("progress.history", "{\"exercise\":\"random\"}").at("/result/sessions")).hasSize(1);
+        assertThat(call("progress.history", "{}").at("/error/code").asInt()).isEqualTo(-32602);
+    }
+
+    @Test
     void refusesBarsOutsideTheSong() {
         assertThat(call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\""
                 + songId + "\",\"fromBar\":1,\"toBar\":5}").at("/error/message").asString()).contains("2 bars");
@@ -193,7 +240,11 @@ class SongSessionTest {
     }
 
     private JsonNode await(String method, int occurrence) {
+        long deadline = System.nanoTime() + 5_000_000_000L;
         while (true) {
+            if (System.nanoTime() > deadline) {
+                throw new AssertionError("No " + method + " #" + occurrence + " in time; events: " + events);
+            }
             List<JsonNode> matching = events.stream()
                     .filter(event -> event.get("method").asString().equals(method)).toList();
             if (matching.size() >= occurrence) {

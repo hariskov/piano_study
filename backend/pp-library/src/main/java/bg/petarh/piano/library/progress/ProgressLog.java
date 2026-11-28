@@ -1,6 +1,5 @@
 package bg.petarh.piano.library.progress;
 
-import bg.petarh.piano.library.songs.SongLibrary;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
@@ -16,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public final class ProgressLog {
+public final class ProgressLog implements SessionHistory {
 
     public static final int KEPT_SESSIONS = 500;
 
@@ -34,16 +33,14 @@ public final class ProgressLog {
         this.folder = folder;
     }
 
-    public static Path defaultFolder() {
-        return SongLibrary.defaultFolder().resolveSibling("progress");
-    }
-
+    @Override
     public synchronized void record(SessionRecord session) {
         List<SessionRecord> sessions = new ArrayList<>(history(session.key()));
         sessions.add(session);
         write(file(session.key()), sessions.subList(Math.max(0, sessions.size() - KEPT_SESSIONS), sessions.size()));
     }
 
+    @Override
     public synchronized List<SessionRecord> history(String key) {
         Path file = file(key);
         if (!Files.exists(file)) {
