@@ -359,15 +359,15 @@ Implemented so far (`pp-import-midi`, step 1):
 - Notes are paired first in, first out per track, channel and pitch, with Note On at velocity 0 counting as Note Off. A note that is never released ends at the end of the file, with a warning.
 - SMPTE-timed files and files that aren't MIDI throw `MidiImportException`, naming the file.
 - This module uses `javax.sound.midi` only to parse the file (`MidiSystem.getSequence`), never to open devices; device access stays in `pp-midi-jdk`.
-- `MidiToScore.convert(raw, options, fileTitle)` returns a `MidiConversion` (score plus warnings). It covers steps 2–5:
+- `MidiToScore.convert(raw, options, fileTitle)` returns a `MidiConversion` (score, warnings and each part's instrument). It covers steps 2–5:
   - **Quantising:** `Quantiser` snaps note starts and ends, and the positions of tempo, time and key events, to the grid (`MidiImportOptions.grid`, default 1/16). With `triplets`, each position takes the nearer of the straight and the 3:2 grid, preferring straight on a tie. A note that collapses to nothing gets one grid step.
   - **Parts:** one per track and channel, ordered by track then channel, with ids `P1`…. Each is named from its track name, else its General MIDI instrument (`GeneralMidi`), else "Track N". Channel 10 percussion is left out, with a warning.
   - **Signatures:** time and key signatures carried over. Tempo becomes quarter-note BPM, clamped to 20–240 with a warning.
   - **Voices:** notes that start and end together share a voice as a chord; otherwise a note takes the first voice that is free by its start, or a new one. No voice ever has overlapping notes.
-  - **Spelling, length and title:** sharps or flats as the key at the note prefers. The length is rounded up to the end of a measure. The title comes from track 0's name, else the file name.
+  - **Spelling, length and title:** sharps or flats as the key at the note prefers. The length is rounded up to the end of a measure. The title comes from track 0's name, else the file name; LilyPond's "control track" doesn't count as a name.
   - **Key estimation:** a file without a key signature gets an estimated key (`KeyEstimator`, Krumhansl–Schmuckler: a duration-weighted pitch-class histogram compared against the 24 major and minor Krumhansl–Kessler profiles), with a warning naming it.
   - **Hands** (`HandSplitter`, MID-5): a part is piano if its program is 0–7, or if it has no program, since 0 is MIDI's default.
-    - **Joined:** two piano parts become one two-staff "Piano" part (the higher one is staff 1, the right hand) when their names say which hand they are (right/left, RH/LH, treble/bass, upper/lower), or when they are the file's only two parts and lie at least 5 semitones apart on average.
+    - **Joined:** the piano parts become one two-staff "Piano" part when every one of them names a hand and both hands are named (right/left, RH/LH, treble/bass, upper/lower, or LilyPond's voice tracks `up:`, `upII:`, `down:`…): right-hand tracks go on staff 1, left-hand ones on staff 2. Two piano parts are also joined, the higher one on staff 1, when they are the file's only two parts and lie at least 5 semitones apart on average.
     - **Split:** every other piano part gets two staves, split by pitch at `MidiImportOptions.splitPoint` (default 60, middle C).
     - Other instruments keep one staff. Voices are assigned per staff.
   - Every step uses a fixed order, so the same file and options always give the same score (MID-7).

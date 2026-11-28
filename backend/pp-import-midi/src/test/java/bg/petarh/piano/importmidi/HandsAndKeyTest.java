@@ -55,6 +55,18 @@ class HandsAndKeyTest {
     }
 
     @Test
+    void joinsEveryVoiceTrackNamedForAHandIntoOnePart() {
+        RawMidi raw = midi(List.of(note(1, 76, 0), note(2, 72, 0), note(3, 48, 0), note(4, 43, 0)),
+                Map.of(1, "up:", 2, "upII:", 3, "down:", 4, "downII:"), Map.of());
+
+        List<Part> parts = convert(raw).score().parts();
+
+        assertThat(parts).hasSize(1);
+        assertThat(parts.getFirst().notes()).extracting(note -> note.pitch().midiNumber() + " staff " + note.staff())
+                .containsExactlyInAnyOrder("76 staff 1", "72 staff 1", "48 staff 2", "43 staff 2");
+    }
+
+    @Test
     void joinsTheOnlyTwoPianoTracksWhenTheyLieApart() {
         RawMidi raw = midi(List.of(note(1, 50, 0), note(1, 52, 1), note(2, 72, 0), note(2, 74, 1)), Map.of(), Map.of());
 
