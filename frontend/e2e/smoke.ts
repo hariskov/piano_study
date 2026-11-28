@@ -3,6 +3,7 @@ import { log, runAll, screenshot, test } from "./runner";
 
 declare const SONG_FILE: string;
 declare const MIDI_FILE: string;
+declare const LARGE_SCORE: string;
 
 configure({ asyncUtilTimeout: 10_000 });
 
@@ -39,6 +40,15 @@ function playTargetsOnComputerKeys(): void {
   const keys = targetKeys();
   keys.forEach((midi) => fireEvent.keyDown(window, { key: COMPUTER_KEYS[midi] }));
   keys.forEach((midi) => fireEvent.keyUp(window, { key: COMPUTER_KEYS[midi] }));
+}
+
+// The computer keys only reach C4-E5, so other targets are clicked.
+function playTargetsOnComputerKeysOrByClicking(): void {
+  if (targetKeys().every((midi) => COMPUTER_KEYS[midi] !== undefined)) {
+    playTargetsOnComputerKeys();
+  } else {
+    playTargetsByClicking();
+  }
 }
 
 function playTargetsByClicking(): void {
@@ -214,6 +224,49 @@ test("imports a MIDI file, leaving out a part", async () => {
     if (document.querySelector(".song-details table.parts")?.textContent?.includes("Melody")) throw new Error("melody imported");
   });
   await screenshot("11-midi-imported");
+});
+
+const LARGE_SCORE_STEPS = 40;
+const STEP_BUDGET_MS = 100;
+
+function nextFrame(): Promise<void> {
+  return new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+}
+
+// Moving the cursor once repainted the whole 3,000-note score, up to a second per step; the sheet now has its own
+// compositing layer. The time runs from the key press until the frame after the next target is shown. WebKit draws a
+// window that isn't on screen once a second, so then only the time until the page changes is checked.
+test("practises a large score smoothly", async () => {
+  window.backend!.chooseSongFile = async () => LARGE_SCORE;
+  await click("button", "Library");
+  await click("button", "Import…");
+  await click("button", "Import 1 part");
+  await screen.findByText(/Imported "chopin/i);
+  await screen.findByRole("heading", { name: /chopin/i });
+  await click("button", "Practise");
+  await choose("Count-in", "0");
+  await click("button", "Start");
+  await expectSheetMusic();
+
+  const steps: number[] = [];
+  for (let step = 0; step < LARGE_SCORE_STEPS; step++) {
+    const shown = await waitForTarget();
+    const start = performance.now();
+    playTargetsOnComputerKeysOrByClicking();
+    await waitFor(() => {
+      if (nowPlaying() === shown) throw new Error("target did not move on");
+    });
+    if (document.visibilityState === "visible") {
+      await nextFrame();
+    }
+    steps.push(performance.now() - start);
+  }
+  const until = document.visibilityState === "visible" ? "next frame" : "page change (window not visible)";
+  steps.sort((a, b) => a - b);
+  const p95 = steps[Math.floor(steps.length * 0.95)];
+  log(`    large score, press to ${until}: median ${steps[steps.length / 2].toFixed(1)} ms, 95th percentile ${p95.toFixed(1)} ms`);
+  if (p95 > STEP_BUDGET_MS) throw new Error(`95th percentile ${p95.toFixed(1)} ms is over ${STEP_BUDGET_MS} ms`);
+  await click("button", "Stop");
 });
 
 void runAll();

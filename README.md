@@ -46,7 +46,7 @@ End-to-end smoke test. It runs inside the real app window with the real backend 
 cd frontend && npm run e2e
 ```
 
-It prints one line per test and exits with 0 when all pass. Screenshots of each step go to `frontend/test-results/screens/`.
+Keep its window on screen while it runs. It prints one line per test and exits with 0 when all pass. Screenshots of each step go to `frontend/test-results/screens/`.
 
 It plays a random-notes session and a chord session on the virtual keyboard, imports a song into the library, shows its sheet music and practises it twice in a row, and saves screenshots in `frontend/test-results/screens/`.
 

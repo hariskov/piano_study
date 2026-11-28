@@ -984,3 +984,8 @@ label:has(> input[type="radio"]) > .icon {
   width: 1.6em;
   height: 1.6em;
 }
+
+/* Its own compositing layer, so moving the cursor doesn't repaint a large score (up to a second per step before). */
+.sheet-music svg {
+  will-change: transform;
+}
