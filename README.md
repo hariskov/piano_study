@@ -32,12 +32,14 @@ frontend/target/bundle/piano-player-0.1.0-x86_64.sh
 
 It is a shell script with the app packed inside. The first start unpacks it (about 340 MB) into `~/.cache/piano-player/app/` and removes older unpacked builds; later starts run it from there. It contains its own Java runtime, so the target machine needs nothing else installed.
 
-End-to-end smoke test (Playwright driving the real app; needs a display, for example Xvfb on a headless machine):
+End-to-end smoke test. It runs inside the real app window with the real backend and a fresh settings and library folder. It needs a display and the same GJS and WebKitGTK packages as `bin/ui`:
 
 ```
 ./mvnw -q package -DskipTests
-cd frontend && npm run e2e        # or: xvfb-run npm run e2e
+cd frontend && npm run e2e
 ```
+
+It prints one line per test and exits with 0 when all pass. Screenshots of each step go to `frontend/test-results/screens/`.
 
 It plays a random-notes session and a chord session on the virtual keyboard, imports a song into the library, shows its sheet music and practises it twice in a row, and saves screenshots in `frontend/test-results/screens/`.
 
