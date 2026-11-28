@@ -41,7 +41,7 @@ The backend does all the work: device handling, importing, generating notes, tim
 | UI framework | **React + Vite** | Widely used, lots of tooling. Drawing done directly on canvas/SVG |
 | Desktop window | **Electron** | A predictable Chromium engine, good canvas performance, mature Linux packaging |
 | Notation (v1) | **VexFlow** or **OpenSheetMusicDisplay** (renders MusicXML directly, built on VexFlow) | Proper staff notation in canvas/SVG without writing a music engraver ourselves |
-| Packaging | **jlink** (trimmed Java runtime) + **appimagetool** → AppImage | One self-contained package, built by a short script (electron-builder was dropped: it added 266 npm packages for a job a script does) |
+| Packaging | **jlink** (trimmed Java runtime) + a self-extracting shell script | One self-contained executable built by a short script with only `tar` and `xz` (electron-builder was dropped: it added 266 npm packages; then the AppImage, which needed appimagetool) |
 | OMR (v2) | **Audiveris** | Open-source Java OMR, outputs MusicXML |
 
 ### 2.1 Why a web UI in a desktop window, and not a browser
@@ -58,13 +58,13 @@ The backend doesn't depend on the window shell, so switching later only affects 
 
 ### 2.2 jpackage vs jlink
 
-`jpackage` is a JDK tool that bundles a Java app and a Java runtime into a Linux package (.deb/.rpm/app image). Because Electron is the app here, we only need its building block, **`jlink`**, which produces a trimmed-down Java runtime (~40–60 MB). `packaging/build-appimage.sh` then puts that runtime, Electron and the UI into one AppImage. jpackage is still useful for a backend-only build (for example, a headless/CLI test build).
+`jpackage` is a JDK tool that bundles a Java app and a Java runtime into a Linux package (.deb/.rpm/app image). Because Electron is the app here, we only need its building block, **`jlink`**, which produces a trimmed-down Java runtime (~40–60 MB). `packaging/build-bundle.sh` then packs that runtime, Electron and the UI into one executable file. jpackage is still useful for a backend-only build (for example, a headless/CLI test build).
 
-As built (P4), with the opt-in Maven profile `appimage`:
+As built (P4), with the opt-in Maven profile `bundle`:
 - `pp-app` runs `jlink` on `pp-app.jar` and its `lib/` modules. Every dependency is a named module, so the backend itself is linked in, with a `pp` launcher. The result is `backend/pp-app/target/runtime`, about 60 MB. It uses `--strip-java-debug-attributes` rather than `--strip-debug`, because the latter also strips native symbols and needs `objcopy`. The build stops with an install hint when the JDK has no `jmods` (on openSUSE: `java-25-openjdk-jmods`).
-- `frontend` runs `packaging/build-appimage.sh`. It assembles an AppDir: Electron's own files from `node_modules/electron/dist` (unpacked by Electron's `install.js` if needed, binary renamed `piano-player`), the UI and `package.json` in `resources/app`, the runtime in `resources/backend`, an `AppRun` launcher, the desktop entry (category Education) and `packaging/icon.png`. It packs the AppDir with **appimagetool 1.9.1**, taken from `$APPIMAGETOOL` or `~/.cache/piano-player/appimagetool-1.9.1-x86_64.AppImage`; the script never downloads it, and stops with the download link when it's missing. The AppDir is deleted afterwards, so only the AppImage stays in `frontend/target/appimage`. electron-builder was used at first and dropped on 2026-11-28: it brought 266 npm packages (including a Windows installer) and left a 344 MB unpacked copy behind.
+- `frontend` runs `packaging/build-bundle.sh`. It assembles the app folder: Electron's own files from `node_modules/electron/dist` (unpacked by Electron's `install.js` if needed, binary renamed `piano-player`), the UI and `package.json` in `resources/app`, the runtime in `resources/backend`. It packs the folder as `tar.xz` and appends it to a short `sh` header, giving `frontend/target/bundle/piano-player-<version>-x86_64.sh` (about 130 MB). On start the header unpacks the payload into `${XDG_CACHE_HOME:-~/.cache}/piano-player/app/<version>-<payload hash>` unless it is already there, removes other unpacked builds, and runs it. Only `sh`, `tail`, `xz` and `tar` are needed on the target. electron-builder was used at first and dropped on 2026-11-28 (266 npm packages, a 344 MB unpacked copy left behind); an AppImage built with appimagetool followed and was replaced the same day, because appimagetool had to be fetched by hand.
 - The Electron main process picks the backend with `backendCommand`: `PP_BACKEND` if set, otherwise `resources/backend/bin/pp` when packaged, or the checkout's `bin/pp` when run from source.
-- Only an AppImage for now; it runs on any distribution without installing.
+- No desktop entry or menu icon yet; the file runs on any distribution without installing.
 
 ## 2A. Code principles
 

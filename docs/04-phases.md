@@ -138,7 +138,7 @@ Done when: you can practise random notes and chords with the real piano using on
 **Goal:** a self-contained Linux build.
 
 Deliverables:
-- jlink runtime plus `packaging/build-appimage.sh` (appimagetool) → **AppImage**.
+- jlink runtime plus `packaging/build-bundle.sh` → **one self-extracting executable** (`piano-player-<version>-x86_64.sh`). An AppImage came first and was dropped on 2026-11-28: it needed appimagetool, fetched by hand.
 - A single build command, or a wrapper script that runs `mvn package` and `npm run dist`.
 
 Testing:

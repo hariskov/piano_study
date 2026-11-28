@@ -85,7 +85,7 @@
 
     <profiles>
         <profile>
-            <id>appimage</id>
+            <id>bundle</id>
             <build>
                 <plugins>
                     <plugin>
@@ -94,14 +94,14 @@
                         <version>${antrun-plugin.version}</version>
                         <executions>
                             <execution>
-                                <id>build-appimage</id>
+                                <id>build-bundle</id>
                                 <phase>package</phase>
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
                                 <configuration>
                                     <target>
-                                        <exec executable="${maven.multiModuleProjectDirectory}/packaging/build-appimage.sh"
+                                        <exec executable="${maven.multiModuleProjectDirectory}/packaging/build-bundle.sh"
                                               failonerror="true"/>
                                     </target>
                                 </configuration>
