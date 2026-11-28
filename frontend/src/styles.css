@@ -850,3 +850,46 @@ fieldset.card {
 .practice-main:has(> .adjust) {
   grid-template-columns: 1fr 260px;
 }
+
+.section-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+  padding: 0.75rem 1rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.section-picker input {
+  width: 6rem;
+}
+
+.section-picker > button {
+  align-self: end;
+  justify-self: start;
+}
+
+.passes {
+  list-style: none;
+  margin: 1rem 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.passes li {
+  display: grid;
+  grid-template-columns: 5rem 1fr 3.5rem;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pass-bar {
+  height: 0.6rem;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.passes strong {
+  text-align: right;
+}

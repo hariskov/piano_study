@@ -9,6 +9,11 @@ interface Props {
 }
 
 const SLOWEST_PERCENT = 25;
+const MOST_REPEATS = 99;
+
+function clamp(value: number, lowest: number, highest: number): number {
+  return Math.min(highest, Math.max(lowest, Number.isFinite(value) ? Math.round(value) : lowest));
+}
 const FASTEST_PERCENT = 150;
 
 export function SongSetup({ song, onStart, onBack }: Props) {
@@ -22,6 +27,9 @@ export function SongSetup({ song, onStart, onBack }: Props) {
   const [metronome, setMetronome] = useState(true);
   const [outOfRange, setOutOfRange] = useState("shift");
   const [accompany, setAccompany] = useState(true);
+  const [fromBar, setFromBar] = useState(1);
+  const [toBar, setToBar] = useState(song.measureCount);
+  const [repeats, setRepeats] = useState(1);
 
   useEffect(() => {
     void client.request("settings.get", {}).then(setSettings);
@@ -39,6 +47,10 @@ export function SongSetup({ song, onStart, onBack }: Props) {
   if (!settings) {
     return <p className="muted">Loading…</p>;
   }
+  const section = () => {
+    const first = clamp(fromBar, 1, song.measureCount);
+    return { fromBar: first, toBar: clamp(toBar, first, song.measureCount), repeats: clamp(repeats, 1, MOST_REPEATS) };
+  };
   const start = () => {
     const params: SessionStartParams = {
       input: settings.input,
@@ -50,6 +62,7 @@ export function SongSetup({ song, onStart, onBack }: Props) {
       tempoPercent: percent,
       countIn,
       outOfRange,
+      ...section(),
     };
     if (metronome && settings.output) {
       params.metronome = settings.output;
@@ -64,7 +77,7 @@ export function SongSetup({ song, onStart, onBack }: Props) {
     <section className="screen setup">
       <h2>{song.title}</h2>
       <p className="muted">
-        {song.key} · {song.timeSignature} · {song.measureCount} bars
+        {song.key} · {song.timeSignature} · {song.measureCount} {song.measureCount === 1 ? "bar" : "bars"}
       </p>
       {settings.input === undefined && <p className="problem">Choose your piano on the Devices screen first.</p>}
       <div className="columns">
@@ -148,6 +161,32 @@ export function SongSetup({ song, onStart, onBack }: Props) {
             </span>
           </label>
           <p className="muted">The song is written at {song.tempo} BPM. Start slower and speed up as it gets easier.</p>
+          <fieldset className="section-picker">
+            <legend>Section</legend>
+            <label className="field">
+              <span>From bar</span>
+              <input type="number" aria-label="From bar" min={1} max={song.measureCount} value={fromBar}
+                onChange={(event) => setFromBar(Number(event.target.value))} />
+            </label>
+            <label className="field">
+              <span>To bar</span>
+              <input type="number" aria-label="To bar" min={1} max={song.measureCount} value={toBar}
+                onChange={(event) => setToBar(Number(event.target.value))} />
+            </label>
+            <label className="field">
+              <span>Play it</span>
+              <select aria-label="Play it" value={repeats} onChange={(event) => setRepeats(Number(event.target.value))}>
+                {[1, 2, 3, 5, 10, 20, MOST_REPEATS].map((count) => (
+                  <option key={count} value={count}>
+                    {count === 1 ? "once" : count === MOST_REPEATS ? "until I stop" : `${count} times`}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="button" onClick={() => { setFromBar(1); setToBar(song.measureCount); }}>
+              Whole song
+            </button>
+          </fieldset>
         </div>
       </div>
       <div className="actions">

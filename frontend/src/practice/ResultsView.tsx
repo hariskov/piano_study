@@ -43,6 +43,17 @@ export function ResultsView({ summary, onAgain, onChangeSettings }: Props) {
           ))}
         </dl>
       </div>
+      {summary.passes.length > 1 && (
+        <ol className="card passes" aria-label="Passes">
+          {summary.passes.map((accuracy, index) => (
+            <li key={index}>
+              <span>Pass {index + 1}</span>
+              <span className="pass-bar" style={{ width: `${accuracy}%` }} />
+              <strong>{accuracy}%</strong>
+            </li>
+          ))}
+        </ol>
+      )}
       <div className="actions">
         <button type="button" onClick={onChangeSettings}>
           Change settings

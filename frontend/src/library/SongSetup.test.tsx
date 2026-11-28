@@ -111,4 +111,27 @@ describe("SongSetup", () => {
     expect(onStart).toHaveBeenCalledWith(expect.objectContaining({ mode: "listen", playback: "jdk:Gervill" }));
     expect(screen.getByRole("option", { name: "Play along (no scoring)" })).toBeTruthy();
   });
+
+  it("practises a section of bars several times", async () => {
+    const onStart = show();
+    await screen.findByText("Sonatina");
+
+    fireEvent.change(screen.getByLabelText("From bar"), { target: { value: "5" } });
+    fireEvent.change(screen.getByLabelText("To bar"), { target: { value: "8" } });
+    fireEvent.change(screen.getByLabelText("Play it"), { target: { value: "5" } });
+    fireEvent.click(screen.getByRole("button", { name: "Start" }));
+
+    expect(onStart).toHaveBeenCalledWith(expect.objectContaining({ fromBar: 5, toBar: 8, repeats: 5 }));
+  });
+
+  it("plays the whole song once by default and keeps the bars in order", async () => {
+    const onStart = show();
+    await screen.findByText("Sonatina");
+
+    fireEvent.change(screen.getByLabelText("From bar"), { target: { value: "30" } });
+    fireEvent.click(screen.getByRole("button", { name: "Start" }));
+
+    expect(onStart).toHaveBeenCalledWith(expect.objectContaining({ fromBar: 24, toBar: 24, repeats: 1 }));
+  });
 });
+

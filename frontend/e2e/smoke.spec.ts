@@ -118,10 +118,11 @@ test("practises the imported song to the results", async () => {
   };
   await page.getByRole("button", { name: "Practise" }).click();
   await page.getByLabel("Count-in").selectOption("0");
+  await page.getByLabel("Play it").selectOption("2");
   await page.screenshot({ path: path.join(screenshots, "7-song-setup.png") });
   await page.getByRole("button", { name: "Start" }).click();
 
-  for (let played = 0; played < 2; played++) {
+  for (let played = 0; played < 4; played++) {
     await expect(page.getByLabel("Now playing")).not.toHaveText("…");
     if (played === 0) {
       await page.screenshot({ path: path.join(screenshots, "8-song-practice.png") });
@@ -136,10 +137,12 @@ test("practises the imported song to the results", async () => {
     for (const midi of targets) {
       await page.keyboard.up(keys[midi]);
     }
-    if (played === 0) {
+    if (played < 3) {
       await expect(page.getByLabel("Now playing")).not.toHaveText(shown);
     }
   }
 
   await expect(page.getByLabel("Accuracy")).toHaveText("100%");
+  await expect(page.getByRole("list", { name: "Passes" })).toContainText("Pass 2");
+  await page.screenshot({ path: path.join(screenshots, "9-song-results.png") });
 });
