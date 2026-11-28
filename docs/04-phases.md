@@ -22,7 +22,8 @@ v2.0:             P11 PDF/OMR
 | P6 MIDI → MusicXML | **Code complete.** Done: `pp-import-midi` reads MIDI files (types 0 and 1) and converts them to a `Score` (quantising, triplets, parts and names, percussion left out, tempo/time/key, voices, spelling), hand splitting and key estimation. `pp import` / `pp songs`. Remaining: golden MIDI files from real songs and the manual check of converted files in MuseScore. |
 | P7 Song sessions and playback | **Code complete.** Done: Library screen (import with file picker and MIDI options, search by name, open details, delete) on the `library.*` API; song tempo maps with scaling; `SongSelection` (part, hands, notes outside the keyboard); song sessions over the API; song setup and practice in the UI; playback of the other hand and parts; Listen and Play-along modes; sections and repeats with per-pass accuracy, in the API and the UI. |
 | P8 Notation | **In progress.** Done: `library.musicXml` and the section's place in `session.start`; songs drawn as sheet music (OpenSheetMusicDisplay) in the Library and during song practice, with a cursor that follows the current target through repeats. Remaining: staff notation for random notes and chords. |
-| P9–P11 | Not started |
+| P9 Full practice features | **In progress.** Sections and repeats were done in P7. Done: `ProgressLog`, session history in JSON files. |
+| P10–P11 | Not started |
 
 This table is updated in every PR that completes a deliverable.
 
@@ -181,8 +182,8 @@ Testing:
 ### Phase 9: Full practice features
 - Full MIDI import screen (preview, quantisation and hand-split controls).
 - Section selection and looping (moved into P7, done there), all settings in spec 3.1, latency offset adjustment.
-- Saved progress (SQLite), measures with the most mistakes, history for each song and exercise.
-- Testing: scenario tests for looping and sections; migration tests for the progress database; manual checklist covering the whole specification.
+- Saved progress (JSON files, not SQLite: decided 2026-11-28), measures with the most mistakes, history for each song and exercise.
+- Testing: scenario tests for looping and sections; tests for reading and writing the progress files; manual checklist covering the whole specification.
 
 ### Phase 10: Release hardening
 - Error handling and import reports shown in the UI, logs, crash recovery (restarting the backend if it stops).
