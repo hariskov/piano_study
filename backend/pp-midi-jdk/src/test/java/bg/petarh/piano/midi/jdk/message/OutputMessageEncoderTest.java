@@ -1,6 +1,7 @@
 package bg.petarh.piano.midi.jdk.message;
 
 import bg.petarh.piano.midi.output.OutputEvent;
+import bg.petarh.piano.midi.value.Instrument;
 import bg.petarh.piano.midi.value.MidiChannel;
 import bg.petarh.piano.midi.value.Velocity;
 import bg.petarh.piano.model.pitch.Pitch;
@@ -35,6 +36,15 @@ class OutputMessageEncoderTest {
         assertThat(message.getChannel()).isEqualTo(2);
         assertThat(message.getData1()).isEqualTo(69);
         assertThat(message.getData2()).isZero();
+    }
+
+    @Test
+    void encodesTheInstrumentAsProgramChange() {
+        ShortMessage message = encoder.encode(new OutputEvent.ProgramChange(Instrument.of(56), CHANNEL_3));
+
+        assertThat(message.getCommand()).isEqualTo(ShortMessage.PROGRAM_CHANGE);
+        assertThat(message.getChannel()).isEqualTo(2);
+        assertThat(message.getData1()).isEqualTo(56);
     }
 
     @Test

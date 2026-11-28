@@ -1,6 +1,6 @@
 package bg.petarh.piano.app.cli;
 
-import bg.petarh.piano.app.echo.InputEcho;
+import bg.petarh.piano.midi.output.InputEcho;
 import bg.petarh.piano.app.monitor.InputEventFormatter;
 import bg.petarh.piano.midi.device.DeviceId;
 import bg.petarh.piano.midi.input.InputConnection;

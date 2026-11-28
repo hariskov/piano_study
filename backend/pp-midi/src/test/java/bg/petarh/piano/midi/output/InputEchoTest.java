@@ -1,7 +1,7 @@
-package bg.petarh.piano.app.echo;
+package bg.petarh.piano.midi.output;
 
 import bg.petarh.piano.midi.input.InputEvent;
-import bg.petarh.piano.midi.output.OutputEvent;
+import bg.petarh.piano.midi.value.Instrument;
 import bg.petarh.piano.midi.value.MidiChannel;
 import bg.petarh.piano.midi.value.Velocity;
 import bg.petarh.piano.midi.virtual.output.SilentOutput;
@@ -40,5 +40,15 @@ class InputEchoTest {
         assertThat(output.sentEvents()).containsExactly(
                 new OutputEvent.SustainPedal(true, FIRST),
                 new OutputEvent.SustainPedal(false, FIRST));
+    }
+
+    @Test
+    void choosesItsInstrumentBeforePlaying() {
+        InputEcho organ = InputEcho.playing(Instrument.of(19), output.port().open(output.device().id()), FIRST);
+        organ.onEvent(new InputEvent.NoteOn(MIDDLE_C, Velocity.of(37), 0L));
+
+        assertThat(output.sentEvents()).containsExactly(
+                new OutputEvent.ProgramChange(Instrument.of(19), FIRST),
+                new OutputEvent.NoteOn(MIDDLE_C, Velocity.of(37), FIRST));
     }
 }

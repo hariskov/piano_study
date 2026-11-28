@@ -252,9 +252,9 @@ The rest of the backend only uses the interfaces in `pp-midi`. `javax.sound.midi
 | Package | Contents |
 |---|---|
 | `midi.device` | `DeviceId`, `DeviceDescriptor`, `DeviceUnavailableException` |
-| `midi.value` | `Velocity` (1–127), `MidiChannel` (0–15) |
+| `midi.value` | `Velocity` (1–127), `MidiChannel` (0–15), `Instrument` (General MIDI program 0–127) |
 | `midi.input` | `MidiInputPort`, `InputConnection`, `InputListener`, `InputEvent` (`NoteOn`, `NoteOff`, `SustainPedal`), `TimestampSource` |
-| `midi.output` | `MidiOutputPort`, `OutputConnection`, `OutputEvent` (`NoteOn`, `NoteOff`, `SustainPedal`, `AllNotesOff`) |
+| `midi.output` | `MidiOutputPort`, `OutputConnection`, `OutputEvent` (`NoteOn`, `NoteOff`, `SustainPedal`, `AllNotesOff`, `ProgramChange`), `InputEcho` (plays what comes in on an output channel, optionally after choosing its instrument; used by `pp echo`, moved here from `pp-app`) |
 | `midi.virtual.input` | `VirtualKeyboard`: controller (`press` / `release` / `sustain`) plus its `MidiInputPort`. Used for testing and for on-screen keyboard input (DEV-7). |
 | `midi.virtual.output` | `SilentOutput`: a `MidiOutputPort` that records sent events instead of playing them |
 

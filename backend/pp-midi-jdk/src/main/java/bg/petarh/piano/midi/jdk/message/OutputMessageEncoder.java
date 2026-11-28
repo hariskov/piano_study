@@ -21,6 +21,8 @@ public final class OutputMessageEncoder {
             case OutputEvent.SustainPedal pedal -> message(
                     ShortMessage.CONTROL_CHANGE, pedal.channel().index(), SUSTAIN_CONTROLLER,
                     pedal.down() ? CONTROLLER_ON : CONTROLLER_OFF);
+            case OutputEvent.ProgramChange change -> message(
+                    ShortMessage.PROGRAM_CHANGE, change.channel().index(), change.instrument().program(), 0);
             case OutputEvent.AllNotesOff allOff -> message(
                     ShortMessage.CONTROL_CHANGE, allOff.channel().index(), ALL_NOTES_OFF_CONTROLLER, CONTROLLER_OFF);
         };
