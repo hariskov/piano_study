@@ -22,7 +22,8 @@ public final class Messages {
     private Messages() {
     }
 
-    public record SessionStarted(long seed, int tempo, @MayBeAbsent Integer songTempo, List<String> notices) {
+    public record SessionStarted(long seed, int tempo, @MayBeAbsent Integer songTempo, List<String> notices,
+                                 @MayBeAbsent String sectionStart, @MayBeAbsent String passLength) {
     }
 
     public record TempoParams(int bpm) {

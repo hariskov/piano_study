@@ -64,6 +64,7 @@ final class PracticePlan {
     private final List<NoteEvent> accompaniment;
     private final List<NoteEvent> songNotes;
     private final SectionLoop loop;
+    private final Fraction sectionStart;
     private volatile SessionStartParams params;
 
     private PracticePlan(SessionStartParams params, Settings settings, SessionTiming timing, FollowMode mode,
@@ -83,10 +84,11 @@ final class PracticePlan {
         this.accompaniment = List.of();
         this.songNotes = List.of();
         this.loop = null;
+        this.sectionStart = null;
     }
 
     private PracticePlan(SessionStartParams params, Settings settings, SessionTiming timing, FollowMode mode,
-                         Score song, SectionLoop loop, List<String> notices) {
+                         Score song, SectionLoop loop, Fraction sectionStart, List<String> notices) {
         this.params = params;
         this.settings = settings;
         this.timing = timing;
@@ -102,6 +104,7 @@ final class PracticePlan {
         whole.addAll(loop.accompaniment());
         this.songNotes = List.copyOf(whole);
         this.loop = loop;
+        this.sectionStart = sectionStart;
     }
 
     static PracticePlan fromSong(SessionStartParams params, Settings settings, Score song) {
@@ -135,7 +138,7 @@ final class PracticePlan {
         if (selection.skipped() > 0) {
             notices.add(count(selection.skipped()) + " outside your keyboard " + was(selection.skipped()) + " skipped");
         }
-        return new PracticePlan(params, settings, timing, mode, song, loop, notices);
+        return new PracticePlan(params, settings, timing, mode, song, loop, sectionStart, notices);
     }
 
     private static String count(int notes) {
@@ -144,6 +147,10 @@ final class PracticePlan {
 
     private static String was(int notes) {
         return notes == 1 ? "was" : "were";
+    }
+
+    Optional<Fraction> sectionStart() {
+        return Optional.ofNullable(sectionStart);
     }
 
     Optional<SectionLoop> loop() {
