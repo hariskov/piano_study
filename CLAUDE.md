@@ -10,7 +10,8 @@ Docs: `docs/01-vision.md`, `docs/02-specification.md`, `docs/03-architecture-pla
 - After changing an API record, method or event: `./mvnw -pl backend/pp-api -am test -Dprotocol.write=true` regenerates `frontend/src/api/protocol.ts` (the build fails while it is out of date).
 - Frontend only: `cd frontend && PATH=$PWD/target/node:$PATH npm test` (or `npm run dev`) once Maven has installed Node.
 - `./mvnw -q package -DskipTests && bin/pp <command>` runs the CLI (`pp-app`) against the real MIDI system.
-- `./mvnw -Pappimage package -DskipTests` also builds the AppImage (`frontend/target/appimage/`). It needs the JDK's jmods (openSUSE: `java-25-openjdk-jmods`) and downloads electron-builder's tools on first use.
+- `./mvnw -Pappimage package -DskipTests` also builds the AppImage (`frontend/target/appimage/`). It needs the JDK's jmods (openSUSE: `java-25-openjdk-jmods`) and appimagetool 1.9.1 in `~/.cache/piano-player/` (or `$APPIMAGETOOL`); `packaging/build-appimage.sh` says where to get it.
+- Keep dependencies few: check what a new package pulls in (`npm ls --all`, the lock file's size) before adding it, and prefer a short script to a large tool.
 
 ## Rules
 

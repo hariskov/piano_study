@@ -78,17 +78,23 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>com.github.eirslett</groupId>
-                        <artifactId>frontend-maven-plugin</artifactId>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>${antrun-plugin.version}</version>
                         <executions>
                             <execution>
-                                <id>npm-dist</id>
+                                <id>build-appimage</id>
                                 <phase>package</phase>
                                 <goals>
-                                    <goal>npm</goal>
+                                    <goal>run</goal>
                                 </goals>
                                 <configuration>
-                                    <arguments>run dist</arguments>
+                                    <target>
+                                        <exec executable="${maven.multiModuleProjectDirectory}/packaging/build-appimage.sh"
+                                              failonerror="true">
+                                            <env key="PATH" path="${node.directory}/node:${env.PATH}"/>
+                                        </exec>
+                                    </target>
                                 </configuration>
                             </execution>
                         </executions>
