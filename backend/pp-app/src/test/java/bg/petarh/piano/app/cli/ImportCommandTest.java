@@ -45,7 +45,8 @@ class ImportCommandTest {
                 .contains("Imported \"Little Tune\" as little-tune (MIDI, 1 part, 1 measure)")
                 .contains("P1  Acoustic Grand Piano  2 staves  2 notes  C4-C5")
                 .contains("estimated as C major");
-        assertThat(library().resolve("little-tune/score.musicxml")).exists();
+        assertThat(library().resolve("xml/Little Tune.musicxml")).exists();
+        assertThat(library().resolve("midi/Little Tune.mid")).exists();
     }
 
     @Test
@@ -70,6 +71,37 @@ class ImportCommandTest {
         assertThat(exitCode).isZero();
         assertThat(out.toString()).contains("Imported \"Simple Melody\" as simple-melody (MusicXML, 1 part, 1 measure)")
                 .contains("simple-melody  Simple Melody  1 part  1 measure  MusicXML");
+    }
+
+    @Test
+    void opensASongByName() throws IOException {
+        run("import", Files.writeString(folder.resolve("melody.musicxml"), MELODY).toString(),
+                "--library", library().toString());
+
+        int exitCode = run("songs", "simple melody", "--library", library().toString());
+
+        assertThat(exitCode).isZero();
+        assertThat(out.toString()).contains("Simple Melody", "File: " + library().resolve("xml/Simple Melody.musicxml"),
+                "Flute  1 staff  2 notes  C5-G5", "4/4", "C major", "120 BPM");
+    }
+
+    @Test
+    void deletesASongByName() throws IOException {
+        run("import", Files.writeString(folder.resolve("melody.musicxml"), MELODY).toString(),
+                "--library", library().toString());
+
+        run("songs", "--delete", "Simple Melody", "--library", library().toString());
+        run("songs", "--library", library().toString());
+
+        assertThat(out.toString()).contains("Deleted \"Simple Melody\"").contains("No songs yet");
+    }
+
+    @Test
+    void saysWhenASongIsNotThere() {
+        int exitCode = run("songs", "nothing", "--library", library().toString());
+
+        assertThat(exitCode).isEqualTo(1);
+        assertThat(err.toString()).contains("No song called \"nothing\"");
     }
 
     @Test

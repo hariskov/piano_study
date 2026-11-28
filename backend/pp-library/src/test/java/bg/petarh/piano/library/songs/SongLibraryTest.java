@@ -65,8 +65,9 @@ class SongLibraryTest {
         assertThat(entry.format()).isEqualTo("MusicXML");
         assertThat(entry.importedAt()).isEqualTo(NOW);
         assertThat(entry.warnings()).containsExactly("Repeats are played straight through");
-        assertThat(folder.resolve("library/simple-melody/score.musicxml")).hasContent(MELODY);
-        assertThat(folder.resolve("library/simple-melody/meta.json")).exists();
+        assertThat(entry.fileName()).isEqualTo("Simple Melody.musicxml");
+        assertThat(folder.resolve("library/xml/Simple Melody.musicxml")).hasContent(MELODY);
+        assertThat(folder.resolve("library/index.json")).content().contains("\"title\" : \"Simple Melody\"");
     }
 
     @Test
@@ -101,6 +102,29 @@ class SongLibraryTest {
     }
 
     @Test
+    void keepsTheOriginalMidiFileNextToItsMusicXml() throws IOException {
+        Path midi = Files.write(folder.resolve("tune.mid"), new byte[]{'M', 'T', 'h', 'd'});
+        Score score = Score.builder("Little Tune").length(Fraction.whole(1)).build();
+
+        SongEntry entry = library().addMidi(score, midi, List.of());
+
+        assertThat(entry.midiFile()).contains("Little Tune.mid");
+        assertThat(folder.resolve("library/midi/Little Tune.mid")).hasBinaryContent(new byte[]{'M', 'T', 'h', 'd'});
+        assertThat(folder.resolve("library/xml/Little Tune.musicxml")).exists();
+        assertThat(entry.format()).isEqualTo("MIDI");
+        assertThat(library().delete(entry.id())).isTrue();
+        assertThat(folder.resolve("library/midi/Little Tune.mid")).doesNotExist();
+    }
+
+    @Test
+    void preparesAFolderForSheets() throws IOException {
+        library().importMusicXml(write("one.musicxml", MELODY));
+
+        assertThat(folder.resolve("library/sheets")).isDirectory();
+        assertThat(folder.resolve("library/midi")).isDirectory();
+    }
+
+    @Test
     void listsSongsByTitleAcrossRestarts() throws IOException {
         library().importMusicXml(write("b.musicxml", MELODY.replace("Simple Melody", "Zebra")));
         library().importMusicXml(write("a.musicxml", MELODY.replace("Simple Melody", "Aria")));
@@ -115,6 +139,8 @@ class SongLibraryTest {
 
         assertThat(first.id()).isEqualTo("simple-melody");
         assertThat(second.id()).isEqualTo("simple-melody-2");
+        assertThat(second.fileName()).isEqualTo("Simple Melody (2).musicxml");
+        assertThat(folder.resolve("library/xml/Simple Melody (2).musicxml")).exists();
     }
 
     @Test
@@ -131,7 +157,7 @@ class SongLibraryTest {
         assertThat(library().delete(entry.id())).isTrue();
 
         assertThat(library().list()).isEmpty();
-        assertThat(folder.resolve("library/simple-melody")).doesNotExist();
+        assertThat(folder.resolve("library/xml/Simple Melody.musicxml")).doesNotExist();
         assertThat(library().delete("simple-melody")).isFalse();
         assertThat(library().load("simple-melody")).isEmpty();
     }
@@ -151,21 +177,48 @@ class SongLibraryTest {
     }
 
     @Test
-    void skipsFoldersThatAreNotSongs() throws IOException {
+    void opensSongsByNameOrId() throws IOException {
         library().importMusicXml(write("one.musicxml", MELODY));
-        Files.createDirectories(folder.resolve("library/stray"));
-        Files.createDirectories(folder.resolve("library/corrupt"));
-        Files.writeString(folder.resolve("library/corrupt/meta.json"), "{ not json");
 
-        assertThat(library().list()).extracting(SongEntry::id).containsExactly("simple-melody");
+        assertThat(library().find("simple melody")).get().extracting(SongEntry::id).isEqualTo("simple-melody");
+        assertThat(library().find("SIMPLE-MELODY")).isPresent();
+        assertThat(library().find("Simple Melody.musicxml")).isPresent();
+        assertThat(library().find("unknown")).isEmpty();
+    }
+
+    @Test
+    void namesFilesSafelyWhateverTheTitle() throws IOException {
+        SongEntry entry = library().importMusicXml(write("x.musicxml", MELODY.replace("Simple Melody", "AC/DC: Live?")));
+
+        assertThat(entry.fileName()).isEqualTo("AC-DC- Live-.musicxml");
+        assertThat(folder.resolve("library/xml").resolve(entry.fileName())).exists();
+    }
+
+    @Test
+    void forgetsSongsWhoseFileWasRemoved() throws IOException {
+        SongEntry entry = library().importMusicXml(write("one.musicxml", MELODY));
+        Files.delete(folder.resolve("library/xml").resolve(entry.fileName()));
+
+        assertThat(library().list()).isEmpty();
+        assertThat(library().load(entry.id())).isEmpty();
+    }
+
+    @Test
+    void movesACorruptIndexAsideAndStartsAgain() throws IOException {
+        Files.createDirectories(folder.resolve("library"));
+        Files.writeString(folder.resolve("library/index.json"), "{ not json");
+
+        assertThat(library().list()).isEmpty();
+        assertThat(folder.resolve("library/index.json.bad")).hasContent("{ not json");
+        assertThat(library().importMusicXml(write("one.musicxml", MELODY)).id()).isEqualTo("simple-melody");
     }
 
     @Test
     void usesTheXdgDataFolder() {
         assertThat(SongLibrary.defaultFolder(Map.of("XDG_DATA_HOME", "/data"), Path.of("/home/ana")))
-                .isEqualTo(Path.of("/data/piano-player/library"));
+                .isEqualTo(Path.of("/data/piano-player/musicFiles"));
         assertThat(SongLibrary.defaultFolder(Map.of(), Path.of("/home/ana")))
-                .isEqualTo(Path.of("/home/ana/.local/share/piano-player/library"));
+                .isEqualTo(Path.of("/home/ana/.local/share/piano-player/musicFiles"));
     }
 
     private Path write(String name, String content) throws IOException {

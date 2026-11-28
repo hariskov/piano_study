@@ -45,7 +45,7 @@ final class ImportCommand implements Callable<Integer> {
     @Option(names = "--out", paramLabel = "FILE", description = "Write the converted MIDI file here as MusicXML instead.")
     private Optional<Path> out;
 
-    @Option(names = "--library", paramLabel = "DIR", description = "Song library folder (default: ~/.local/share/piano-player/library).")
+    @Option(names = "--library", paramLabel = "DIR", description = "Song library folder (default: ~/.local/share/piano-player/musicFiles).")
     private Optional<Path> library;
 
     @Option(names = "--grid", defaultValue = "16", description = "MIDI: snap notes to 1/4, 1/8, 1/16 or 1/32 (default: ${DEFAULT-VALUE}).")
@@ -77,7 +77,7 @@ final class ImportCommand implements Callable<Integer> {
                 describe(printer, converted.score(), converted.warnings());
                 return 0;
             }
-            SongEntry entry = songs.add(converted.score(), name, "MIDI", converted.warnings());
+            SongEntry entry = songs.addMidi(converted.score(), file, converted.warnings());
             report(printer, entry, converted.score());
             return 0;
         }
@@ -109,13 +109,17 @@ final class ImportCommand implements Callable<Integer> {
 
     private static void describe(PrintWriter printer, Score score, List<String> warnings) {
         for (Part part : score.parts()) {
-            printer.println("  " + part.id() + "  " + part.name() + "  " + plural(part.staffCount(), "staff", "staves")
-                    + "  " + plural(part.notes().size(), "note") + range(part.notes()));
+            printer.println(describePart(part));
         }
         if (!warnings.isEmpty()) {
             printer.println("Warnings:");
             warnings.forEach(warning -> printer.println("  - " + warning));
         }
+    }
+
+    static String describePart(Part part) {
+        return "  " + part.id() + "  " + part.name() + "  " + plural(part.staffCount(), "staff", "staves")
+                + "  " + plural(part.notes().size(), "note") + range(part.notes());
     }
 
     private static String range(List<ScoreNote> notes) {
