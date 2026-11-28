@@ -893,3 +893,8 @@ fieldset.card {
 .passes strong {
   text-align: right;
 }
+
+.prompt {
+  color: var(--accent);
+  font-weight: 600;
+}

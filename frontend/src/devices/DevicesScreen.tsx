@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useBackend } from "../app/backendContext";
 import type { DeviceList, SettingsView } from "../api/protocol";
 import { PianoKeyboard } from "../keyboard/PianoKeyboard";
 import { KEYBOARD_PRESETS, keyboardRange } from "../keyboard/presets";
 import { pitchName } from "../music/pitch";
+import { START_DETECTION, detectStep, type Detection } from "../keyboard/rangeDetection";
 
 const VIRTUAL_KEYBOARD = "virtual:keyboard";
 const CUSTOM = "custom";
@@ -17,6 +18,9 @@ export function DevicesScreen() {
   const [rangeProblem, setRangeProblem] = useState<string>();
   const [pressed, setPressed] = useState<ReadonlySet<number>>(new Set());
   const [rescanning, setRescanning] = useState(false);
+  const [detection, setDetection] = useState<Detection>();
+  const detectionRef = useRef<Detection>(undefined);
+  detectionRef.current = detection;
 
   useEffect(() => {
     void Promise.all([client.request("devices.list", {}), client.request("settings.get", {})]).then(([list, saved]) => {
@@ -42,6 +46,9 @@ export function DevicesScreen() {
         return;
       }
       const midi = event.midi;
+      if (event.type === "NOTE_ON" && detectionRef.current !== undefined) {
+        setDetection(detectStep(detectionRef.current, midi));
+      }
       setPressed((current) => {
         const next = new Set(current);
         if (event.type === "NOTE_ON") {
@@ -57,6 +64,14 @@ export function DevicesScreen() {
       void client.request("devices.stopMonitor", {}).catch(() => undefined);
     };
   }, [client, input]);
+
+  useEffect(() => {
+    if (detection?.step === "done" && input !== undefined) {
+      setDetection(undefined);
+      setCustomRange(detection.range);
+      void client.request("settings.update", { keyboards: { [input]: detection.range } }).then(setSettings);
+    }
+  }, [client, detection, input]);
 
   const saved = input ? settings?.keyboards[input] : undefined;
   const isPreset = saved === undefined || KEYBOARD_PRESETS.some((preset) => String(preset.keys) === saved);
@@ -165,6 +180,13 @@ export function DevicesScreen() {
               <option value={CUSTOM}>Custom range…</option>
             </select>
           </label>
+          <div className="field inline">
+            <button type="button" onClick={() => setDetection(detection ? undefined : START_DETECTION)}>
+              {detection ? "Cancel" : "Detect from the piano"}
+            </button>
+            {detection?.step === "lowest" && <span className="prompt">Press the lowest key on your piano.</span>}
+            {detection?.step === "highest" && <span className="prompt">Now press the highest key.</span>}
+          </div>
           {!isPreset && (
             <div className="field inline">
               <input
