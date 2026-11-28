@@ -35,10 +35,14 @@ public final class DeviceWatcher implements AutoCloseable {
         scheduler.scheduleWithFixedDelay(this::check, interval.toNanos(), interval.toNanos(), TimeUnit.NANOSECONDS);
     }
 
-    synchronized void check() {
+    public DeviceList rescan() {
+        return check();
+    }
+
+    synchronized DeviceList check() {
         DeviceList now = current();
         if (now.equals(last)) {
-            return;
+            return now;
         }
         boolean inputsDiffer = !now.inputs().equals(last.inputs());
         last = now;
@@ -46,6 +50,7 @@ public final class DeviceWatcher implements AutoCloseable {
         if (inputsDiffer) {
             inputsChanged.accept(now.inputs().stream().map(DeviceInfo::id).collect(Collectors.toSet()));
         }
+        return now;
     }
 
     @Override

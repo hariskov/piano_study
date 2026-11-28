@@ -23,6 +23,9 @@ Optional fields can be left out. Fields without a value are left out of events t
 ### `devices.list`
 No params. Result: `{"inputs":[{"id","name","description"}],"outputs":[…]}`.
 
+### `devices.rescan`
+No params. Looks for devices straight away instead of waiting for the next automatic check (every second), and sends `devices.changed` if the list changed. A running session reacts as usual (pauses on a lost input, reconnects a returned one). Result: the device list, as in `devices.list`.
+
 ### `devices.monitor`
 Params `{"input":"jdk:Piano [hw:3,0,0]"}`. Opens the input outside a session and sends an `input` event for every key and pedal, for the device screen's live keyboard (DEV-6). A second call switches to the new input. Starting a session stops monitoring. Result `null`; -32002 if the device is unavailable.
 
