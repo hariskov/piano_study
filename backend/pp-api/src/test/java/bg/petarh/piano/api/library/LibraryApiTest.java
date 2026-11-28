@@ -90,6 +90,39 @@ class LibraryApiTest {
     }
 
     @Test
+    void previewsAMidiFileWithoutSavingIt() throws IOException {
+        Path midi = Files.write(folder.resolve("tune.mid"), midiFile());
+
+        JsonNode preview = call("library.preview", "{\"path\":\"" + midi + "\",\"splitPoint\":\"C4\"}").get("result");
+
+        assertThat(preview.get("title").asString()).isEqualTo("tune");
+        assertThat(preview.get("measureCount").asInt()).isEqualTo(1);
+        assertThat(preview.get("key").asString()).isNotBlank();
+        assertThat(preview.at("/parts/0").toString()).isEqualTo("{\"id\":\"P1\",\"name\":\"Acoustic Grand Piano\","
+                + "\"instrument\":\"Acoustic Grand Piano\",\"staffCount\":2,\"noteCount\":1,\"lowest\":\"E4\",\"highest\":\"E4\"}");
+        assertThat(preview.get("warnings").toString()).contains("estimated");
+        assertThat(call("library.list", "{}").at("/result/songs")).isEmpty();
+    }
+
+    @Test
+    void importsOnlyThePartsNotLeftOut() throws IOException {
+        Path midi = Files.write(folder.resolve("tune.mid"), midiFile());
+
+        JsonNode error = call("library.import", "{\"path\":\"" + midi + "\",\"exclude\":[\"P1\"]}").get("error");
+
+        assertThat(error.get("code").asInt()).isEqualTo(-32602);
+        assertThat(error.get("message").asString()).isEqualTo("Choose at least one part to import");
+        assertThat(call("library.list", "{}").at("/result/songs")).isEmpty();
+    }
+
+    @Test
+    void previewsOnlyMidiFiles() throws IOException {
+        Path file = Files.writeString(folder.resolve("melody.musicxml"), MELODY);
+
+        assertThat(call("library.preview", "{\"path\":\"" + file + "\"}").at("/error/code").asInt()).isEqualTo(-32602);
+    }
+
+    @Test
     void explainsFilesItCannotRead() throws IOException {
         Path broken = Files.writeString(folder.resolve("broken.musicxml"), "<score-partwise>");
 

@@ -46,6 +46,17 @@ export interface ImportParams {
   grid?: number;
   triplets?: boolean;
   splitPoint?: string;
+  exclude?: string[];
+}
+
+export interface ImportPart {
+  id: string;
+  name: string;
+  instrument: string;
+  staffCount: number;
+  noteCount: number;
+  lowest?: string;
+  highest?: string;
 }
 
 export interface InputDeviceEvent {
@@ -64,6 +75,16 @@ export interface InputMessage {
 export interface KeyParams {
   pitch?: string;
   velocity?: number;
+}
+
+export interface MidiPreview {
+  title: string;
+  measureCount: number;
+  timeSignature: string;
+  key: string;
+  tempo: number;
+  parts: ImportPart[];
+  warnings: string[];
 }
 
 export interface MonitorParams {
@@ -243,6 +264,7 @@ export interface ApiMethods {
   "library.list": { params: Record<string, never>; result: SongList };
   "library.musicXml": { params: SongId; result: MusicXml };
   "library.open": { params: SongId; result: SongDetails };
+  "library.preview": { params: ImportParams; result: MidiPreview };
   "progress.history": { params: HistoryParams; result: History };
   "session.adjust": { params: AdjustParams; result: null };
   "session.changeTempo": { params: TempoParams; result: null };

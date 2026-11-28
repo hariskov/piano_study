@@ -3,7 +3,7 @@ package bg.petarh.piano.importmidi;
 import java.util.List;
 import java.util.stream.IntStream;
 
-record Draft(String name, boolean piano, List<Quantiser.Span> spans, List<Integer> staves) {
+record Draft(String name, String instrument, boolean piano, List<Quantiser.Span> spans, List<Integer> staves) {
 
     Draft {
         spans = List.copyOf(spans);

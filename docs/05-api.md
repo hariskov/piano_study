@@ -39,7 +39,10 @@ Params `{"pitch":"C4","velocity":80}` (`velocity` is optional and defaults to 80
 No params. Result: `{"songs":[{"id","title","fileName","midiFile","partCount","measureCount","sourceFile","format","importedAt","warnings"}]}`, sorted by title. `midiFile` is only there for MIDI imports.
 
 ### `library.import`
-Params: `{"path":"/home/me/song.mid"}` plus, for MIDI files, optional `grid` (4, 8, 16 or 32, default 16), `triplets` (default false) and `splitPoint` (lowest right-hand note, default `"C4"`). MIDI (`.mid`, `.midi`) is converted and kept with its original file; MusicXML (`.musicxml`, `.xml`, `.mxl`) is saved as it is. Result: the new song, as in `library.list`, with its import warnings. Other file types give -32602; unreadable files -32003.
+Params: `{"path":"/home/me/song.mid"}` plus, for MIDI files, optional `grid` (4, 8, 16 or 32, default 16), `triplets` (default false), `splitPoint` (lowest right-hand note, default `"C4"`) and `exclude` (ids of parts to leave out, as `library.preview` gives them; leaving out every part gives -32602). MIDI (`.mid`, `.midi`) is converted and kept with its original file; MusicXML (`.musicxml`, `.xml`, `.mxl`) is saved as it is. Result: the new song, as in `library.list`, with its import warnings. Other file types give -32602; unreadable files -32003.
+
+### `library.preview`
+Converts a MIDI file with the same params as `library.import` (`path`, `grid`, `triplets`, `splitPoint`, `exclude`) without saving anything, for the import screen. Result: `{"title","measureCount","timeSignature":"4/4","key":"C major","tempo":120,"parts":[{"id":"P1","name":"Piano","instrument":"Acoustic Grand Piano","staffCount":2,"noteCount":120,"lowest":"A2","highest":"E5"}],"warnings"}`. The conversion is repeatable (MID-7), so these part ids are the ones `exclude` takes. `instrument` is the General MIDI instrument of the part's program change (Acoustic Grand Piano without one). Percussion is never a part. Other file types give -32602; unreadable files -32003.
 
 ### `library.open`
 Params `{"id":"simple-melody"}`. Result: `{"id","title","composer","file","midiFile","measureCount","timeSignature":"4/4","key":"C major","tempo":120,"parts":[{"id","name","staffCount","noteCount","lowest","highest"}],"warnings"}`. `file` and `midiFile` are full paths. -32004 if there is no such song.
