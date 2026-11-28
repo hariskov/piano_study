@@ -5,6 +5,7 @@ export type Exercise = "random" | "chords";
 export type Mode = "wait" | "tempo";
 export type Hands = "right" | "left" | "both";
 export type NoteValue = "whole" | "half" | "quarter" | "eighth";
+export type Display = "staff" | "lanes";
 
 export interface Setup {
   exercise: Exercise;
@@ -24,6 +25,7 @@ export interface Setup {
   chordTypes: string[];
   inversions: number[];
   chordLabels: ChordLabels;
+  display: Display;
   range: string;
 }
 
@@ -52,6 +54,7 @@ export function defaultSetup(settings: SettingsView): Setup {
     chordTypes: ["maj", "min"],
     inversions: [0],
     chordLabels: "both",
+    display: "staff",
     range: "",
   };
 }

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useBackend } from "../app/backendContext";
 import type { SessionStartParams, SettingsView } from "../api/protocol";
 import { TempoControl } from "../tempo/TempoControl";
-import { AccidentalsCheck, ChordLabelSelect, ChordTypeChecks, HandsSelect, LevelSelect, MixedCheck } from "./exerciseControls";
+import { AccidentalsCheck, ChordLabelSelect, ChordTypeChecks, DisplaySelect, HandsSelect, LevelSelect, MixedCheck } from "./exerciseControls";
 import { defaultSetup, savedTempo, toStartParams, type Mode, type Setup } from "./setupForm";
 
 interface Props {
@@ -143,6 +143,7 @@ export function SetupScreen({ onStart, onChooseDevice, previous }: Props) {
               />
               Metronome {settings.output === undefined && <small className="muted">(choose an output on Devices)</small>}
             </label>
+            <DisplaySelect value={setup.display} onChange={(display) => change({ display })} />
             {random && (
               <>
                 <AccidentalsCheck checked={setup.accidentals} onChange={(accidentals) => change({ accidentals })} />

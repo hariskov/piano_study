@@ -77,6 +77,17 @@ describe("SetupScreen", () => {
     );
   });
 
+  it("shows the notes on the staff unless note lanes are chosen", async () => {
+    const { onStart } = show(backend("jdk:Piano"));
+    await screen.findByLabelText("Tempo in BPM");
+    expect((screen.getByLabelText("Display") as HTMLSelectElement).value).toBe("staff");
+
+    fireEvent.change(screen.getByLabelText("Display"), { target: { value: "lanes" } });
+    fireEvent.click(screen.getByRole("button", { name: "Start" }));
+
+    expect(onStart).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ display: "lanes" }));
+  });
+
   it("starts from the previous setup when there is one", async () => {
     const previous = { ...defaultSetup({ keyboards: {}, tempos: {}, latencyOffsetMs: 0 }), countIn: 0, notes: 7 };
     show(backend("jdk:Piano"), vi.fn(), vi.fn(), previous);
