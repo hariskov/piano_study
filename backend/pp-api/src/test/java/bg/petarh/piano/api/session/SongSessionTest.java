@@ -76,6 +76,8 @@ class SongSessionTest {
 
         assertThat(started.get("songTempo").asInt()).isEqualTo(100);
         assertThat(started.get("tempo").asInt()).isEqualTo(100);
+        assertThat(started.get("sectionStart").asString()).isEqualTo("0");
+        assertThat(started.get("passLength").asString()).isEqualTo("1");
         assertThat(started.get("notices").toString()).contains("1 note outside your keyboard was moved by an octave");
         for (int i = 1; i <= 3; i++) {
             JsonNode target = await("session.target", i);
@@ -156,6 +158,15 @@ class SongSessionTest {
         JsonNode summary = await("session.summary", 1).get("params");
         assertThat(summary.get("completedTargets").asInt()).isEqualTo(6);
         assertThat(summary.get("passes").toString()).isEqualTo("[100,75]");
+    }
+
+    @Test
+    void saysWhereTheSectionStartsInTheSong() {
+        JsonNode started = call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\""
+                + songId + "\",\"fromBar\":1,\"toBar\":1,\"repeats\":3,\"countIn\":0}").get("result");
+
+        assertThat(started.get("sectionStart").asString()).isEqualTo("0");
+        assertThat(started.get("passLength").asString()).isEqualTo("3/4");
     }
 
     @Test

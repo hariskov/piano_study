@@ -20,6 +20,7 @@ import bg.petarh.piano.musicxml.MusicXmlException;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -64,6 +65,9 @@ public final class LibraryMethods {
                               int tempo, List<PartSummary> parts, List<String> warnings) {
     }
 
+    public record MusicXml(String xml) {
+    }
+
     private LibraryMethods() {
     }
 
@@ -73,6 +77,7 @@ public final class LibraryMethods {
         server.register("library.import", ImportParams.class, SongSummary.class,
                 params -> SongSummary.of(importFile(library, params)));
         server.register("library.open", SongId.class, SongDetails.class, params -> details(library, params.id()));
+        server.register("library.musicXml", SongId.class, MusicXml.class, params -> musicXml(library, params.id()));
         server.register("library.delete", SongId.class, Void.class, params -> {
             if (!library.delete(required(params.id()))) {
                 throw notFound(params.id());
@@ -127,6 +132,15 @@ public final class LibraryMethods {
                 score.measureCount(), score.timeSignatureAt(Fraction.ZERO).toString(),
                 score.keyAt(Fraction.ZERO).toString(), score.tempoMap().tempoAt(Fraction.ZERO).bpm(),
                 score.parts().stream().map(PartSummary::of).toList(), entry.warnings());
+    }
+
+    private static MusicXml musicXml(SongLibrary library, String id) {
+        SongEntry entry = library.find(required(id)).orElseThrow(() -> notFound(id));
+        try {
+            return new MusicXml(Files.readString(library.xmlPath(entry)));
+        } catch (IOException e) {
+            throw new RpcException(RpcException.FILE_ERROR, entry.fileName() + ": " + describe(e));
+        }
     }
 
     private static String describe(Exception e) {

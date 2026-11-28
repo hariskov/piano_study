@@ -44,6 +44,10 @@ Params: `{"path":"/home/me/song.mid"}` plus, for MIDI files, optional `grid` (4,
 ### `library.open`
 Params `{"id":"simple-melody"}`. Result: `{"id","title","composer","file","midiFile","measureCount","timeSignature":"4/4","key":"C major","tempo":120,"parts":[{"id","name","staffCount","noteCount","lowest","highest"}],"warnings"}`. `file` and `midiFile` are full paths. -32004 if there is no such song.
 
+### `library.musicXml`
+
+Params: `{"id":"simple-melody"}`. Result: `{"xml":"<?xml …"}`, the song's saved MusicXML (always uncompressed), for drawing the score. -32004 if there is no such song, -32003 if the file can't be read.
+
 ### `library.delete`
 Params `{"id":"simple-melody"}`. Removes the song, its MusicXML and its MIDI file. Result `null`; -32004 if there is no such song.
 
@@ -85,7 +89,7 @@ Starts a random-notes or chord session. Only one session runs at a time. Leaving
 | `fromBar`, `toBar` | the whole song | songs: the section to play, bars counted from 1 (a pickup is bar 1) |
 | `repeats` | 1 | songs: play the section this many times in a row (1–99) |
 
-Result: `{"seed":42,"tempo":90,"songTempo":100,"notices":[]}`. For songs, `songTempo` is the song's starting tempo, so the UI can show "84 BPM · 84%", and `notices` says how many notes were moved or skipped. Songs use their own time signature for the count-in and metronome, ignore `tempo`, `key`, `range`, `noteValue`, `time`, `notes` and the random/chord fields, and don't change the saved tempo for the mode. `session.adjust` is refused for songs.
+Result: `{"seed":42,"tempo":90,"songTempo":100,"notices":[]}`. For songs, `songTempo` is the song's starting tempo, `sectionStart` is where the chosen section starts in the song and `passLength` how long one pass is (both in whole notes, like target starts: a target at `start` is at `sectionStart + start mod passLength` in the score), so the UI can show "84 BPM · 84%", and `notices` says how many notes were moved or skipped. Songs use their own time signature for the count-in and metronome, ignore `tempo`, `key`, `range`, `noteValue`, `time`, `notes` and the random/chord fields, and don't change the saved tempo for the mode. `session.adjust` is refused for songs.
 
 ### `session.pause`, `session.resume`, `session.stop`
 No params. Result `null`. Error -32001 if no session is running. Pause and resume are ignored in states where they don't apply. Stop finishes the session and sends `session.summary`.

@@ -104,6 +104,17 @@ class LibraryApiTest {
     }
 
     @Test
+    void givesTheSavedMusicXmlForDrawingTheScore() throws IOException {
+        Path file = Files.writeString(folder.resolve("melody.musicxml"), MELODY);
+        call("library.import", "{\"path\":\"" + file + "\"}");
+
+        String xml = call("library.musicXml", "{\"id\":\"simple-melody\"}").at("/result/xml").asString();
+
+        assertThat(xml).startsWith("<?xml").contains("<score-partwise").contains("Simple Melody");
+        assertThat(call("library.musicXml", "{\"id\":\"nope\"}").at("/error/code").asInt()).isEqualTo(-32004);
+    }
+
+    @Test
     void saysWhenASongIsNotThere() {
         assertThat(call("library.open", "{\"id\":\"nothing\"}").at("/error/code").asInt()).isEqualTo(-32004);
         assertThat(call("library.delete", "{\"id\":\"nothing\"}").at("/error/code").asInt()).isEqualTo(-32004);

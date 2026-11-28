@@ -61,6 +61,10 @@ export interface MonitorParams {
   input?: string;
 }
 
+export interface MusicXml {
+  xml: string;
+}
+
 export interface NoteInfo {
   pitch: string;
   midi: number;
@@ -111,6 +115,8 @@ export interface SessionStarted {
   tempo: number;
   songTempo?: number;
   notices: string[];
+  sectionStart?: string;
+  passLength?: string;
 }
 
 export interface SettingsUpdate {
@@ -202,6 +208,7 @@ export interface ApiMethods {
   "library.delete": { params: SongId; result: null };
   "library.import": { params: ImportParams; result: SongSummary };
   "library.list": { params: Record<string, never>; result: SongList };
+  "library.musicXml": { params: SongId; result: MusicXml };
   "library.open": { params: SongId; result: SongDetails };
   "session.adjust": { params: AdjustParams; result: null };
   "session.changeTempo": { params: TempoParams; result: null };

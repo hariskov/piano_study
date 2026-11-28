@@ -30,6 +30,7 @@ import bg.petarh.piano.midi.output.MidiOutputPort;
 import bg.petarh.piano.midi.output.OutputConnection;
 import bg.petarh.piano.model.note.Target;
 import bg.petarh.piano.model.score.Score;
+import bg.petarh.piano.model.time.Fraction;
 import bg.petarh.piano.model.time.Tempo;
 
 import java.util.ArrayList;
@@ -137,7 +138,9 @@ public final class SessionMethods implements AutoCloseable {
         settings.update(current -> plan.isSong() ? current.withInput(params.input())
                 : current.withInput(params.input()).withTempo(plan.modeKey(), bpm));
         practice.start().whenComplete((ignored, failure) -> finished(session, results, passes));
-        return new SessionStarted(plan.seed(), bpm, plan.songTempo(), plan.notices());
+        return new SessionStarted(plan.seed(), bpm, plan.songTempo(), plan.notices(),
+                plan.sectionStart().map(Fraction::toString).orElse(null),
+                plan.loop().map(loop -> loop.passLength().toString()).orElse(null));
     }
 
     private Object adjust(AdjustParams change) {
