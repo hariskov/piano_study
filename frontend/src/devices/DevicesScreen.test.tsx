@@ -3,8 +3,10 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { DevicesScreen } from "./DevicesScreen";
 import { BackendContext } from "../app/backendContext";
 import { FakeBackend } from "../testing/fakeBackend";
+import type { SettingsView } from "../api/protocol";
 
 function backend(): FakeBackend {
+  let saved: SettingsView = { input: "jdk:Piano", output: "jdk:Gervill", keyboards: { "jdk:Piano": "61" }, tempos: {}, latencyOffsetMs: 0, instrument: 0, keySound: false };
   return new FakeBackend()
     .answer("devices.list", () => ({
       inputs: [
@@ -13,8 +15,11 @@ function backend(): FakeBackend {
       ],
       outputs: [{ id: "jdk:Gervill", name: "Gervill", description: "Software MIDI Synthesizer" }],
     }))
-    .answer("settings.get", () => ({ input: "jdk:Piano", keyboards: { "jdk:Piano": "61" }, tempos: {}, latencyOffsetMs: 0, instrument: 0, keySound: false }))
-    .answer("settings.update", (update) => ({ keyboards: {}, tempos: {}, latencyOffsetMs: 0, instrument: 0, keySound: false, ...update }));
+    .answer("settings.get", () => saved)
+    .answer("settings.update", (update) => {
+      saved = { ...saved, ...update, keyboards: { ...saved.keyboards, ...update.keyboards } } as SettingsView;
+      return saved;
+    });
 }
 
 function show(fake: FakeBackend) {
@@ -129,5 +134,19 @@ describe("DevicesScreen", () => {
 
     expect(screen.getByText("Use a whole number from -500 to 500")).toBeTruthy();
     expect(fake.callsOf("settings.update").some((update) => "latencyOffsetMs" in (update as object))).toBe(false);
+  });
+  it("plays a sample of the instrument and listens again with the new sound", async () => {
+    const fake = backend().answer("sound.test", () => null);
+    show(fake);
+    await screen.findByLabelText("Piano");
+    await waitFor(() => expect(fake.callsOf("devices.monitor")).toHaveLength(1));
+
+    fireEvent.change(screen.getByLabelText("Instrument"), { target: { value: "89" } });
+    await waitFor(() => expect((screen.getByLabelText("Instrument") as HTMLSelectElement).value).toBe("89"));
+    fireEvent.click(screen.getByRole("button", { name: "Try it" }));
+
+    await waitFor(() => expect(fake.callsOf("sound.test")).toEqual([{ instrument: 89 }]));
+    expect(fake.callsOf("settings.update")).toContainEqual({ instrument: 89 });
+    await waitFor(() => expect(fake.callsOf("devices.monitor")).toHaveLength(2));
   });
 });
