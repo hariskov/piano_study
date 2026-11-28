@@ -138,6 +138,33 @@ class SongSessionTest {
     }
 
     @Test
+    void repeatsAChosenSectionAndScoresEachPass() {
+        call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\"" + songId
+                + "\",\"fromBar\":1,\"toBar\":1,\"repeats\":2,\"keyboard\":\"61\",\"countIn\":0}");
+
+        for (int i = 1; i <= 6; i++) {
+            JsonNode target = await("session.target", i);
+            Pitch pitch = Pitch.parse(target.at("/params/notes/0/pitch").asString());
+            if (i == 4) {
+                keyboard.press(Pitch.parse("A0"), Velocity.of(64));
+                keyboard.release(Pitch.parse("A0"));
+            }
+            keyboard.press(pitch, Velocity.of(64));
+            keyboard.release(pitch);
+        }
+
+        JsonNode summary = await("session.summary", 1).get("params");
+        assertThat(summary.get("completedTargets").asInt()).isEqualTo(6);
+        assertThat(summary.get("passes").toString()).isEqualTo("[100,75]");
+    }
+
+    @Test
+    void refusesBarsOutsideTheSong() {
+        assertThat(call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\""
+                + songId + "\",\"fromBar\":1,\"toBar\":5}").at("/error/message").asString()).contains("2 bars");
+    }
+
+    @Test
     void refusesUnknownSongsPartsAndAdjusting() {
         assertThat(call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\"nope\"}")
                 .at("/error/code").asInt()).isEqualTo(-32004);

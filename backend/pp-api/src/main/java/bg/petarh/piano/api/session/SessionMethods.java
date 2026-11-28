@@ -15,6 +15,7 @@ import bg.petarh.piano.engine.evaluation.FollowMode;
 import bg.petarh.piano.engine.metronome.MidiClicks;
 import bg.petarh.piano.engine.playback.MidiNotes;
 import bg.petarh.piano.engine.playback.Playback;
+import bg.petarh.piano.engine.run.PassResults;
 import bg.petarh.piano.engine.run.Practice;
 import bg.petarh.piano.engine.run.Results;
 import bg.petarh.piano.engine.run.SessionListener;
@@ -117,8 +118,9 @@ public final class SessionMethods implements AutoCloseable {
         Optional<Playback> playback = Optional.ofNullable(params.playback()).filter(id -> plan.isSong())
                 .map(id -> new Playback(plan.playbackNotes(), new MidiNotes(outputs.get(id)), plan.mode() == FollowMode.WAIT));
         Results results = new Results();
+        PassResults passes = new PassResults(position -> plan.loop().map(loop -> loop.passAt(position)).orElse(1));
         Practice practice = Practice.prepare(plan.targets(), plan.timing(), plan.mode(), clock::nanos,
-                SessionListener.all(List.of(new SessionEvents(events, plan::nameOf), results)),
+                SessionListener.all(List.of(new SessionEvents(events, plan::nameOf), results, passes)),
                 Optional.of(accent -> {
                     Messages.BEAT.send(events, new BeatEvent(accent));
                     clicks.ifPresent(output -> output.click(accent));
@@ -134,7 +136,7 @@ public final class SessionMethods implements AutoCloseable {
         int bpm = plan.timing().tempo().bpm();
         settings.update(current -> plan.isSong() ? current.withInput(params.input())
                 : current.withInput(params.input()).withTempo(plan.modeKey(), bpm));
-        practice.start().whenComplete((ignored, failure) -> finished(session, results));
+        practice.start().whenComplete((ignored, failure) -> finished(session, results, passes));
         return new SessionStarted(plan.seed(), bpm, plan.songTempo(), plan.notices());
     }
 
@@ -201,7 +203,7 @@ public final class SessionMethods implements AutoCloseable {
         return Optional.ofNullable(active);
     }
 
-    private void finished(Active session, Results results) {
+    private void finished(Active session, Results results, PassResults passes) {
         synchronized (this) {
             if (!session.inputLost) {
                 closeQuietly(session.input);
@@ -211,7 +213,8 @@ public final class SessionMethods implements AutoCloseable {
             }
         }
         session.outputs.forEach(OutputConnection::close);
-        Messages.SUMMARY.send(events, SummaryEvent.of(results.summary(), session.practice.elapsedNanos()));
+        Messages.SUMMARY.send(events, SummaryEvent.of(results.summary(), session.practice.elapsedNanos(),
+                session.plan.loop().filter(loop -> loop.passes() > 1).map(loop -> passes.passes()).orElse(List.of())));
     }
 
     private static void closeQuietly(InputConnection input) {

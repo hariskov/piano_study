@@ -101,6 +101,9 @@ export interface SessionStartParams {
   outOfRange?: string;
   tempoPercent?: number;
   playback?: string;
+  fromBar?: number;
+  toBar?: number;
+  repeats?: number;
 }
 
 export interface SessionStarted {
@@ -176,6 +179,7 @@ export interface SummaryEvent {
   missed: number;
   accuracyPercent: number;
   elapsedMs: number;
+  passes: number[];
 }
 
 export interface TargetEvent {

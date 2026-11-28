@@ -104,7 +104,7 @@ Before starting, the user chooses:
 - **Follow mode**: Wait, Tempo, Listen or Play-along.
 - **Tempo**: presets, slider or number field (section 1B), defaulting to the song's tempo.
 - **Accompaniment**: play the parts you aren't playing (on/off, plus volume), and play the hand you aren't playing (on/off).
-- **Section**: a range of measures to play (default: the whole song), and optionally **loop** that section.
+- **Section**: a range of measures to play (default: the whole song), and how many times to play it in a row (1–99). The passes follow each other with no new count-in, and the results show the accuracy of each pass.
 - **Count-in**: off, 1 bar or 2 bars, with a metronome on or off.
 
 ### 3.2 Follow modes

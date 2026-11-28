@@ -20,7 +20,7 @@ v2.0:             P11 PDF/OMR
 | P4 Packaging | Not started (after P5–P6, as decided) |
 | P5 MusicXML reading | **Code complete.** Done: song model (`Score`, `Part`, `ScoreNote`, `Spelling`, ties joined for playing), MusicXML reader (`.musicxml`/`.xml`/`.mxl`, import report) and writer (round trip gives the same model), song library (`SongLibrary`: import, add, list, load, delete). Remaining: real MuseScore exports as golden files. Golden test files are hand-written in MuseScore's style for now; real MuseScore exports still to add. |
 | P6 MIDI → MusicXML | **Code complete.** Done: `pp-import-midi` reads MIDI files (types 0 and 1) and converts them to a `Score` (quantising, triplets, parts and names, percussion left out, tempo/time/key, voices, spelling), hand splitting and key estimation. `pp import` / `pp songs`. Remaining: golden MIDI files from real songs and the manual check of converted files in MuseScore. |
-| P7 Song sessions and playback | **In progress.** Done: Library screen (import with file picker and MIDI options, search by name, open details, delete) on the `library.*` API; song tempo maps with scaling; `SongSelection` (part, hands, notes outside the keyboard); song sessions over the API; song setup and practice in the UI; playback of the other hand and parts; Listen and Play-along modes. Next: sections and loops (moved up from P9). |
+| P7 Song sessions and playback | **In progress.** Done: Library screen (import with file picker and MIDI options, search by name, open details, delete) on the `library.*` API; song tempo maps with scaling; `SongSelection` (part, hands, notes outside the keyboard); song sessions over the API; song setup and practice in the UI; playback of the other hand and parts; Listen and Play-along modes; sections and repeats with per-pass accuracy over the API. Next: sections in the UI. |
 | P8–P11 | Not started |
 
 This table is updated in every PR that completes a deliverable.
@@ -179,7 +179,7 @@ Testing:
 
 ### Phase 9: Full practice features
 - Full MIDI import screen (preview, quantisation and hand-split controls).
-- Section selection and looping, all settings in spec 3.1, latency offset adjustment.
+- Section selection and looping (moved into P7, done there), all settings in spec 3.1, latency offset adjustment.
 - Saved progress (SQLite), measures with the most mistakes, history for each song and exercise.
 - Testing: scenario tests for looping and sections; migration tests for the progress database; manual checklist covering the whole specification.
 

@@ -3,6 +3,8 @@ package bg.petarh.piano.api.session;
 import bg.petarh.piano.engine.evaluation.FollowMode;
 import bg.petarh.piano.engine.session.SessionTiming;
 import bg.petarh.piano.engine.songs.OutOfRange;
+import bg.petarh.piano.engine.songs.SectionLoop;
+import bg.petarh.piano.engine.songs.SongSection;
 import bg.petarh.piano.engine.songs.SongSelection;
 import bg.petarh.piano.engine.targets.TargetSource;
 import bg.petarh.piano.generator.chords.ChordEvent;
@@ -61,6 +63,7 @@ final class PracticePlan {
     private final List<String> notices;
     private final List<NoteEvent> accompaniment;
     private final List<NoteEvent> songNotes;
+    private final SectionLoop loop;
     private volatile SessionStartParams params;
 
     private PracticePlan(SessionStartParams params, Settings settings, SessionTiming timing, FollowMode mode,
@@ -79,10 +82,11 @@ final class PracticePlan {
         this.notices = List.of();
         this.accompaniment = List.of();
         this.songNotes = List.of();
+        this.loop = null;
     }
 
     private PracticePlan(SessionStartParams params, Settings settings, SessionTiming timing, FollowMode mode,
-                         Score song, SongSelection selection, List<String> notices) {
+                         Score song, SectionLoop loop, List<String> notices) {
         this.params = params;
         this.settings = settings;
         this.timing = timing;
@@ -90,13 +94,14 @@ final class PracticePlan {
         this.seed = 0;
         this.key = song.keyAt(Fraction.ZERO);
         this.measures = null;
-        this.targets = TargetSource.of(Targets.from(selection.played()));
-        this.songTempo = song.tempoMap().tempoAt(Fraction.ZERO).bpm();
+        this.targets = TargetSource.of(Targets.from(loop.played()));
+        this.songTempo = loop.tempoMap().tempoAt(Fraction.ZERO).bpm();
         this.notices = List.copyOf(notices);
-        this.accompaniment = selection.accompaniment();
-        List<NoteEvent> whole = new ArrayList<>(selection.played());
-        whole.addAll(selection.accompaniment());
+        this.accompaniment = loop.accompaniment();
+        List<NoteEvent> whole = new ArrayList<>(loop.played());
+        whole.addAll(loop.accompaniment());
         this.songNotes = List.copyOf(whole);
+        this.loop = loop;
     }
 
     static PracticePlan fromSong(SessionStartParams params, Settings settings, Score song) {
@@ -108,8 +113,7 @@ final class PracticePlan {
         if (percent < 1) {
             throw new IllegalArgumentException("tempoPercent must be positive: " + percent);
         }
-        SessionTiming timing = new SessionTiming(song.tempoMap().scaledBy(percent / 100.0),
-                song.timeSignatureAt(Fraction.ZERO), or(params.countIn(), DEFAULT_COUNT_IN_BARS));
+
         String partId = params.part() != null ? params.part()
                 : song.parts().stream().findFirst().map(Part::id)
                 .orElseThrow(() -> new IllegalArgumentException("The song has no parts"));
@@ -118,6 +122,11 @@ final class PracticePlan {
                 : settings.keyboardFor(params.input()).orElse(KeyboardRange.fullPiano());
         OutOfRange outOfRange = "skip".equalsIgnoreCase(params.outOfRange()) ? OutOfRange.SKIP : OutOfRange.SHIFT_OCTAVE;
         SongSelection selection = SongSelection.of(song, partId, hands(or(params.hands(), "right")), keyboard, outOfRange);
+        SongSection section = new SongSection(or(params.fromBar(), 1), or(params.toBar(), song.measureCount()));
+        SectionLoop loop = section.loop(song, selection, or(params.repeats(), 1));
+        Fraction sectionStart = song.measureStarts().get(section.firstBar() - 1);
+        SessionTiming timing = new SessionTiming(loop.tempoMap().scaledBy(percent / 100.0),
+                song.timeSignatureAt(sectionStart), or(params.countIn(), DEFAULT_COUNT_IN_BARS));
         List<String> notices = new ArrayList<>();
         if (selection.shifted() > 0) {
             notices.add(count(selection.shifted()) + " outside your keyboard " + was(selection.shifted())
@@ -126,7 +135,7 @@ final class PracticePlan {
         if (selection.skipped() > 0) {
             notices.add(count(selection.skipped()) + " outside your keyboard " + was(selection.skipped()) + " skipped");
         }
-        return new PracticePlan(params, settings, timing, mode, song, selection, notices);
+        return new PracticePlan(params, settings, timing, mode, song, loop, notices);
     }
 
     private static String count(int notes) {
@@ -135,6 +144,10 @@ final class PracticePlan {
 
     private static String was(int notes) {
         return notes == 1 ? "was" : "were";
+    }
+
+    Optional<SectionLoop> loop() {
+        return Optional.ofNullable(loop);
     }
 
     boolean isSong() {

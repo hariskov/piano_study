@@ -53,12 +53,13 @@ public final class Messages {
 
 
     public record SummaryEvent(boolean timed, int completedTargets, int correctNotes, int wrongKeys, int perfect, int good,
-                        int ok, int missed, int accuracyPercent, long elapsedMs) {
+                        int ok, int missed, int accuracyPercent, long elapsedMs, List<Integer> passes) {
 
-        static SummaryEvent of(Summary summary, long elapsedNanos) {
+        static SummaryEvent of(Summary summary, long elapsedNanos, List<Summary> passes) {
             return new SummaryEvent(summary.timed(), summary.completedTargets(), summary.correctNotes(),
                     summary.wrongKeys(), summary.perfect(), summary.good(), summary.ok(), summary.missed(),
-                    summary.accuracyPercent(), elapsedNanos / 1_000_000L);
+                    summary.accuracyPercent(), elapsedNanos / 1_000_000L,
+                    passes.stream().map(Summary::accuracyPercent).toList());
         }
     }
 }
