@@ -656,7 +656,7 @@ button:disabled {
 
 .practice-main {
   display: grid;
-  grid-template-columns: 1fr 260px;
+  grid-template-columns: 1fr;
   gap: 1rem;
   margin-bottom: 1rem;
 }
@@ -830,4 +830,23 @@ fieldset.card {
   right: 1rem;
   padding: 0.3rem 0.8rem;
   font-size: 0.9rem;
+}
+
+.notices {
+  margin: 0 0 1rem;
+  padding: 0.6rem 1rem 0.6rem 2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+  background: var(--panel);
+}
+
+.practice-tempo > .muted {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.practice-main:has(> .adjust) {
+  grid-template-columns: 1fr 260px;
 }

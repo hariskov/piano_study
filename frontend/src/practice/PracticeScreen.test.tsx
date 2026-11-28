@@ -165,6 +165,21 @@ describe("PracticeScreen", () => {
     expect((screen.getByLabelText("Major") as HTMLInputElement).checked).toBe(true);
   });
 
+  it("shows a song's tempo as a share of the song and its notices, without adjusting", async () => {
+    const fake = new FakeBackend()
+      .answer("session.start", () => ({ seed: 0, tempo: 84, songTempo: 120, notices: ["3 notes outside your keyboard were moved by an octave"] }))
+      .answer("settings.get", () => ({ input: "virtual:keyboard", keyboards: {}, tempos: {}, latencyOffsetMs: 0 }));
+    render(
+      <BackendContext.Provider value={fake.client}>
+        <PracticeScreen params={{ input: "virtual:keyboard", exercise: "song", songId: "x" }} onChangeSettings={vi.fn()} />
+      </BackendContext.Provider>,
+    );
+
+    expect(await screen.findByText("70% of the song")).toBeTruthy();
+    expect(screen.getByText("3 notes outside your keyboard were moved by an octave")).toBeTruthy();
+    expect(screen.queryByLabelText("Adjust while playing")).toBeNull();
+  });
+
   it("explains a failed start", async () => {
     const fake = backend().fail("session.start", -32002, "MIDI device unavailable: jdk:Piano");
     show(fake);

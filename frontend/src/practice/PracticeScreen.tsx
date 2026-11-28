@@ -14,8 +14,8 @@ import type { Setup } from "./setupForm";
 
 interface Props {
   params: SessionStartParams;
-  setup: Setup;
-  onSetupChange: (setup: Setup) => void;
+  setup?: Setup;
+  onSetupChange?: (setup: Setup) => void;
   onChangeSettings: () => void;
 }
 
@@ -41,6 +41,8 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
   );
   const [tempo, setTempo] = useState(params.tempo ?? 90);
   const [current, setCurrent] = useState(setup);
+  const [songTempo, setSongTempo] = useState<number>();
+  const [notices, setNotices] = useState<string[]>([]);
   const [problem, setProblem] = useState<string>();
   const [range, setRange] = useState<KeyRange>(keyboardRange(undefined));
   const virtual = params.input === VIRTUAL_KEYBOARD;
@@ -64,7 +66,11 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
     let finished = false;
     const stopOnSummary = client.on("session.summary", () => (finished = true));
     client.request("session.start", params).then(
-      (started) => setTempo(started.tempo),
+      (started) => {
+        setTempo(started.tempo);
+        setSongTempo(started.songTempo);
+        setNotices(started.notices);
+      },
       (error: Error) => {
         finished = true;
         setProblem(error.message);
@@ -121,9 +127,12 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
   }
 
   const adjust = (change: Partial<Setup> & AdjustParams) => {
+    if (current === undefined) {
+      return;
+    }
     const next = { ...current, ...change };
     setCurrent(next);
-    onSetupChange(next);
+    onSetupChange?.(next);
     void client.request("session.adjust", change).catch((error: Error) => setProblem(error.message));
   };
   const changeTempo = (bpm: number) => {
@@ -140,6 +149,7 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
         <span key={practice.beat.count} className={practice.beat.accent ? "beat accent" : "beat"} aria-hidden="true" />
         <div className="practice-tempo">
           <TempoControl value={tempo} onChange={changeTempo} />
+          {songTempo !== undefined && <span className="muted">{Math.round((tempo * 100) / songTempo)}% of the song</span>}
         </div>
         <div className="practice-buttons">
           {practice.state === "PAUSED" ? (
@@ -156,6 +166,13 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
           </button>
         </div>
       </div>
+      {notices.length > 0 && (
+        <ul className="notices">
+          {notices.map((notice) => (
+            <li key={notice}>{notice}</li>
+          ))}
+        </ul>
+      )}
       <div className="practice-main">
       <div className="stage card">
         <div className="now-playing" aria-label="Now playing">
@@ -178,6 +195,7 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
           <div className="overlay problem">The piano was disconnected. Plug it back in, then resume.</div>
         )}
       </div>
+      {current && params.exercise !== "song" && (
       <aside className="card adjust" aria-label="Adjust while playing">
         <h3>Adjust while playing</h3>
         <HandsSelect value={current.hands} onChange={(hands) => adjust({ hands })} />
@@ -192,6 +210,7 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
         )}
         <p className="muted small">Changes apply from the next bar.</p>
       </aside>
+      )}
       </div>
       <div className="card keyboard-card">
         <PianoKeyboard

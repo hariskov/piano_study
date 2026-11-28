@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { connectToBackend } from "../api/backend";
-import type { SessionStartParams } from "../api/protocol";
+import type { SessionStartParams, SongDetails } from "../api/protocol";
 import { DevicesScreen } from "../devices/DevicesScreen";
 import { LibraryScreen } from "../library/LibraryScreen";
+import { SongSetup } from "../library/SongSetup";
 import { PracticeScreen } from "../practice/PracticeScreen";
 import { SetupScreen } from "../practice/SetupScreen";
 import type { Setup } from "../practice/setupForm";
@@ -23,6 +24,7 @@ export function App() {
   const [screen, setScreen] = useState<Screen>(screenFromHash);
   const [started, setStarted] = useState<SessionStartParams>();
   const [lastSetup, setLastSetup] = useState<Setup>();
+  const [songToPractise, setSongToPractise] = useState<SongDetails>();
   const open = (next: Screen) => {
     window.location.hash = next;
     setScreen(next);
@@ -51,6 +53,7 @@ export function App() {
                 className={item.screen === screen ? "nav active" : "nav"}
                 onClick={() => {
                   setStarted(undefined);
+                  setSongToPractise(undefined);
                   open(item.screen);
                 }}
               >
@@ -63,16 +66,28 @@ export function App() {
           {screen === "home" && <HomeScreen onOpen={open} />}
           {screen === "devices" && <DevicesScreen />}
           {screen === "library" && (
-            <LibraryScreen chooseFile={() => window.backend?.chooseSongFile() ?? Promise.resolve(undefined)} />
+            <LibraryScreen
+              chooseFile={() => window.backend?.chooseSongFile() ?? Promise.resolve(undefined)}
+              onPractise={(song) => {
+                setStarted(undefined);
+                setSongToPractise(song);
+                open("practice");
+              }}
+            />
           )}
           {screen === "practice" &&
             (started ? (
               <PracticeScreen
                 params={started}
-                setup={lastSetup!}
+                setup={started.exercise === "song" ? undefined : lastSetup}
                 onSetupChange={setLastSetup}
                 onChangeSettings={() => setStarted(undefined)}
               />
+            ) : songToPractise ? (
+              <SongSetup song={songToPractise} onStart={setStarted} onBack={() => {
+                setSongToPractise(undefined);
+                open("library");
+              }} />
             ) : (
               <SetupScreen
                 previous={lastSetup}

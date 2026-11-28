@@ -35,10 +35,10 @@ function backend(songs: SongSummary[] = [MELODY, SONATINA]): FakeBackend {
     }));
 }
 
-function show(fake: FakeBackend, chooseFile = vi.fn(async () => undefined as string | undefined)) {
+function show(fake: FakeBackend, chooseFile = vi.fn(async () => undefined as string | undefined), onPractise = vi.fn()) {
   render(
     <BackendContext.Provider value={fake.client}>
-      <LibraryScreen chooseFile={chooseFile} />
+      <LibraryScreen chooseFile={chooseFile} onPractise={onPractise} />
     </BackendContext.Provider>,
   );
   return chooseFile;
@@ -122,6 +122,17 @@ describe("LibraryScreen", () => {
     fireEvent.click(screen.getByRole("button", { name: "Import…" }));
 
     expect((await screen.findByRole("alert")).textContent).toContain("not a readable MIDI file");
+  });
+
+  it("practises the opened song", async () => {
+    const onPractise = vi.fn();
+    show(backend(), undefined, onPractise);
+    fireEvent.click(await screen.findByText("Simple Melody"));
+    await screen.findByText("G major");
+
+    fireEvent.click(screen.getByRole("button", { name: "Practise" }));
+
+    expect(onPractise).toHaveBeenCalledWith(expect.objectContaining({ id: "simple-melody", key: "G major" }));
   });
 
   it("deletes a song after asking", async () => {
