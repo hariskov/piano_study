@@ -99,6 +99,16 @@ describe("DevicesScreen", () => {
     expect((screen.getByLabelText("Keyboard size") as HTMLSelectElement).value).toBe("61");
   });
 
+  it("recognises a preset size saved as its range, as the backend gives it back", async () => {
+    const fake = backend();
+    await fake.client.request("settings.update", { keyboards: { "jdk:Piano": "C2-C7" } });
+    show(fake);
+    await screen.findByLabelText("Piano");
+
+    expect((screen.getByLabelText("Keyboard size") as HTMLSelectElement).value).toBe("61");
+    expect(screen.queryByLabelText("Custom range")).toBeNull();
+  });
+
   it("detects the keyboard size from the lowest and highest key pressed", async () => {
     const fake = backend();
     show(fake);

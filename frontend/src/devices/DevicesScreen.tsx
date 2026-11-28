@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useBackend } from "../app/backendContext";
 import type { DeviceList, SettingsView } from "../api/protocol";
 import { PianoKeyboard } from "../keyboard/PianoKeyboard";
-import { KEYBOARD_PRESETS, keyboardRange } from "../keyboard/presets";
+import { KEYBOARD_PRESETS, keyboardRange, presetFor } from "../keyboard/presets";
 import { pitchName } from "../music/pitch";
 import { START_DETECTION, detectStep, type Detection } from "../keyboard/rangeDetection";
 import { LatencyOffsetField } from "./LatencyOffsetField";
@@ -78,8 +78,10 @@ export function DevicesScreen() {
   }, [client, detection, input]);
 
   const saved = input ? settings?.keyboards[input] : undefined;
-  const isPreset = saved === undefined || KEYBOARD_PRESETS.some((preset) => String(preset.keys) === saved);
   const range = safeRange(saved);
+  // The backend gives a saved size back as its range ("C2-C7"), so presets are matched by range.
+  const preset = saved === undefined ? undefined : presetFor(range);
+  const isPreset = saved === undefined || preset !== undefined;
 
   const save = async (update: Parameters<typeof client.request<"settings.update">>[1]) =>
     setSettings(await client.request("settings.update", update));
@@ -173,7 +175,7 @@ export function DevicesScreen() {
             <span>Keyboard size</span>
             <select
               aria-label="Keyboard size"
-              value={isPreset ? (saved ?? "88") : CUSTOM}
+              value={preset ? String(preset.keys) : isPreset ? "88" : CUSTOM}
               onChange={(event) => chooseKeyboard(event.target.value)}
             >
               {KEYBOARD_PRESETS.map((preset) => (
