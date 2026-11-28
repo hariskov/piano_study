@@ -10,7 +10,12 @@ const screenshots = path.join("test-results", "screens");
 test.beforeAll(async () => {
   app = await electron.launch({
     args: [".", "--no-sandbox", "--ozone-platform=x11"],
-    env: { ...process.env, XDG_CONFIG_HOME: mkdtempSync(path.join(tmpdir(), "pp-e2e-")), PP_SCREEN: "devices" },
+    env: {
+      ...process.env,
+      XDG_CONFIG_HOME: mkdtempSync(path.join(tmpdir(), "pp-e2e-")),
+      XDG_DATA_HOME: mkdtempSync(path.join(tmpdir(), "pp-e2e-data-")),
+      PP_SCREEN: "devices",
+    },
   });
   page = await app.firstWindow();
   await page.setViewportSize({ width: 1280, height: 860 });
@@ -89,3 +94,20 @@ test("plays a chord session with the computer keyboard", async () => {
 
   await expect(page.getByLabel("Accuracy")).toHaveText("100%");
 });
+
+test("imports a song into the library and opens it", async () => {
+  const score = path.resolve("../backend/pp-musicxml/src/test/resources/scores/piano.musicxml");
+  await app.evaluate(({ dialog }, file) => {
+    dialog.showOpenDialog = (async () => ({ canceled: false, filePaths: [file] })) as typeof dialog.showOpenDialog;
+  }, score);
+  await page.getByRole("button", { name: "Library" }).click();
+  await expect(page.getByText(/No songs yet/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Import…" }).click();
+
+  await expect(page.getByText('Imported "Two Hands"')).toBeVisible();
+  await expect(page.getByText("G major")).toBeVisible();
+  await expect(page.locator("code").first()).toContainText("musicFiles/xml/Two Hands.musicxml");
+  await page.screenshot({ path: path.join(screenshots, "6-library.png") });
+});
+

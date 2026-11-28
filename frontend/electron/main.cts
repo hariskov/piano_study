@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import path from "node:path";
 import { createInterface } from "node:readline";
@@ -49,6 +49,20 @@ function createWindow(): void {
 
 ipcMain.on("backend:line", (_event, line: string) => {
   backend?.stdin.write(line + "\n");
+});
+
+ipcMain.handle("dialog:chooseSong", async (event) => {
+  const owner = BrowserWindow.fromWebContents(event.sender);
+  const options = {
+    title: "Import a song",
+    properties: ["openFile" as const],
+    filters: [
+      { name: "MIDI and MusicXML", extensions: ["mid", "midi", "musicxml", "xml", "mxl"] },
+      { name: "All files", extensions: ["*"] },
+    ],
+  };
+  const chosen = owner ? await dialog.showOpenDialog(owner, options) : await dialog.showOpenDialog(options);
+  return chosen.canceled ? undefined : chosen.filePaths[0];
 });
 
 app.whenReady().then(createWindow);

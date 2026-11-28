@@ -17,10 +17,10 @@ export function HomeScreen({ onOpen }: Props) {
           <span className="tile-title">Devices</span>
           <span className="tile-text">Choose your piano, the sound output and the keyboard size.</span>
         </button>
-        <div className="tile disabled" aria-disabled="true">
+        <button type="button" className="tile" onClick={() => onOpen("library")}>
           <span className="tile-title">Songs</span>
-          <span className="tile-text">MusicXML and MIDI songs arrive in version 0.8.</span>
-        </div>
+          <span className="tile-text">Import MIDI and MusicXML files, find them by name and open them.</span>
+        </button>
       </div>
     </section>
   );
