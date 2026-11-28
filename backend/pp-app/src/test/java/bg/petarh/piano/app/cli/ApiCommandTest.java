@@ -54,6 +54,6 @@ class ApiCommandTest {
                 VirtualKeyboard.withClock(System::nanoTime).port(), SilentOutput.create().port(), System::nanoTime,
                 new ScriptedLifetime(), new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)), stdout);
         return PianoCli.create(environment, new PrintWriter(out, true), new PrintWriter(new StringWriter(), true))
-                .execute("api", "--settings", settingsFile.toString());
+                .execute("api", "--settings", settingsFile.toString(), "--library", folder.resolve("musicFiles").toString());
     }
 }

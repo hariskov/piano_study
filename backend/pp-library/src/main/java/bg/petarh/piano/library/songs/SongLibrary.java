@@ -143,6 +143,14 @@ public final class SongLibrary {
         return entry;
     }
 
+    public Path xmlPath(SongEntry song) {
+        return songFile(song);
+    }
+
+    public Optional<Path> midiPath(SongEntry song) {
+        return song.midiFile().map(midi -> folder.resolve(MIDI_FOLDER).resolve(midi));
+    }
+
     private List<SongEntry> songs() {
         return readIndex().stream().filter(song -> Files.isRegularFile(songFile(song))).toList();
     }

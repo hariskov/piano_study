@@ -3,6 +3,7 @@ module bg.petarh.piano.api {
     requires bg.petarh.piano.engine;
     requires bg.petarh.piano.generator;
     requires transitive bg.petarh.piano.library;
+    requires bg.petarh.piano.importmidi;
     requires tools.jackson.databind;
     requires com.fasterxml.jackson.annotation;
 
@@ -15,4 +16,5 @@ module bg.petarh.piano.api {
     opens bg.petarh.piano.api.session to tools.jackson.databind;
     opens bg.petarh.piano.api.settings to tools.jackson.databind;
     opens bg.petarh.piano.api.keyboard to tools.jackson.databind;
+    opens bg.petarh.piano.api.library to tools.jackson.databind;
 }

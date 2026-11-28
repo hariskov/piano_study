@@ -11,6 +11,8 @@ public class RpcException extends RuntimeException {
     public static final int INTERNAL_ERROR = -32603;
     public static final int SESSION_ERROR = -32001;
     public static final int DEVICE_ERROR = -32002;
+    public static final int FILE_ERROR = -32003;
+    public static final int NOT_FOUND = -32004;
 
     @Serial
     private static final long serialVersionUID = 1L;

@@ -32,6 +32,13 @@ export interface EvalEvent {
   offsetMs?: number;
 }
 
+export interface ImportParams {
+  path?: string;
+  grid?: number;
+  triplets?: boolean;
+  splitPoint?: string;
+}
+
 export interface InputDeviceEvent {
   input: string;
 }
@@ -58,6 +65,15 @@ export interface NoteInfo {
   pitch: string;
   midi: number;
   hand: string;
+}
+
+export interface PartSummary {
+  id: string;
+  name: string;
+  staffCount: number;
+  noteCount: number;
+  lowest?: string;
+  highest?: string;
 }
 
 export interface SessionStartParams {
@@ -103,6 +119,41 @@ export interface SettingsView {
   latencyOffsetMs: number;
 }
 
+export interface SongDetails {
+  id: string;
+  title: string;
+  composer?: string;
+  file: string;
+  midiFile?: string;
+  measureCount: number;
+  timeSignature: string;
+  key: string;
+  tempo: number;
+  parts: PartSummary[];
+  warnings: string[];
+}
+
+export interface SongId {
+  id?: string;
+}
+
+export interface SongList {
+  songs: SongSummary[];
+}
+
+export interface SongSummary {
+  id: string;
+  title: string;
+  fileName: string;
+  midiFile?: string;
+  partCount: number;
+  measureCount: number;
+  sourceFile: string;
+  format: string;
+  importedAt: string;
+  warnings: string[];
+}
+
 export interface StateEvent {
   state: string;
 }
@@ -136,6 +187,10 @@ export interface ApiMethods {
   "devices.stopMonitor": { params: Record<string, never>; result: null };
   "keyboard.press": { params: KeyParams; result: null };
   "keyboard.release": { params: KeyParams; result: null };
+  "library.delete": { params: SongId; result: null };
+  "library.import": { params: ImportParams; result: SongSummary };
+  "library.list": { params: Record<string, never>; result: SongList };
+  "library.open": { params: SongId; result: SongDetails };
   "session.adjust": { params: AdjustParams; result: null };
   "session.changeTempo": { params: TempoParams; result: null };
   "session.pause": { params: Record<string, never>; result: null };

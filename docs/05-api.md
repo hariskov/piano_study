@@ -1,6 +1,6 @@
 # Piano Player: backend API reference
 
-The UI's Electron main process starts `pp api` (optionally `pp api --settings <file>`; by default `~/.config/piano-player/settings.json`) and exchanges JSON-RPC 2.0 messages with it, one per line, over the process's stdin (requests) and stdout (responses and events). See architecture §7 for the design.
+The UI's Electron main process starts `pp api` (optionally `--settings <file>`, default `~/.config/piano-player/settings.json`, and `--library <dir>`, default `~/.local/share/piano-player/musicFiles`) and exchanges JSON-RPC 2.0 messages with it, one per line, over the process's stdin (requests) and stdout (responses and events). See architecture §7 for the design.
 
 Optional fields can be left out. Fields without a value are left out of events too.
 
@@ -15,6 +15,8 @@ Optional fields can be left out. Fields without a value are left out of events t
 | -32603 | Internal error |
 | -32001 | Session error, for example "A session is already running; stop it first" or "No session is running" |
 | -32002 | Device error, for example "MIDI device unavailable: jdk:Missing" |
+| -32003 | File error: a song file can't be read (missing, broken, not MIDI or MusicXML inside); `message` names the file and the reason |
+| -32004 | Not found: no song with that id |
 
 ## Methods
 
@@ -29,6 +31,18 @@ No params. Stops monitoring. Result `null`.
 
 ### `keyboard.press`, `keyboard.release`
 Params `{"pitch":"C4","velocity":80}` (`velocity` is optional and defaults to 80; release ignores it). Plays the built-in virtual keyboard, the input `virtual:keyboard`, which `devices.list` always lists. The UI's on-screen keyboard and computer keys use it to practise without a piano (DEV-7). Result `null`; -32602 for an unknown pitch.
+
+### `library.list`
+No params. Result: `{"songs":[{"id","title","fileName","midiFile","partCount","measureCount","sourceFile","format","importedAt","warnings"}]}`, sorted by title. `midiFile` is only there for MIDI imports.
+
+### `library.import`
+Params: `{"path":"/home/me/song.mid"}` plus, for MIDI files, optional `grid` (4, 8, 16 or 32, default 16), `triplets` (default false) and `splitPoint` (lowest right-hand note, default `"C4"`). MIDI (`.mid`, `.midi`) is converted and kept with its original file; MusicXML (`.musicxml`, `.xml`, `.mxl`) is saved as it is. Result: the new song, as in `library.list`, with its import warnings. Other file types give -32602; unreadable files -32003.
+
+### `library.open`
+Params `{"id":"simple-melody"}`. Result: `{"id","title","composer","file","midiFile","measureCount","timeSignature":"4/4","key":"C major","tempo":120,"parts":[{"id","name","staffCount","noteCount","lowest","highest"}],"warnings"}`. `file` and `midiFile` are full paths. -32004 if there is no such song.
+
+### `library.delete`
+Params `{"id":"simple-melody"}`. Removes the song, its MusicXML and its MIDI file. Result `null`; -32004 if there is no such song.
 
 ### `settings.get`
 No params. Result: `{"input":"jdk:Piano","output":"jdk:Gervill","keyboards":{"jdk:Piano":"A0-C8"},"tempos":{"wait":72,"tempo":100},"latencyOffsetMs":0}`. Fields that were never set are left out.
