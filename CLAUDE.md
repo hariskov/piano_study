@@ -1,6 +1,6 @@
 # Piano Player
 
-Piano learning desktop app: Java 25 backend (Maven multi-module) and a React + TypeScript UI in a WebKitGTK window (`frontend/shell/piano-player.js`, run with GJS). Linux only. The bundle and end-to-end test still use Electron until that switch is finished.
+Piano learning desktop app: Java 25 backend (Maven multi-module) and a React + TypeScript UI in a WebKitGTK window (`frontend/shell/piano-player.js`, run with GJS). Linux only. The bundle still uses Electron until that switch is finished.
 
 Docs: `docs/01-vision.md`, `docs/02-specification.md`, `docs/03-architecture-plan.md`, `docs/04-phases.md`, `docs/05-api.md` (backend API reference).
 
@@ -8,7 +8,7 @@ Docs: `docs/01-vision.md`, `docs/02-specification.md`, `docs/03-architecture-pla
 
 - `./mvnw verify` builds and runs all tests, backend and frontend (JDK 25, Maven 3.10 via the wrapper). The frontend build uses the system Node.js (24 or newer; openSUSE: `sudo zypper in nodejs26 npm26`) and runs `npm ci`, `npm run build` (type check plus Vite) and `npm test` (Vitest with happy-dom).
 - After changing an API record, method or event: `./mvnw -pl backend/pp-api -am test -Dprotocol.write=true` regenerates `frontend/src/api/protocol.ts` (the build fails while it is out of date).
-- Frontend only: `cd frontend && npm test` (or `npm run dev`).
+- Frontend only: `cd frontend && npm test` (or `npm run dev`). `npm run e2e` runs the smoke test in the real window (needs a display; after `./mvnw -q package -DskipTests`).
 - `./mvnw -q package -DskipTests && bin/pp <command>` runs the CLI (`pp-app`) against the real MIDI system.
 - `./mvnw -Pbundle package -DskipTests` also builds the self-extracting executable `frontend/target/bundle/piano-player-<version>-x86_64.sh` (`packaging/build-bundle.sh`). It needs the JDK's jmods (openSUSE: `java-25-openjdk-jmods`).
 - Keep dependencies few: check what a new package pulls in (`npm ls --all`, the lock file's size) before adding it, and prefer a short script to a large tool.

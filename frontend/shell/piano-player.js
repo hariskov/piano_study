@@ -80,6 +80,32 @@ function chooseSong(window, view, id) {
   });
 }
 
+// PP_E2E names a test script to run in the page; see e2e/runner.ts.
+function runTests(content, view, stdin) {
+  const script = GLib.getenv("PP_E2E");
+  if (script === null) {
+    return () => false;
+  }
+  const [, source] = GLib.file_get_contents(script);
+  content.add_script(new WebKit.UserScript(new TextDecoder().decode(source), WebKit.UserContentInjectedFrames.TOP_FRAME, WebKit.UserScriptInjectionTime.END, null, null));
+  const screens = GLib.getenv("PP_E2E_SCREENS");
+  return (message) => {
+    if (message.type === "e2e.log") {
+      print(message.text);
+    } else if (message.type === "e2e.screenshot" && screens !== null) {
+      view.get_snapshot(WebKit.SnapshotRegion.VISIBLE, WebKit.SnapshotOptions.NONE, null, (_view, result) =>
+        view.get_snapshot_finish(result).save_to_png(`${screens}/${message.name}.png`),
+      );
+    } else if (message.type === "e2e.done") {
+      stdin.close(null);
+      System.exit(message.failed ? 1 : 0);
+    } else {
+      return false;
+    }
+    return true;
+  };
+}
+
 function openWindow(app) {
   const content = new WebKit.UserContentManager();
   const view = new WebKit.WebView({ user_content_manager: content });
@@ -96,6 +122,7 @@ function openWindow(app) {
 
   const backend = startBackend(view);
   const stdin = backend.get_stdin_pipe();
+  const testMessage = runTests(content, view, stdin);
   content.register_script_message_handler("shell", null);
   content.connect("script-message-received::shell", (_manager, value) => {
     const message = JSON.parse(value.to_string());
@@ -103,6 +130,8 @@ function openWindow(app) {
       stdin.write_all(new TextEncoder().encode(message.line + "\n"), null);
     } else if (message.type === "chooseSong") {
       chooseSong(window, view, message.id);
+    } else {
+      testMessage(message);
     }
   });
   // Closing stdin is the backend's signal to stop its session, close the MIDI devices and exit.

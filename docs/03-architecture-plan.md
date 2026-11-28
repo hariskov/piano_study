@@ -5,10 +5,10 @@
 ```
 ┌─────────────────────────── Desktop app (one package) ───────────────────────────┐
 │                                                                                 │
-│  ┌──────────── UI (Electron + TypeScript) ────────────┐                         │
+│  ┌──────── UI (WebKitGTK window + TypeScript) ────────┐                         │
 │  │  screens · note display (canvas/SVG) · keyboard    │                         │
 │  └───────────────▲───────────────────────┬────────────┘                         │
-│                  │ events                │ requests      (Electron IPC)         │
+│                  │ events                │ requests      (WebKit messages)      │
 │  ┌───────────────┴───────────────────────▼────────────────────────────────────┐ │
 │  │          Java backend (child process, JSON lines on stdin/stdout)          │ │
 │  │                                                                            │ │
@@ -39,7 +39,7 @@ The backend does all the work: device handling, importing, generating notes, tim
 | Tests | JUnit 5, AssertJ | Standard choice |
 | UI language | **TypeScript** | Type safety for the protocol with the backend |
 | UI framework | **React + Vite** | Widely used, lots of tooling. Drawing done directly on canvas/SVG |
-| Desktop window | **WebKitGTK 6.0**, opened by a ~130-line GJS script (`frontend/shell/piano-player.js`) | Uses the system's web engine, so the app ships no browser: Electron was 274 of the 340 MB unpacked. Needs `gjs` and `typelib-1_0-WebKit-6_0` installed (decided 2026-11-28). Until the follow-up PR, the bundle and the end-to-end test still use Electron |
+| Desktop window | **WebKitGTK 6.0**, opened by a ~130-line GJS script (`frontend/shell/piano-player.js`) | Uses the system's web engine, so the app ships no browser: Electron was 274 of the 340 MB unpacked. Needs `gjs` and `typelib-1_0-WebKit-6_0` installed (decided 2026-11-28). Until the follow-up PR, the bundle still uses Electron |
 | Notation (v1) | **VexFlow** or **OpenSheetMusicDisplay** (renders MusicXML directly, built on VexFlow) | Proper staff notation in canvas/SVG without writing a music engraver ourselves |
 | Packaging | **jlink** (trimmed Java runtime) + a self-extracting shell script | One self-contained executable built by a short script with only `tar` and `xz` (electron-builder was dropped: it added 266 npm packages; then the AppImage, which needed appimagetool) |
 | OMR (v2) | **Audiveris** | Open-source Java OMR, outputs MusicXML |
@@ -118,7 +118,7 @@ piano-player/                      root parent pom: shared coordinates, Maven ve
 │   ├── pp-api/                    JSON-RPC messages, dispatcher, stdio transport
 │   ├── pp-app/                    main(): wires everything together, CLI options
 │   └── pp-import-pdf/             (v2) Audiveris integration
-└── frontend/                      Electron + React + TypeScript; Maven runs npm
+└── frontend/                      React + TypeScript; shell/ (GJS window), e2e/; Maven runs npm
 
 ```
 
@@ -404,7 +404,7 @@ The renderer never talks to the backend directly:
 - `testing/FakeBackend`: an in-memory `Transport` that answers requests and sends events, used by the screen tests.
 - `styles.css`: one dark theme with CSS variables.
 
-The main and preload sources are `.cts` files, compiled by `tsconfig.electron.json` to CommonJS `.cjs` (Electron's sandboxed preload needs CommonJS). The renderer is built by Vite. Electron 45 downloads its binary on first start, not at `npm install`. Electron is still used by the bundle and the end-to-end test until the follow-up PR; `bin/ui` already uses the WebKitGTK shell.
+The main and preload sources are `.cts` files, compiled by `tsconfig.electron.json` to CommonJS `.cjs` (Electron's sandboxed preload needs CommonJS). The renderer is built by Vite. Electron 45 downloads its binary on first start, not at `npm install`. Electron is still used by the bundle until the follow-up PR; `bin/ui` already uses the WebKitGTK shell.
 
 **Protocol: JSON-RPC 2.0.**
 - A **request** has an `id`, a `method` and `params`, and gets exactly one **response** with the same `id`: either `result` or `error` (`code`, `message`).
@@ -444,7 +444,7 @@ Implemented so far (`pp-api`, using Jackson 3):
   - `settings.get`, `settings.update` (through `api.settings.SettingsService`, which holds the current `Settings` and saves every change to the `SettingsStore`).
   - `session.start`, `session.pause`, `session.resume`, `session.changeTempo`, `session.stop`, plus the events `session.state`, `session.target`, `eval`, `input`, `beat` and `session.summary`. The full reference is in `docs/05-api.md`.
 - `api.session.SessionMethods` keeps at most one active session. `PracticePlan` remembers the session's params and turns them into the model types, using the same parsers and defaults as the CLI, and builds the generator, the targets and the chord names. Bad values become -32602 with the model's message, and a missing device becomes -32002. Song sessions (`exercise: "song"`) are built by `PracticePlan.fromSong`. With `playback`, `SessionMethods` opens that output (shared with the metronome when it is the same id) and adds a `Playback` of the accompaniment (the whole song in Listen), gated in Wait mode. The song is loaded through `PianoApi`'s library. A `SongSelection` gives fixed targets (`TargetSource.of(Targets.from(played))`) and the accompaniment, and the timing is the section loop's tempo map scaled by `tempoPercent`, with the time signature at the section's start. `session.summary` adds `passes` when a section is repeated. `session.adjust` merges the changed fields into the params (`SessionStartParams.adjustedBy`) and validates them by building a generator straight away. Then, on the session thread, it switches the `SwitchingMeasures` supplier to a generator starting at the measure after the current target, and discards the target look-ahead. The engine's `Practice` runs the session. `SessionEvents` (a `SessionListener`) and the input listener send events, and `Results` gives the summary. When the session finishes, the input and metronome output are closed, `session.summary` is sent, and a new session can start. `PianoApi.close()` (at end of input) stops a running session. JSON leaves out fields without a value. Sessions read their default tempo (per mode) and keyboard (per input) from the settings, and save the input and tempo when they start and when the tempo changes. The input listener moves every key press earlier by the latency offset (`LatencyOffset`) before the evaluator sees it. `pp api --settings <file>` chooses the file (default: `SettingsLocation.defaultSettingsFile()`). `api.devices.DeviceScanner` looks for devices only when asked: the UI lists them when it loads, and `devices.rescan` (the **Rescan** button) checks again. Nothing polls in the background, so no CPU is used while idle. When a rescan finds a changed list it sends `devices.changed` and tells `SessionMethods.inputsChanged`. If the active session's input is gone, that pauses the session, closes the connection and sends `session.inputLost`. When a later rescan finds the input again, it reopens it with the same listener and sends `session.inputRestored`; the user then resumes (DEV-5).
-- `pp api` (in `pp-app`) serves the API on stdin/stdout until end of input. This is the command Electron starts. `CliEnvironment` has `stdin`/`stdout` streams so tests use in-memory ones.
+- `pp api` (in `pp-app`) serves the API on stdin/stdout until end of input. This is the command the window shell starts. `CliEnvironment` has `stdin`/`stdout` streams so tests use in-memory ones.
 - `api.stdio.StdioTransport.run(in, out)` reads one request per line until end of input, skipping blank lines. A writer thread sends responses and events in order, so `events()` (an `EventSink`) can be used from any thread, for example the session thread. At end of input it runs the `onEndOfInput` action (stop the session, close devices), sends what's queued, and stops. Events after that are dropped.
 
 `pp-app` also has a **headless CLI** built with picocli subcommands (for example `pp devices`, `pp monitor <device>`, `pp random --hands=right`). `bin/pp` runs it on the module path. `PianoCli.create(CliEnvironment, out, err)` builds it from a `CliEnvironment` (input port, output port, clock, `Lifetime`), so CLI tests run against the virtual devices with a controlled clock. Long-running commands hand their open connections to `Lifetime`. `keepOpenUntilStopped` waits for Ctrl+C (`monitor`, `echo`). `keepOpenUntil(resource, done)` waits until a task completes (`detect-range`, `random`, `chords`). In production (`UntilShutdown`), a shutdown hook closes the connections if Ctrl+C comes first, so outputs always get their All Notes Off. In tests a scripted lifetime plays some key presses and returns. A missing device is reported as a one-line error with exit code 1, not a stack trace. `pp echo` closes the input before the output, so no event reaches an output that is already closed; the output then sends All Notes Off. It can be used to test the backend before the UI exists, and it is what Phase 1–3 testing relies on.
@@ -494,9 +494,9 @@ Implemented so far (`pp-library`, song part, `library.songs`):
 | Golden | MIDI → MusicXML, MusicXML → model | stored inputs and expected outputs in `src/test/resources` |
 | Engine scenarios | whole sessions from scripted input ("press C4 at 1000 ms…") | a scenario test runner that uses the manual clock |
 | Device integration | real ALSA path | a virtual MIDI port (`snd-virmidi` kernel module plus `aplaymidi`/`amidi`) to send in recorded MIDI |
-| UI end to end | The real Electron app and backend with the virtual keyboard: devices, a random session played by mouse, a chord session played on the computer keyboard, results | Playwright for Electron (`npm run e2e`, needs a display; not part of `./mvnw verify`) |
+| UI end to end | The real window and backend with the virtual keyboard: devices, a random session played by mouse, a chord session played on the computer keyboard, a song imported, its sheet music drawn and practised for two passes, results | `npm run e2e` (needs a display; not part of `./mvnw verify`). `e2e/run.sh` builds `e2e/smoke.ts` into one script (Vite library build, `dist/e2e/smoke.js`) and starts `bin/ui` with `PP_E2E` pointing at it and fresh `XDG_CONFIG_HOME`/`XDG_DATA_HOME`. The shell injects the script into the page. The tests use `@testing-library/dom` and a 50-line runner (`e2e/runner.ts`) that reports through the shell: one line per test on stdout, screenshots to `PP_E2E_SCREENS`, and the exit code. The import replaces `window.backend.chooseSongFile` to skip the GTK dialog. Playwright was dropped with Electron: WebKitGTK 6.0 has no WebDriver on openSUSE |
 | API | JSON-RPC contract over stdio | In-memory streams in place of stdin/stdout, JSON snapshot tests |
-| UI | components, protocol handling | Vitest, plus Playwright with Electron for smoke tests |
+| UI | components, protocol handling | Vitest with happy-dom, plus the in-window smoke test |
 | Manual | with the real piano | a checklist for each phase (see `04-phases.md`) |
 
 ## 10. Risks
