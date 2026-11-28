@@ -14,6 +14,10 @@ function post(message: object): void {
 
 window.addEventListener("error", (event) => post({ type: "e2e.log", text: `page error: ${event.message}` }));
 
+export function log(text: string): void {
+  post({ type: "e2e.log", text });
+}
+
 export function test(name: string, run: () => Promise<void>): void {
   tests.push({ name, run });
 }

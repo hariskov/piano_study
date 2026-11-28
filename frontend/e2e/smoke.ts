@@ -1,5 +1,5 @@
 import { configure, fireEvent, screen, waitFor } from "@testing-library/dom";
-import { runAll, screenshot, test } from "./runner";
+import { log, runAll, screenshot, test } from "./runner";
 
 declare const SONG_FILE: string;
 declare const MIDI_FILE: string;
@@ -70,6 +70,44 @@ test("sets up the virtual keyboard on the Devices screen", async () => {
     if (count !== 61) throw new Error(`${count} keys shown`);
   });
   await screenshot("1-devices");
+});
+
+const LATENCY_PRESSES = 40;
+const LATENCY_BUDGET_MS = 20;
+
+function shownPressed(midi: number, pressed: boolean): Promise<void> {
+  const key = document.querySelector(`[data-midi="${midi}"]`)!;
+  return new Promise((resolve) => {
+    const check = () => {
+      if (key.classList.contains("pressed") === pressed) {
+        observer.disconnect();
+        resolve();
+      }
+    };
+    const observer = new MutationObserver(check);
+    observer.observe(key, { attributes: true, attributeFilter: ["class"] });
+    check();
+  });
+}
+
+// NF-1: a press goes to the backend like one from the virtual keyboard and comes back as an input event. The time
+// until the page shows the key pressed covers both directions of the bridge, so it bounds the backend-to-UI delay.
+// The screen's next refresh (at most one frame) comes on top, as for any app.
+test("draws a key press within the latency budget", async () => {
+  const times: number[] = [];
+  for (let press = 0; press < LATENCY_PRESSES; press++) {
+    const start = performance.now();
+    window.backend!.send(JSON.stringify({ jsonrpc: "2.0", id: `latency-${press}`, method: "keyboard.press", params: { pitch: "C4" } }));
+    await shownPressed(60, true);
+    times.push(performance.now() - start);
+    window.backend!.send(JSON.stringify({ jsonrpc: "2.0", id: `latency-${press}-up`, method: "keyboard.release", params: { pitch: "C4" } }));
+    await shownPressed(60, false);
+  }
+  times.sort((a, b) => a - b);
+  const median = times[Math.floor(times.length / 2)];
+  const p95 = times[Math.floor(times.length * 0.95)];
+  log(`    key press shown on the page, round trip: median ${median.toFixed(1)} ms, 95th percentile ${p95.toFixed(1)} ms`);
+  if (median > LATENCY_BUDGET_MS) throw new Error(`median ${median.toFixed(1)} ms is over ${LATENCY_BUDGET_MS} ms`);
 });
 
 test("plays a short random-notes session to the results", async () => {
