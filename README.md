@@ -13,6 +13,7 @@ Requires:
 | Building and testing | JDK 25, Node.js 24 or newer: `sudo zypper in java-25-openjdk-devel nodejs26 npm26`. Maven comes with the wrapper. |
 | Running the app (and the end-to-end test) | GJS and WebKitGTK 6.0: `sudo zypper in gjs typelib-1_0-WebKit-6_0` (Fedora: `gjs webkitgtk6.0`, Debian/Ubuntu: `gjs gir1.2-webkit-6.0`) |
 | Building the single-file app | the JDK's jmods: `sudo zypper in java-25-openjdk-jmods` |
+| Better laptop sound (optional) | a General MIDI SoundFont: `sudo zypper in fluid-soundfont-gm` (142 MB; Fedora: `fluid-soundfont-gm`, Debian/Ubuntu: `fluid-soundfont-gm`). Without one, Java's small built-in sound set is used. Your own `.sf2` can go in `~/.local/share/piano-player/soundfonts/`, or be named by `PP_SOUNDFONT` |
 
 ```
 ./mvnw verify
