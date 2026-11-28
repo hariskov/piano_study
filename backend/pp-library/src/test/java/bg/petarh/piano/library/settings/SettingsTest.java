@@ -17,6 +17,22 @@ class SettingsTest {
         assertThat(defaults.keyboardFor("jdk:Piano")).isEmpty();
         assertThat(defaults.tempoFor("wait")).isEmpty();
         assertThat(defaults.latencyOffsetMs()).isZero();
+        assertThat(defaults.instrument()).isZero();
+        assertThat(defaults.keySound()).isFalse();
+    }
+
+    @Test
+    void remembersTheInstrumentAndWhetherKeysSound() {
+        Settings settings = defaults.withInstrument(19).withKeySound(true);
+
+        assertThat(settings.instrument()).isEqualTo(19);
+        assertThat(settings.keySound()).isTrue();
+    }
+
+    @Test
+    void rejectsAnInstrumentOutsideGeneralMidi() {
+        assertThatIllegalArgumentException().isThrownBy(() -> defaults.withInstrument(128));
+        assertThatIllegalArgumentException().isThrownBy(() -> defaults.withInstrument(-1));
     }
 
     @Test

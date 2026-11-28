@@ -13,8 +13,8 @@ function backend(): FakeBackend {
       ],
       outputs: [{ id: "jdk:Gervill", name: "Gervill", description: "Software MIDI Synthesizer" }],
     }))
-    .answer("settings.get", () => ({ input: "jdk:Piano", keyboards: { "jdk:Piano": "61" }, tempos: {}, latencyOffsetMs: 0 }))
-    .answer("settings.update", (update) => ({ keyboards: {}, tempos: {}, latencyOffsetMs: 0, ...update }));
+    .answer("settings.get", () => ({ input: "jdk:Piano", keyboards: { "jdk:Piano": "61" }, tempos: {}, latencyOffsetMs: 0, instrument: 0, keySound: false }))
+    .answer("settings.update", (update) => ({ keyboards: {}, tempos: {}, latencyOffsetMs: 0, instrument: 0, keySound: false, ...update }));
 }
 
 function show(fake: FakeBackend) {
@@ -60,7 +60,7 @@ describe("DevicesScreen", () => {
   });
 
   it("saves the input it shows as chosen when none was saved", async () => {
-    const fake = backend().answer("settings.get", () => ({ keyboards: {}, tempos: {}, latencyOffsetMs: 0 }));
+    const fake = backend().answer("settings.get", () => ({ keyboards: {}, tempos: {}, latencyOffsetMs: 0, instrument: 0, keySound: false }));
     show(fake);
     await screen.findByLabelText("Piano");
 

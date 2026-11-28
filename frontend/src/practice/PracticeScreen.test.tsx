@@ -14,10 +14,10 @@ function backend(): FakeBackend {
   return new FakeBackend()
     .answer("session.start", () => ({ seed: 42, tempo: 80, notices: [] }))
     .answer("progress.history", () => ({ sessions: [] }))
-    .answer("settings.get", () => ({ input: "virtual:keyboard", keyboards: {}, tempos: {}, latencyOffsetMs: 0 }));
+    .answer("settings.get", () => ({ input: "virtual:keyboard", keyboards: {}, tempos: {}, latencyOffsetMs: 0, instrument: 0, keySound: false }));
 }
 
-const SETUP = { ...defaultSetup({ keyboards: {}, tempos: {}, latencyOffsetMs: 0 }), tempo: 80 };
+const SETUP = { ...defaultSetup({ keyboards: {}, tempos: {}, latencyOffsetMs: 0, instrument: 0, keySound: false }), tempo: 80 };
 
 function show(fake: FakeBackend, onSettings = vi.fn(), setup: Setup = SETUP, onSetupChange = vi.fn()) {
   const view = render(
@@ -225,7 +225,7 @@ describe("PracticeScreen", () => {
     const fake = new FakeBackend()
       .answer("session.start", () => ({ seed: 0, tempo: 84, songTempo: 120, notices: ["3 notes outside your keyboard were moved by an octave"] }))
       .answer("library.musicXml", () => ({ xml: "<score-partwise/>" }))
-      .answer("settings.get", () => ({ input: "virtual:keyboard", keyboards: {}, tempos: {}, latencyOffsetMs: 0 }));
+      .answer("settings.get", () => ({ input: "virtual:keyboard", keyboards: {}, tempos: {}, latencyOffsetMs: 0, instrument: 0, keySound: false }));
     render(
       <BackendContext.Provider value={fake.client}>
         <PracticeScreen params={{ input: "virtual:keyboard", exercise: "song", songId: "x" }} onChangeSettings={vi.fn()} />
@@ -241,7 +241,7 @@ describe("PracticeScreen", () => {
     const fake = new FakeBackend()
       .answer("session.start", () => ({ seed: 0, tempo: 120, songTempo: 120, notices: [], sectionStart: "1/4", passLength: "1/2" }))
       .answer("library.musicXml", () => ({ xml: "<score-partwise>song</score-partwise>" }))
-      .answer("settings.get", () => ({ input: "virtual:keyboard", keyboards: {}, tempos: {}, latencyOffsetMs: 0 }));
+      .answer("settings.get", () => ({ input: "virtual:keyboard", keyboards: {}, tempos: {}, latencyOffsetMs: 0, instrument: 0, keySound: false }));
     render(
       <BackendContext.Provider value={fake.client}>
         <PracticeScreen params={{ input: "virtual:keyboard", exercise: "song", songId: "duet" }} onChangeSettings={vi.fn()} />

@@ -14,18 +14,18 @@ import java.util.TreeMap;
 public final class SettingsMethods {
 
     public record SettingsView(@MayBeAbsent String input, @MayBeAbsent String output, Map<String, String> keyboards, Map<String, Integer> tempos,
-                        int latencyOffsetMs) {
+                        int latencyOffsetMs, int instrument, boolean keySound) {
 
         static SettingsView of(Settings settings) {
             Map<String, String> keyboards = new TreeMap<>();
             settings.keyboards().forEach((device, range) -> keyboards.put(device, range.toString()));
             return new SettingsView(settings.input().orElse(null), settings.output().orElse(null), keyboards,
-                    new TreeMap<>(settings.tempos()), settings.latencyOffsetMs());
+                    new TreeMap<>(settings.tempos()), settings.latencyOffsetMs(), settings.instrument(), settings.keySound());
         }
     }
 
     public record SettingsUpdate(String input, String output, Map<String, String> keyboards, Map<String, Integer> tempos,
-                          Integer latencyOffsetMs) {
+                          Integer latencyOffsetMs, Integer instrument, Boolean keySound) {
 
         Settings applyTo(Settings settings) {
             Settings changed = settings;
@@ -44,6 +44,12 @@ public final class SettingsMethods {
             }
             if (latencyOffsetMs != null) {
                 changed = changed.withLatencyOffset(latencyOffsetMs);
+            }
+            if (instrument != null) {
+                changed = changed.withInstrument(instrument);
+            }
+            if (keySound != null) {
+                changed = changed.withKeySound(keySound);
             }
             return changed;
         }

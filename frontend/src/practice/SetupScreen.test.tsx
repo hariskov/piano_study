@@ -21,6 +21,8 @@ function backend(input?: string): FakeBackend {
     keyboards: {},
     tempos: { wait: 70, tempo: 100 },
     latencyOffsetMs: 0,
+    instrument: 0,
+    keySound: false,
   }));
 }
 
@@ -89,7 +91,7 @@ describe("SetupScreen", () => {
   });
 
   it("starts from the previous setup when there is one", async () => {
-    const previous = { ...defaultSetup({ keyboards: {}, tempos: {}, latencyOffsetMs: 0 }), countIn: 0, notes: 7 };
+    const previous = { ...defaultSetup({ keyboards: {}, tempos: {}, latencyOffsetMs: 0, instrument: 0, keySound: false }), countIn: 0, notes: 7 };
     show(backend("jdk:Piano"), vi.fn(), vi.fn(), previous);
 
     expect(((await screen.findByLabelText("Count-in")) as HTMLSelectElement).value).toBe("0");

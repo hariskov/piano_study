@@ -6,13 +6,13 @@ import java.util.Map;
 import java.util.TreeMap;
 
 record SettingsFile(String input, String output, Map<String, String> keyboards, Map<String, Integer> tempos,
-                    Integer latencyOffsetMs) {
+                    Integer latencyOffsetMs, Integer instrument, Boolean keySound) {
 
     static SettingsFile of(Settings settings) {
         Map<String, String> keyboards = new TreeMap<>();
         settings.keyboards().forEach((device, range) -> keyboards.put(device, range.toString()));
         return new SettingsFile(settings.input().orElse(null), settings.output().orElse(null), keyboards,
-                new TreeMap<>(settings.tempos()), settings.latencyOffsetMs());
+                new TreeMap<>(settings.tempos()), settings.latencyOffsetMs(), settings.instrument(), settings.keySound());
     }
 
     Settings toSettings() {
@@ -35,6 +35,12 @@ record SettingsFile(String input, String output, Map<String, String> keyboards, 
         }
         if (latencyOffsetMs != null && Math.abs(latencyOffsetMs) <= Settings.LARGEST_LATENCY_OFFSET_MS) {
             settings = settings.withLatencyOffset(latencyOffsetMs);
+        }
+        if (instrument != null && instrument >= 0 && instrument <= Settings.LAST_INSTRUMENT) {
+            settings = settings.withInstrument(instrument);
+        }
+        if (keySound != null) {
+            settings = settings.withKeySound(keySound);
         }
         return settings;
     }

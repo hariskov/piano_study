@@ -27,6 +27,8 @@ function show(onStart = vi.fn()) {
     keyboards: {},
     tempos: {},
     latencyOffsetMs: 0,
+    instrument: 0,
+    keySound: false,
   }));
   render(
     <BackendContext.Provider value={fake.client}>

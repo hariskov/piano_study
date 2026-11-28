@@ -10,22 +10,27 @@ import java.util.Optional;
 public final class Settings {
 
     static final int LARGEST_LATENCY_OFFSET_MS = 500;
+    static final int LAST_INSTRUMENT = 127;
 
-    private static final Settings DEFAULTS = new Settings(null, null, Map.of(), Map.of(), 0);
+    private static final Settings DEFAULTS = new Settings(null, null, Map.of(), Map.of(), 0, 0, false);
 
     private final String input;
     private final String output;
     private final Map<String, KeyboardRange> keyboards;
     private final Map<String, Integer> tempos;
     private final int latencyOffsetMs;
+    private final int instrument;
+    private final boolean keySound;
 
     private Settings(String input, String output, Map<String, KeyboardRange> keyboards, Map<String, Integer> tempos,
-                     int latencyOffsetMs) {
+                     int latencyOffsetMs, int instrument, boolean keySound) {
         this.input = input;
         this.output = output;
         this.keyboards = Map.copyOf(keyboards);
         this.tempos = Map.copyOf(tempos);
         this.latencyOffsetMs = latencyOffsetMs;
+        this.instrument = instrument;
+        this.keySound = keySound;
     }
 
     public static Settings defaults() {
@@ -60,24 +65,36 @@ public final class Settings {
         return latencyOffsetMs;
     }
 
+    /** The General MIDI program (0–127) that the keys you play sound with. */
+    public int instrument() {
+        return instrument;
+    }
+
+    /** Whether the keys you play are also sent to the output. */
+    public boolean keySound() {
+        return keySound;
+    }
+
     public Settings withInput(String deviceId) {
-        return new Settings(Objects.requireNonNull(deviceId), output, keyboards, tempos, latencyOffsetMs);
+        return new Settings(Objects.requireNonNull(deviceId), output, keyboards, tempos, latencyOffsetMs, instrument,
+                keySound);
     }
 
     public Settings withOutput(String deviceId) {
-        return new Settings(input, Objects.requireNonNull(deviceId), keyboards, tempos, latencyOffsetMs);
+        return new Settings(input, Objects.requireNonNull(deviceId), keyboards, tempos, latencyOffsetMs, instrument,
+                keySound);
     }
 
     public Settings withKeyboard(String deviceId, KeyboardRange range) {
         Map<String, KeyboardRange> changed = new HashMap<>(keyboards);
         changed.put(deviceId, range);
-        return new Settings(input, output, changed, tempos, latencyOffsetMs);
+        return new Settings(input, output, changed, tempos, latencyOffsetMs, instrument, keySound);
     }
 
     public Settings withTempo(String mode, int bpm) {
         Map<String, Integer> changed = new HashMap<>(tempos);
         changed.put(mode, bpm);
-        return new Settings(input, output, keyboards, changed, latencyOffsetMs);
+        return new Settings(input, output, keyboards, changed, latencyOffsetMs, instrument, keySound);
     }
 
     public Settings withLatencyOffset(int milliseconds) {
@@ -85,7 +102,18 @@ public final class Settings {
             throw new IllegalArgumentException("Latency offset must be within ±" + LARGEST_LATENCY_OFFSET_MS
                     + " ms: " + milliseconds);
         }
-        return new Settings(input, output, keyboards, tempos, milliseconds);
+        return new Settings(input, output, keyboards, tempos, milliseconds, instrument, keySound);
+    }
+
+    public Settings withInstrument(int program) {
+        if (program < 0 || program > LAST_INSTRUMENT) {
+            throw new IllegalArgumentException("Instrument must be a General MIDI program 0-127: " + program);
+        }
+        return new Settings(input, output, keyboards, tempos, latencyOffsetMs, program, keySound);
+    }
+
+    public Settings withKeySound(boolean on) {
+        return new Settings(input, output, keyboards, tempos, latencyOffsetMs, instrument, on);
     }
 
     @Override
@@ -95,17 +123,19 @@ public final class Settings {
                 && Objects.equals(settings.output, output)
                 && settings.keyboards.equals(keyboards)
                 && settings.tempos.equals(tempos)
-                && settings.latencyOffsetMs == latencyOffsetMs;
+                && settings.latencyOffsetMs == latencyOffsetMs
+                && settings.instrument == instrument
+                && settings.keySound == keySound;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(input, output, keyboards, tempos, latencyOffsetMs);
+        return Objects.hash(input, output, keyboards, tempos, latencyOffsetMs, instrument, keySound);
     }
 
     @Override
     public String toString() {
         return "Settings[input=" + input + ", output=" + output + ", keyboards=" + keyboards + ", tempos=" + tempos
-                + ", latencyOffsetMs=" + latencyOffsetMs + "]";
+                + ", latencyOffsetMs=" + latencyOffsetMs + ", instrument=" + instrument + ", keySound=" + keySound + "]";
     }
 }

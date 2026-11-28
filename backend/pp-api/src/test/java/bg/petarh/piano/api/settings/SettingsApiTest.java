@@ -36,16 +36,17 @@ class SettingsApiTest {
     @Test
     void startsWithDefaults() {
         assertThat(call("settings.get", "{}").get("result").toString())
-                .isEqualTo("{\"keyboards\":{},\"tempos\":{},\"latencyOffsetMs\":0}");
+                .isEqualTo("{\"keyboards\":{},\"tempos\":{},\"latencyOffsetMs\":0,\"instrument\":0,\"keySound\":false}");
     }
 
     @Test
     void updatesAndSavesOnlyWhatIsGiven() {
         call("settings.update", "{\"input\":\"jdk:Piano\",\"keyboards\":{\"jdk:Piano\":\"F1-F7\"}}");
-        JsonNode result = call("settings.update", "{\"latencyOffsetMs\":20,\"tempos\":{\"wait\":70}}").get("result");
+        JsonNode result = call("settings.update", "{\"latencyOffsetMs\":20,\"tempos\":{\"wait\":70},\"instrument\":19,"
+                + "\"keySound\":true}").get("result");
 
         assertThat(result.toString()).isEqualTo("{\"input\":\"jdk:Piano\",\"keyboards\":{\"jdk:Piano\":\"F1-F7\"},"
-                + "\"tempos\":{\"wait\":70},\"latencyOffsetMs\":20}");
+                + "\"tempos\":{\"wait\":70},\"latencyOffsetMs\":20,\"instrument\":19,\"keySound\":true}");
         assertThat(store.saved().keyboardFor("jdk:Piano")).contains(KeyboardRange.parse("F1-F7"));
     }
 
@@ -55,6 +56,7 @@ class SettingsApiTest {
                 .isEqualTo(-32602);
         assertThat(call("settings.update", "{\"latencyOffsetMs\":9999}").at("/error/code").asInt()).isEqualTo(-32602);
         assertThat(call("settings.update", "{\"tempos\":{\"wait\":500}}").at("/error/code").asInt()).isEqualTo(-32602);
+        assertThat(call("settings.update", "{\"instrument\":128}").at("/error/code").asInt()).isEqualTo(-32602);
         assertThat(store.saves()).isZero();
     }
 
