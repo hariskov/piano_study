@@ -14,6 +14,7 @@ import bg.petarh.piano.model.time.TimeSignature;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -68,7 +69,7 @@ public final class MidiToScore {
             }
             List<Quantiser.Span> spans = part.getValue().stream()
                     .map(note -> quantiser.place(note.pitch(), note.startTick(), note.endTick())).toList();
-            drafts.add(new Draft(name(raw, part.getKey()), isPiano(raw, part.getKey()), spans, List.of()));
+            drafts.add(new Draft(name(raw, part.getKey()), instrument(raw, part.getKey()), isPiano(raw, part.getKey()), spans, List.of()));
         }
         if (keys.isEmpty() && !drafts.isEmpty()) {
             KeySignature estimated = KeyEstimator.estimate(drafts.stream().flatMap(draft -> draft.spans().stream()).toList());
@@ -76,12 +77,23 @@ public final class MidiToScore {
             warnings.add("The file has no key signature; the key was estimated as " + estimated);
         }
         List<Part> parts = new ArrayList<>();
+        Map<String, String> instruments = new LinkedHashMap<>();
         Fraction lastEnd = Fraction.ZERO;
-        for (Draft draft : HandSplitter.arrange(drafts, options.splitPoint())) {
+        List<Draft> arranged = HandSplitter.arrange(drafts, options.splitPoint());
+        for (int index = 0; index < arranged.size(); index++) {
+            Draft draft = arranged.get(index);
+            String id = "P" + (index + 1);
+            if (options.excludedParts().contains(id)) {
+                continue;
+            }
             for (Quantiser.Span note : draft.spans()) {
                 lastEnd = note.end().compareTo(lastEnd) > 0 ? note.end() : lastEnd;
             }
-            parts.add(new Part("P" + (parts.size() + 1), draft.name(), draft.staffCount(), scored(draft, keys)));
+            parts.add(new Part(id, draft.name(), draft.staffCount(), scored(draft, keys)));
+            instruments.put(id, draft.instrument());
+        }
+        if (parts.isEmpty() && !arranged.isEmpty()) {
+            throw new IllegalArgumentException("Choose at least one part to import");
         }
 
         Fraction length = roundedUpToMeasure(lastEnd, times);
@@ -90,7 +102,7 @@ public final class MidiToScore {
         times.forEach((at, time) -> inside(at, length, () -> score.timeSignature(at, time)));
         keys.forEach((at, key) -> inside(at, length, () -> score.key(at, key)));
         tempos.forEach((at, tempo) -> inside(at, length, () -> score.tempo(at, tempo)));
-        return new MidiConversion(score.length(length).build(), new ArrayList<>(warnings));
+        return new MidiConversion(score.length(length).build(), new ArrayList<>(warnings), instruments);
     }
 
     private static List<ScoreNote> scored(Draft draft, TreeMap<Fraction, KeySignature> keys) {
@@ -164,8 +176,10 @@ public final class MidiToScore {
     }
 
     private static String name(RawMidi raw, RawMidi.TrackChannel part) {
-        return raw.trackName(part.track()).filter(name -> !name.isBlank())
-                .orElseGet(() -> GeneralMidi.instrument(raw.program(part.track(), part.channel())
-                        .orElse(GeneralMidi.DEFAULT_PROGRAM)));
+        return raw.trackName(part.track()).filter(name -> !name.isBlank()).orElseGet(() -> instrument(raw, part));
+    }
+
+    private static String instrument(RawMidi raw, RawMidi.TrackChannel part) {
+        return GeneralMidi.instrument(raw.program(part.track(), part.channel()).orElse(GeneralMidi.DEFAULT_PROGRAM));
     }
 }

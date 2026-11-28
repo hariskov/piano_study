@@ -50,12 +50,12 @@ final class HandSplitter {
         List<Integer> staves = new ArrayList<>();
         upper.spans().forEach(span -> staves.add(1));
         lower.spans().forEach(span -> staves.add(2));
-        return new Draft("Piano", true, spans, staves);
+        return new Draft("Piano", upper.instrument(), true, spans, staves);
     }
 
     private static Draft splitAt(Draft draft, int splitPoint) {
         List<Integer> staves = draft.spans().stream().map(span -> span.pitch() >= splitPoint ? 1 : 2).toList();
-        return new Draft(draft.name(), true, draft.spans(), staves);
+        return new Draft(draft.name(), draft.instrument(), true, draft.spans(), staves);
     }
 
     private static double averagePitch(Draft draft) {

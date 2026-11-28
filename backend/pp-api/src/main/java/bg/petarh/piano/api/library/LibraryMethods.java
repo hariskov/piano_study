@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public final class LibraryMethods {
 
@@ -43,7 +44,7 @@ public final class LibraryMethods {
     public record SongList(List<SongSummary> songs) {
     }
 
-    public record ImportParams(String path, Integer grid, Boolean triplets, String splitPoint) {
+    public record ImportParams(String path, Integer grid, Boolean triplets, String splitPoint, List<String> exclude) {
     }
 
     public record SongId(String id) {
@@ -68,6 +69,28 @@ public final class LibraryMethods {
     public record MusicXml(String xml) {
     }
 
+    public record ImportPart(String id, String name, String instrument, int staffCount, int noteCount,
+                             @MayBeAbsent String lowest, @MayBeAbsent String highest) {
+
+        static ImportPart of(Part part, String instrument) {
+            PartSummary summary = PartSummary.of(part);
+            return new ImportPart(part.id(), part.name(), instrument, part.staffCount(), summary.noteCount(),
+                    summary.lowest(), summary.highest());
+        }
+    }
+
+    public record MidiPreview(String title, int measureCount, String timeSignature, String key, int tempo,
+                              List<ImportPart> parts, List<String> warnings) {
+
+        static MidiPreview of(MidiConversion converted) {
+            Score score = converted.score();
+            return new MidiPreview(score.title(), score.measureCount(), score.timeSignatureAt(Fraction.ZERO).toString(),
+                    score.keyAt(Fraction.ZERO).toString(), score.tempoMap().tempoAt(Fraction.ZERO).bpm(),
+                    score.parts().stream().map(part -> ImportPart.of(part, converted.instruments().get(part.id()))).toList(),
+                    converted.warnings());
+        }
+    }
+
     private LibraryMethods() {
     }
 
@@ -76,6 +99,8 @@ public final class LibraryMethods {
                 ignored -> new SongList(library.list().stream().map(SongSummary::of).toList()));
         server.register("library.import", ImportParams.class, SongSummary.class,
                 params -> SongSummary.of(importFile(library, params)));
+        server.register("library.preview", ImportParams.class, MidiPreview.class,
+                params -> MidiPreview.of(convertMidi(params)));
         server.register("library.open", SongId.class, SongDetails.class, params -> details(library, params.id()));
         server.register("library.musicXml", SongId.class, MusicXml.class, params -> musicXml(library, params.id()));
         server.register("library.delete", SongId.class, Void.class, params -> {
@@ -90,19 +115,42 @@ public final class LibraryMethods {
         Path file = Path.of(required(params.path()));
         String name = file.getFileName().toString();
         String lower = name.toLowerCase(Locale.ROOT);
+        if (isMidi(name)) {
+            MidiConversion converted = convertMidi(params);
+            return fileErrors(name, () -> library.addMidi(converted.score(), file, converted.warnings()));
+        }
+        if (lower.endsWith(".musicxml") || lower.endsWith(".xml") || lower.endsWith(".mxl")) {
+            return fileErrors(name, () -> library.importMusicXml(file));
+        }
+        throw new IllegalArgumentException("Choose a MIDI (.mid, .midi) or MusicXML (.musicxml, .xml, .mxl) file: " + name);
+    }
+
+    private static MidiConversion convertMidi(ImportParams params) {
+        Path file = Path.of(required(params.path()));
+        String name = file.getFileName().toString();
+        if (!isMidi(name)) {
+            throw new IllegalArgumentException("Only MIDI files (.mid, .midi) are converted and previewed: " + name);
+        }
+        MidiImportOptions options = options(params);
+        return fileErrors(name, () -> new MidiToScore().convert(new MidiFileReader().read(file), options,
+                name.substring(0, name.lastIndexOf('.'))));
+    }
+
+    private static boolean isMidi(String name) {
+        String lower = name.toLowerCase(Locale.ROOT);
+        return lower.endsWith(".mid") || lower.endsWith(".midi");
+    }
+
+    private interface FileWork<T> {
+        T run() throws IOException;
+    }
+
+    private static <T> T fileErrors(String name, FileWork<T> work) {
         try {
-            if (lower.endsWith(".mid") || lower.endsWith(".midi")) {
-                MidiConversion converted = new MidiToScore().convert(new MidiFileReader().read(file), options(params),
-                        name.substring(0, name.lastIndexOf('.')));
-                return library.addMidi(converted.score(), file, converted.warnings());
-            }
-            if (lower.endsWith(".musicxml") || lower.endsWith(".xml") || lower.endsWith(".mxl")) {
-                return library.importMusicXml(file);
-            }
+            return work.run();
         } catch (IOException | UncheckedIOException | MusicXmlException | MidiImportException e) {
             throw new RpcException(RpcException.FILE_ERROR, name + ": " + describe(e));
         }
-        throw new IllegalArgumentException("Choose a MIDI (.mid, .midi) or MusicXML (.musicxml, .xml, .mxl) file: " + name);
     }
 
     private static MidiImportOptions options(ImportParams params) {
@@ -119,6 +167,9 @@ public final class LibraryMethods {
         }
         if (params.splitPoint() != null) {
             options = options.withSplitPoint(Pitch.parse(params.splitPoint()).midiNumber());
+        }
+        if (params.exclude() != null) {
+            options = options.withExcludedParts(Set.copyOf(params.exclude()));
         }
         return options;
     }
