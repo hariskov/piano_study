@@ -1,5 +1,6 @@
 package bg.petarh.piano.midi.output;
 
+import bg.petarh.piano.midi.value.Instrument;
 import bg.petarh.piano.midi.value.MidiChannel;
 import bg.petarh.piano.midi.value.Velocity;
 import bg.petarh.piano.model.pitch.Pitch;
@@ -18,5 +19,8 @@ public sealed interface OutputEvent {
     }
 
     record AllNotesOff(MidiChannel channel) implements OutputEvent {
+    }
+
+    record ProgramChange(Instrument instrument, MidiChannel channel) implements OutputEvent {
     }
 }
