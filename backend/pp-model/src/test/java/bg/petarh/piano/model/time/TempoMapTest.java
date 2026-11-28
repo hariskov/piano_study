@@ -70,4 +70,32 @@ class TempoMapTest {
     void rejectsChangesBeforeTheStart() {
         assertThatIllegalArgumentException().isThrownBy(() -> steady.withChangeAt(Fraction.of(-1, 4), Tempo.of(60)));
     }
+
+    @Test
+    void scalesEveryTempoByAFactor() {
+        TempoMap song = steady.withChangeAt(Fraction.whole(1), Tempo.of(60));
+
+        TempoMap slower = song.scaledBy(0.5);
+
+        assertThat(slower.tempoAt(Fraction.ZERO)).isEqualTo(Tempo.of(60));
+        assertThat(slower.tempoAt(Fraction.whole(1))).isEqualTo(Tempo.of(30));
+        assertThat(slower.nanosAt(Fraction.whole(1))).isEqualTo(4000 * MS);
+    }
+
+    @Test
+    void keepsScaledTempoWithinWhatCanBePlayed() {
+        assertThat(TempoMap.constant(Tempo.of(200)).scaledBy(2).tempoAt(Fraction.ZERO)).isEqualTo(Tempo.of(240));
+    }
+
+    @Test
+    void followsAnotherMapFromAPosition() {
+        TempoMap song = steady.withChangeAt(Fraction.whole(2), Tempo.of(60));
+
+        TempoMap changed = song.withSegmentsFrom(Fraction.whole(1), song.scaledBy(0.5));
+
+        assertThat(changed.nanosAt(Fraction.whole(1))).isEqualTo(2000 * MS);
+        assertThat(changed.tempoAt(Fraction.of(3, 2))).isEqualTo(Tempo.of(60));
+        assertThat(changed.tempoAt(Fraction.whole(2))).isEqualTo(Tempo.of(30));
+        assertThat(changed.nanosAt(Fraction.whole(2))).isEqualTo(6000 * MS);
+    }
 }
