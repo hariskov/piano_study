@@ -60,7 +60,7 @@ Starts a random-notes or chord session. Only one session runs at a time. Leaving
 |---|---|---|
 | `input` | required | input device id from `devices.list` |
 | `exercise` | required | `"random"`, `"chords"` or `"song"` |
-| `mode` | `"wait"` | `"wait"`, `"tempo"`, `"listen"` or `"play-along"` (the last two only for songs make sense: nothing is scored and the song moves on by itself) |
+| `mode` | `"wait"` | `"wait"`, `"tempo"`, `"listen"` or `"play-along"`. The last two are meant for songs: nothing is scored and the song moves on by itself |
 | `tempo` | saved for the mode, else 90 | BPM, 20–240 |
 | `key` | `"C"` | e.g. `"Bb"`, `"F#m"` |
 | `hands` | `"right"` | `"right"`, `"left"`, `"both"` |
@@ -82,6 +82,8 @@ Starts a random-notes or chord session. Only one session runs at a time. Leaving
 | `tempoPercent` | 100 | songs: the song's own tempos, scaled (its tempo changes stay in proportion) |
 | `outOfRange` | `"shift"` | songs: notes outside the keyboard are moved by octaves (`"shift"`) or left out (`"skip"`) |
 | `playback` | none | songs: output id that plays the other hand and other parts (the whole song in `listen`). Can be the same output as `metronome` |
+| `fromBar`, `toBar` | the whole song | songs: the section to play, bars counted from 1 (a pickup is bar 1) |
+| `repeats` | 1 | songs: play the section this many times in a row (1–99) |
 
 Result: `{"seed":42,"tempo":90,"songTempo":100,"notices":[]}`. For songs, `songTempo` is the song's starting tempo, so the UI can show "84 BPM · 84%", and `notices` says how many notes were moved or skipped. Songs use their own time signature for the count-in and metronome, ignore `tempo`, `key`, `range`, `noteValue`, `time`, `notes` and the random/chord fields, and don't change the saved tempo for the mode. `session.adjust` is refused for songs.
 
@@ -106,7 +108,7 @@ Params `{"bpm":80}`. Takes effect from the next beat (TMP-3) and is saved as the
 | `session.inputLost` | `{"input":"jdk:Piano [hw:3,0,0]"}` | a rescan found the session's input gone; the session is paused |
 | `session.inputRestored` | `{"input":"jdk:Piano [hw:3,0,0]"}` | the input is back and reconnected; the session stays paused until `session.resume` |
 | `devices.changed` | same as the `devices.list` result | a rescan found a device plugged in or unplugged |
-| `session.summary` | `{"timed":false,"completedTargets":50,"correctNotes":60,"wrongKeys":3,"perfect":0,"good":0,"ok":0,"missed":0,"accuracyPercent":95,"elapsedMs":83000}` | once, after the session finishes |
+| `session.summary` | `{"timed":false,"completedTargets":50,"correctNotes":60,"wrongKeys":3,"perfect":0,"good":0,"ok":0,"missed":0,"accuracyPercent":95,"elapsedMs":83000,"passes":[]}` | once, after the session finishes. `passes` is the accuracy of each pass when a section was repeated, empty otherwise |
 
 ## Example
 

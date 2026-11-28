@@ -91,7 +91,7 @@ describe("practice state", () => {
   it("keeps the summary and finishes the last target", () => {
     const summary = {
       timed: false, completedTargets: 1, correctNotes: 1, wrongKeys: 0, perfect: 0, good: 0, ok: 0, missed: 0,
-      accuracyPercent: 100, elapsedMs: 4000,
+      accuracyPercent: 100, elapsedMs: 4000, passes: [],
     };
     const state = apply(
       { event: "session.target", params: C4 },

@@ -102,7 +102,7 @@ describe("PracticeScreen", () => {
     act(() =>
       fake.emit("session.summary", {
         timed: false, completedTargets: 50, correctNotes: 57, wrongKeys: 3, perfect: 0, good: 0, ok: 0, missed: 0,
-        accuracyPercent: 95, elapsedMs: 83000,
+        accuracyPercent: 95, elapsedMs: 83000, passes: [],
       }),
     );
 
@@ -114,7 +114,7 @@ describe("PracticeScreen", () => {
     act(() =>
       fake.emit("session.summary", {
         timed: true, completedTargets: 0, correctNotes: 0, wrongKeys: 1, perfect: 5, good: 2, ok: 1, missed: 2,
-        accuracyPercent: 80, elapsedMs: 9000,
+        accuracyPercent: 80, elapsedMs: 9000, passes: [],
       }),
     );
     expect(screen.getByText("Perfect")).toBeTruthy();
