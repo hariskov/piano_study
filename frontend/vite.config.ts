@@ -5,5 +5,5 @@ export default defineConfig({
   plugins: [react()],
   base: "./",
   build: { outDir: "dist/renderer", emptyOutDir: true, chunkSizeWarningLimit: 1600 },
-  test: { environment: "happy-dom", globals: true, setupFiles: ["src/testing/osmdMock.ts"], include: ["src/**/*.test.{ts,tsx}"] },
+  test: { environment: "happy-dom", globals: true, setupFiles: ["src/testing/osmdMock.ts"], include: ["src/**/*.test.{ts,tsx}", "shell/**/*.test.js"] },
 });

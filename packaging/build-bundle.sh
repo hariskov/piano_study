@@ -21,7 +21,7 @@ fail() {
 
 rm -rf "$out"
 mkdir -p "$app"
-cp "$frontend/shell/piano-player" "$frontend/shell/piano-player.js" "$app/"
+cp "$frontend/shell/piano-player" "$frontend/shell/piano-player.js" "$frontend/shell/backendCare.js" "$app/"
 cp -a "$frontend/dist/renderer" "$app/renderer"
 cp -a "$runtime" "$app/backend"
 

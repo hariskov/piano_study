@@ -27,6 +27,7 @@ export class RpcClient {
   private readonly pending = new Map<number, Pending>();
   private readonly listeners = new Map<string, Set<Listener>>();
   private stopped: string | undefined;
+  private readonly disconnectListeners = new Set<(reason: string) => void>();
 
   constructor(private readonly transport: Transport) {
     transport.onLine((line) => this.receive(line));
@@ -53,8 +54,14 @@ export class RpcClient {
     return () => forEvent.delete(listener as Listener);
   }
 
+  onDisconnect(listener: (reason: string) => void): () => void {
+    this.disconnectListeners.add(listener);
+    return () => this.disconnectListeners.delete(listener);
+  }
+
   disconnect(reason: string): void {
     this.stopped = reason;
+    this.disconnectListeners.forEach((listener) => listener(reason));
     for (const waiting of this.pending.values()) {
       waiting.reject(new Error(reason));
     }

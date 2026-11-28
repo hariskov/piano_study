@@ -90,6 +90,16 @@ describe("RpcClient", () => {
     await expect(client.request("devices.list", {})).rejects.toThrow("The backend stopped");
   });
 
+  it("tells its listeners why it stopped", () => {
+    const client = new RpcClient(new FakeTransport());
+    const reasons: string[] = [];
+    client.onDisconnect((reason) => reasons.push(reason));
+
+    client.disconnect("The backend stopped (exit code 1)");
+
+    expect(reasons).toEqual(["The backend stopped (exit code 1)"]);
+  });
+
   it("ignores lines that are not JSON-RPC messages", () => {
     const transport = new FakeTransport();
     new RpcClient(transport);

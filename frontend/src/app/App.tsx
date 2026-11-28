@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { connectToBackend } from "../api/backend";
 import type { SessionStartParams, SongDetails } from "../api/protocol";
 import { DevicesScreen } from "../devices/DevicesScreen";
@@ -19,8 +19,13 @@ const NAVIGATION: readonly { screen: Screen; label: string }[] = [
   { screen: "devices", label: "Devices" },
 ];
 
+const LOG_FILE = "~/.local/state/piano-player/backend.log";
+
 export function App() {
   const client = useMemo(() => connectToBackend(), []);
+  const [stopped, setStopped] = useState<string>();
+  const [restarted, setRestarted] = useState(() => new URLSearchParams(window.location.search).has("restarted"));
+  useEffect(() => client?.onDisconnect(setStopped), [client]);
   const [screen, setScreen] = useState<Screen>(screenFromHash);
   const [started, setStarted] = useState<SessionStartParams>();
   const [lastSetup, setLastSetup] = useState<Setup>();
@@ -63,6 +68,20 @@ export function App() {
           </nav>
         </header>
         <main>
+          {stopped && (
+            <p role="alert" className="problem banner">
+              {stopped}. Close Piano Player and start it again; the details are in {LOG_FILE}.
+            </p>
+          )}
+          {restarted && !stopped && (
+            <p role="status" className="notice banner">
+              The music engine stopped unexpectedly and was restarted, so any session in progress was ended. The details
+              are in {LOG_FILE}.{" "}
+              <button type="button" onClick={() => setRestarted(false)}>
+                OK
+              </button>
+            </p>
+          )}
           {screen === "home" && <HomeScreen onOpen={open} />}
           {screen === "devices" && <DevicesScreen />}
           {screen === "library" && (
