@@ -93,4 +93,19 @@ describe("DevicesScreen", () => {
 
     expect((screen.getByLabelText("Keyboard size") as HTMLSelectElement).value).toBe("61");
   });
+
+  it("detects the keyboard size from the lowest and highest key pressed", async () => {
+    const fake = backend();
+    show(fake);
+    await screen.findByText("Digital Piano");
+
+    fireEvent.click(screen.getByRole("button", { name: "Detect from the piano" }));
+    expect(screen.getByText("Press the lowest key on your piano.")).toBeTruthy();
+    act(() => fake.emit("input", { type: "NOTE_ON", pitch: "E1", midi: 28, velocity: 70, t: 1 }));
+    expect(screen.getByText("Now press the highest key.")).toBeTruthy();
+    act(() => fake.emit("input", { type: "NOTE_ON", pitch: "G7", midi: 103, velocity: 70, t: 2 }));
+
+    await waitFor(() => expect(fake.callsOf("settings.update")).toContainEqual({ keyboards: { "jdk:Piano": "E1-G7" } }));
+  });
 });
+
