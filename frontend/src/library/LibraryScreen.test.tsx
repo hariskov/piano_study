@@ -4,7 +4,7 @@ import { LibraryScreen } from "./LibraryScreen";
 import { BackendContext } from "../app/backendContext";
 import { FakeBackend } from "../testing/fakeBackend";
 import { osmdInstances } from "../testing/osmdMock";
-import type { SongSummary } from "../api/protocol";
+import type { MidiPreview, SongSummary } from "../api/protocol";
 
 const MELODY: SongSummary = {
   id: "simple-melody",
@@ -35,6 +35,23 @@ function backend(songs: SongSummary[] = [MELODY, SONATINA]): FakeBackend {
       parts: [{ id: "P1", name: "Piano", staffCount: 2, noteCount: 120, lowest: "G2", highest: "D6" }],
       warnings: ["Repeats are played straight through"],
     }));
+}
+
+const PREVIEW: MidiPreview = {
+  title: "Sonatina",
+  measureCount: 24,
+  timeSignature: "3/4",
+  key: "C major",
+  tempo: 100,
+  parts: [
+    { id: "P1", name: "Piano", instrument: "Acoustic Grand Piano", staffCount: 2, noteCount: 210, lowest: "A2", highest: "E5" },
+    { id: "P2", name: "Flute", instrument: "Flute", staffCount: 1, noteCount: 31, lowest: "C5", highest: "G6" },
+  ],
+  warnings: ["Key estimated as C major"],
+};
+
+function midiBackend(): FakeBackend {
+  return backend([]).answer("library.preview", () => PREVIEW).answer("library.import", () => SONATINA);
 }
 
 function show(fake: FakeBackend, chooseFile = vi.fn(async () => undefined as string | undefined), onPractise = vi.fn()) {
@@ -77,32 +94,93 @@ describe("LibraryScreen", () => {
     expect(fake.callsOf("library.open")).toEqual([{ id: "simple-melody" }]);
   });
 
-  it("imports a chosen file and shows it", async () => {
-    const fake = backend([]).answer("library.import", () => ({ ...SONATINA, warnings: ["Key estimated as C major"] }));
-    const chooseFile = show(fake, vi.fn(async () => "/home/me/Sonatina.mid"));
+  it("imports a MusicXML file straight away", async () => {
+    const fake = backend([]).answer("library.import", () => ({ ...MELODY, warnings: ["Repeats are played straight through"] }));
+    const chooseFile = show(fake, vi.fn(async () => "/home/me/melody.musicxml"));
     await screen.findByText(/No songs yet/);
 
     fireEvent.click(screen.getByRole("button", { name: "Import…" }));
 
-    await waitFor(() => expect(fake.callsOf("library.import")).toEqual([{ path: "/home/me/Sonatina.mid" }]));
+    await waitFor(() => expect(fake.callsOf("library.import")).toEqual([{ path: "/home/me/melody.musicxml" }]));
     expect(chooseFile).toHaveBeenCalled();
-    expect(await screen.findByText(/Imported "Sonatina"/)).toBeTruthy();
-    expect(screen.getByText("Key estimated as C major")).toBeTruthy();
+    expect(await screen.findByText(/Imported "Simple Melody"/)).toBeTruthy();
+    expect(fake.callsOf("library.preview")).toEqual([]);
   });
 
-  it("passes the MIDI options when they are changed", async () => {
-    const fake = backend([]).answer("library.import", () => SONATINA);
+  it("shows a MIDI file's parts before importing it", async () => {
+    const fake = midiBackend();
     show(fake, vi.fn(async () => "/home/me/Sonatina.mid"));
     await screen.findByText(/No songs yet/);
 
-    fireEvent.click(screen.getByText("MIDI options"));
-    fireEvent.click(screen.getByLabelText("Triplets"));
-    fireEvent.change(screen.getByLabelText("Split hands at"), { target: { value: "A3" } });
     fireEvent.click(screen.getByRole("button", { name: "Import…" }));
 
+    const flute = await screen.findByRole("row", { name: /Flute/ });
+    expect(flute.textContent).toContain("Flute");
+    expect(flute.textContent).toContain("31");
+    expect(flute.textContent).toContain("C5–G6");
+    expect(screen.getByText("Key estimated as C major")).toBeTruthy();
+    expect(fake.callsOf("library.preview")).toEqual([{ path: "/home/me/Sonatina.mid", grid: 16, triplets: false, splitPoint: "C4" }]);
+    expect(fake.callsOf("library.import")).toEqual([]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Import 2 parts" }));
+
     await waitFor(() =>
-      expect(fake.callsOf("library.import")).toEqual([{ path: "/home/me/Sonatina.mid", grid: 16, triplets: true, splitPoint: "A3" }]),
+      expect(fake.callsOf("library.import")).toEqual([{ path: "/home/me/Sonatina.mid", grid: 16, triplets: false, splitPoint: "C4" }]),
     );
+    expect(await screen.findByText(/Imported "Sonatina"/)).toBeTruthy();
+    expect(screen.queryByRole("row", { name: /Flute/ })).toBeNull();
+  });
+
+  it("leaves out the parts that are not ticked", async () => {
+    const fake = midiBackend();
+    show(fake, vi.fn(async () => "/home/me/Sonatina.mid"));
+    await screen.findByText(/No songs yet/);
+    fireEvent.click(screen.getByRole("button", { name: "Import…" }));
+
+    fireEvent.click(await screen.findByLabelText("Include Flute"));
+    fireEvent.click(screen.getByRole("button", { name: "Import 1 part" }));
+
+    await waitFor(() => expect(fake.callsOf("library.import")[0]).toEqual(expect.objectContaining({ exclude: ["P2"] })));
+  });
+
+  it("needs at least one part", async () => {
+    show(midiBackend(), vi.fn(async () => "/home/me/Sonatina.mid"));
+    await screen.findByText(/No songs yet/);
+    fireEvent.click(screen.getByRole("button", { name: "Import…" }));
+
+    fireEvent.click(await screen.findByLabelText("Include Flute"));
+    fireEvent.click(screen.getByLabelText("Include Piano"));
+
+    expect((screen.getByRole("button", { name: "Import 0 parts" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("previews again when the hand split or grid changes", async () => {
+    const fake = midiBackend();
+    show(fake, vi.fn(async () => "/home/me/Sonatina.mid"));
+    await screen.findByText(/No songs yet/);
+    fireEvent.click(screen.getByRole("button", { name: "Import…" }));
+    await screen.findByRole("row", { name: /Flute/ });
+
+    fireEvent.change(screen.getByLabelText("Split hands at"), { target: { value: "A3" } });
+    fireEvent.change(screen.getByLabelText("Grid"), { target: { value: "8" } });
+    fireEvent.click(screen.getByLabelText("Triplets"));
+
+    await waitFor(() =>
+      expect(fake.callsOf("library.preview").at(-1)).toEqual({ path: "/home/me/Sonatina.mid", grid: 8, triplets: true, splitPoint: "A3" }),
+    );
+  });
+
+  it("cancels a MIDI import", async () => {
+    const fake = midiBackend();
+    show(fake, vi.fn(async () => "/home/me/Sonatina.mid"));
+    await screen.findByText(/No songs yet/);
+    fireEvent.click(screen.getByRole("button", { name: "Import…" }));
+    await screen.findByRole("row", { name: /Flute/ });
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("row", { name: /Flute/ })).toBeNull();
+    expect(fake.callsOf("library.import")).toEqual([]);
   });
 
   it("does nothing when no file is chosen", async () => {
@@ -117,7 +195,7 @@ describe("LibraryScreen", () => {
   });
 
   it("explains a file it cannot import", async () => {
-    const fake = backend().fail("library.import", -32003, "broken.mid: not a readable MIDI file");
+    const fake = backend().fail("library.preview", -32003, "broken.mid: not a readable MIDI file");
     show(fake, vi.fn(async () => "/home/me/broken.mid"));
     await screen.findByText("Simple Melody");
 

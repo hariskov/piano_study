@@ -2,6 +2,7 @@ import { configure, fireEvent, screen, waitFor } from "@testing-library/dom";
 import { runAll, screenshot, test } from "./runner";
 
 declare const SONG_FILE: string;
+declare const MIDI_FILE: string;
 
 configure({ asyncUtilTimeout: 10_000 });
 
@@ -156,6 +157,25 @@ test("practises the imported song to the results", async () => {
     if (!screen.getByRole("list", { name: "Passes" }).textContent?.includes("Pass 2")) throw new Error("no second pass");
   });
   await screenshot("9-song-results");
+});
+
+test("imports a MIDI file, leaving out a part", async () => {
+  window.backend!.chooseSongFile = async () => MIDI_FILE;
+  await click("button", "Library");
+  await click("button", "Import…");
+
+  await screen.findByRole("row", { name: "Melody" });
+  await screen.findByText("Flute");
+  await screenshot("10-midi-import");
+  fireEvent.click(screen.getByLabelText("Include Melody"));
+  await click("button", "Import 1 part");
+
+  await screen.findByText('Imported "Little Tune"');
+  await waitFor(() => {
+    if (!document.querySelector(".song-details table.parts")?.textContent?.includes("Piano")) throw new Error("no piano part");
+    if (document.querySelector(".song-details table.parts")?.textContent?.includes("Melody")) throw new Error("melody imported");
+  });
+  await screenshot("11-midi-imported");
 });
 
 void runAll();
