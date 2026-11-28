@@ -46,4 +46,12 @@ describe("App", () => {
 
     expect(screen.getByRole("status").textContent).toContain("restarted");
   });
+  it("shows a picture on every menu button, for children who can't read yet", () => {
+    shellBridge();
+    render(<App />);
+
+    for (const name of ["Home", "Practice", "Library", "Devices"]) {
+      expect(screen.getByRole("button", { name }).querySelector("svg.icon")).not.toBeNull();
+    }
+  });
 });

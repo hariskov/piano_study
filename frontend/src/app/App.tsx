@@ -1,3 +1,4 @@
+import { Icon, type IconName } from "../icons/Icon";
 import { useEffect, useMemo, useState } from "react";
 import { connectToBackend } from "../api/backend";
 import type { SessionStartParams, SongDetails } from "../api/protocol";
@@ -12,11 +13,11 @@ import { HomeScreen } from "./HomeScreen";
 
 export type Screen = "home" | "library" | "devices" | "practice";
 
-const NAVIGATION: readonly { screen: Screen; label: string }[] = [
-  { screen: "home", label: "Home" },
-  { screen: "practice", label: "Practice" },
-  { screen: "library", label: "Library" },
-  { screen: "devices", label: "Devices" },
+const NAVIGATION: readonly { screen: Screen; label: string; icon: IconName }[] = [
+  { screen: "home", label: "Home", icon: "home" },
+  { screen: "practice", label: "Practice", icon: "practice" },
+  { screen: "library", label: "Library", icon: "songs" },
+  { screen: "devices", label: "Devices", icon: "devices" },
 ];
 
 const LOG_FILE = "~/.local/state/piano-player/backend.log";
@@ -62,7 +63,8 @@ export function App() {
                   open(item.screen);
                 }}
               >
-                {item.label}
+                <Icon name={item.icon} />
+                <span>{item.label}</span>
               </button>
             ))}
           </nav>
@@ -78,6 +80,7 @@ export function App() {
               The music engine stopped unexpectedly and was restarted, so any session in progress was ended. The details
               are in {LOG_FILE}.{" "}
               <button type="button" onClick={() => setRestarted(false)}>
+                <Icon name="ok" />
                 OK
               </button>
             </p>

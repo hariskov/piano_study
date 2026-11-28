@@ -250,3 +250,4 @@ Level details:
 | NF-6 | **Robustness:** a broken or unsupported file must never crash the app. It produces an error or import report instead. |
 | NF-7 | **Storage:** settings in `~/.config/piano-player/`, and the songs (`musicFiles/`) and progress in `~/.local/share/piano-player/`. Plain files and JSON, no database. |
 | NF-8 | **Testability:** the engine, importers and generator have automated tests that run without a MIDI device. |
+| NF-9 | **For young children:** the app is used by a 4-year-old who can't read yet, so every menu item and action button MUST carry a clear, colourful picture next to its words (play, pause, stop, songs, settings, …), large in the main menu. |

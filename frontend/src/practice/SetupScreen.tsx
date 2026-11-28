@@ -1,3 +1,4 @@
+import { Icon } from "../icons/Icon";
 import { useEffect, useState } from "react";
 import { useBackend } from "../app/backendContext";
 import type { SessionStartParams, SettingsView } from "../api/protocol";
@@ -35,6 +36,7 @@ export function SetupScreen({ onStart, onChooseDevice, previous }: Props) {
         <h2>Practice</h2>
         <p>Choose your piano (or the virtual keyboard) first.</p>
         <button type="button" className="primary" onClick={onChooseDevice}>
+          <Icon name="devices" />
           Choose a device
         </button>
       </section>
@@ -53,10 +55,12 @@ export function SetupScreen({ onStart, onChooseDevice, previous }: Props) {
       <div className="exercise-tabs" role="tablist" aria-label="Exercise">
         <label className={random ? "tab active" : "tab"}>
           <input type="radio" checked={random} onChange={() => change({ exercise: "random" })} aria-label="Random notes" />
+          <Icon name="note" />
           <span>Random notes</span>
         </label>
         <label className={random ? "tab" : "tab active"}>
           <input type="radio" checked={!random} onChange={() => change({ exercise: "chords" })} aria-label="Chords" />
+          <Icon name="chord" />
           <span>Chords</span>
         </label>
       </div>
@@ -180,6 +184,7 @@ export function SetupScreen({ onStart, onChooseDevice, previous }: Props) {
           disabled={!random && (setup.chordTypes.length === 0 || setup.inversions.length === 0)}
           onClick={() => onStart(toStartParams(setup, settings.input!, settings.output), setup)}
         >
+          <Icon name="play" />
           Start
         </button>
       </div>

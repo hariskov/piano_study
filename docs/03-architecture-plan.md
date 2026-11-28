@@ -408,6 +408,7 @@ The renderer never talks to the backend directly:
 - `music/`: pitch names ↔ MIDI numbers.
 - `testing/FakeBackend`: an in-memory `Transport` that answers requests and sends events, used by the screen tests.
 - `styles.css`: one dark theme with CSS variables.
+- `icons/Icon`: about 20 colourful pictures drawn as inline SVG (24×24, no icon library), for children who can't read yet (NF-9): the menu (house, note, books, keyboard), the home tiles, and every action button (play/start green, pause orange, stop red, import, delete, sheet music, settings, back, cancel, OK, try it, …). They are `aria-hidden`, so a button's accessible name stays its words.
 
 The page is built by Vite into `dist/renderer`. The shell is plain JavaScript run by GJS, with no build step. `bin/ui` runs `frontend/shell/piano-player`, which checks that GJS and WebKitGTK 6.0 are installed and says what to install if not. Electron 45 was used until 2026-11-28 and removed because it was 274 of the 340 MB unpacked app.
 
