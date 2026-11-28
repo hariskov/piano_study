@@ -25,14 +25,15 @@ public record SessionStartParams(
         String songId,
         String part,
         String outOfRange,
-        Integer tempoPercent) {
+        Integer tempoPercent,
+        String playback) {
 
     SessionStartParams adjustedBy(AdjustParams change) {
         return new SessionStartParams(input, exercise, mode, tempo, key, or(change.hands(), hands), range, keyboard,
                 noteValue, time, notes, countIn, seed, metronome, or(change.level(), level),
                 or(change.accidentals(), accidentals), or(change.mixed(), mixed),
                 or(change.chordTypes(), chordTypes), or(change.inversions(), inversions), songId, part, outOfRange,
-                tempoPercent);
+                tempoPercent, playback);
     }
 
     private static <T> T or(T value, T fallback) {

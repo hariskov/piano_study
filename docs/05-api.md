@@ -60,7 +60,7 @@ Starts a random-notes or chord session. Only one session runs at a time. Leaving
 |---|---|---|
 | `input` | required | input device id from `devices.list` |
 | `exercise` | required | `"random"`, `"chords"` or `"song"` |
-| `mode` | `"wait"` | `"wait"` or `"tempo"` |
+| `mode` | `"wait"` | `"wait"`, `"tempo"`, `"listen"` or `"play-along"` (the last two only for songs make sense: nothing is scored and the song moves on by itself) |
 | `tempo` | saved for the mode, else 90 | BPM, 20–240 |
 | `key` | `"C"` | e.g. `"Bb"`, `"F#m"` |
 | `hands` | `"right"` | `"right"`, `"left"`, `"both"` |
@@ -81,6 +81,7 @@ Starts a random-notes or chord session. Only one session runs at a time. Leaving
 | `part` | first part | songs: part id from `library.open` |
 | `tempoPercent` | 100 | songs: the song's own tempos, scaled (its tempo changes stay in proportion) |
 | `outOfRange` | `"shift"` | songs: notes outside the keyboard are moved by octaves (`"shift"`) or left out (`"skip"`) |
+| `playback` | none | songs: output id that plays the other hand and other parts (the whole song in `listen`). Can be the same output as `metronome` |
 
 Result: `{"seed":42,"tempo":90,"songTempo":100,"notices":[]}`. For songs, `songTempo` is the song's starting tempo, so the UI can show "84 BPM · 84%", and `notices` says how many notes were moved or skipped. Songs use their own time signature for the count-in and metronome, ignore `tempo`, `key`, `range`, `noteValue`, `time`, `notes` and the random/chord fields, and don't change the saved tempo for the mode. `session.adjust` is refused for songs.
 

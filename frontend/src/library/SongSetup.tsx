@@ -21,6 +21,7 @@ export function SongSetup({ song, onStart, onBack }: Props) {
   const [countIn, setCountIn] = useState(1);
   const [metronome, setMetronome] = useState(true);
   const [outOfRange, setOutOfRange] = useState("shift");
+  const [accompany, setAccompany] = useState(true);
 
   useEffect(() => {
     void client.request("settings.get", {}).then(setSettings);
@@ -52,6 +53,9 @@ export function SongSetup({ song, onStart, onBack }: Props) {
     };
     if (metronome && settings.output) {
       params.metronome = settings.output;
+    }
+    if ((accompany || mode === "listen") && settings.output) {
+      params.playback = settings.output;
     }
     onStart(params);
   };
@@ -88,6 +92,8 @@ export function SongSetup({ song, onStart, onBack }: Props) {
             <select aria-label="Follow mode" value={mode} onChange={(event) => setMode(event.target.value)}>
               <option value="wait">Wait for me</option>
               <option value="tempo">Keep tempo</option>
+              <option value="listen">Listen</option>
+              <option value="play-along">Play along (no scoring)</option>
             </select>
           </label>
           <label className="field">
@@ -113,6 +119,15 @@ export function SongSetup({ song, onStart, onBack }: Props) {
               onChange={(event) => setMetronome(event.target.checked)}
             />
             Metronome
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={accompany && settings.output !== undefined}
+              disabled={settings.output === undefined || mode === "listen"}
+              onChange={(event) => setAccompany(event.target.checked)}
+            />
+            Play the other parts
           </label>
         </div>
         <div className="card">

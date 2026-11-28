@@ -4,6 +4,8 @@ import bg.petarh.piano.api.PianoApi;
 import bg.petarh.piano.api.rpc.RpcServer;
 import bg.petarh.piano.api.settings.InMemorySettings;
 import bg.petarh.piano.library.songs.SongLibrary;
+import bg.petarh.piano.midi.output.OutputEvent;
+import bg.petarh.piano.midi.value.MidiChannel;
 import bg.petarh.piano.midi.value.Velocity;
 import bg.petarh.piano.midi.virtual.input.VirtualKeyboard;
 import bg.petarh.piano.midi.virtual.output.SilentOutput;
@@ -40,6 +42,7 @@ class SongSessionTest {
     Path folder;
 
     private final VirtualKeyboard keyboard = VirtualKeyboard.withClock(System::nanoTime);
+    private final SilentOutput silent = SilentOutput.create();
     private final RpcServer server = new RpcServer();
     private final List<JsonNode> events = new CopyOnWriteArrayList<>();
     private PianoApi api;
@@ -56,7 +59,7 @@ class SongSessionTest {
                 .part(new Part("P2", "Flute", 1, List.of(note("C6", 0, 1))))
                 .build();
         songId = library.add(song, "duet.musicxml", "MusicXML", List.of()).id();
-        api = PianoApi.create(server, keyboard.port(), SilentOutput.create().port(), System::nanoTime,
+        api = PianoApi.create(server, keyboard.port(), silent.port(), System::nanoTime,
                 (method, params) -> events.add(JSON.readTree(server.notification(method, params))),
                 new InMemorySettings(), keyboard, library);
     }
@@ -101,6 +104,37 @@ class SongSessionTest {
                 + songId + "\",\"keyboard\":\"61\",\"outOfRange\":\"skip\",\"countIn\":0}").get("result");
 
         assertThat(started.get("notices").toString()).contains("1 note outside your keyboard was skipped");
+    }
+
+    @Test
+    void playsTheOtherPartsWhileYouPlay() {
+        call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\"" + songId
+                + "\",\"mode\":\"tempo\",\"tempoPercent\":240,\"countIn\":0,\"playback\":\"virtual:silent\","
+                + "\"metronome\":\"virtual:silent\"}");
+
+        await("session.summary", 1);
+
+        assertThat(silent.sentEvents()).filteredOn(event -> event instanceof OutputEvent.NoteOn on
+                        && on.channel().equals(MidiChannel.of(1)))
+                .extracting(event -> ((OutputEvent.NoteOn) event).pitch().name())
+                .contains("C6", "C3").doesNotContain("E5", "G5");
+    }
+
+    @Test
+    void listenPlaysTheWholeSongAndEndsOnItsOwn() {
+        call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\"" + songId
+                + "\",\"mode\":\"listen\",\"tempoPercent\":240,\"countIn\":0,\"playback\":\"virtual:silent\"}");
+
+        assertThat(await("session.summary", 1).at("/params/timed").asBoolean()).isFalse();
+        assertThat(silent.sentEvents()).filteredOn(event -> event instanceof OutputEvent.NoteOn)
+                .extracting(event -> ((OutputEvent.NoteOn) event).pitch().name())
+                .contains("E5", "G5", "C6");
+    }
+
+    @Test
+    void acceptsPlayAlongAsAMode() {
+        assertThat(call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"song\",\"songId\":\"" + songId
+                + "\",\"mode\":\"play-along\",\"countIn\":0}").has("result")).isTrue();
     }
 
     @Test
