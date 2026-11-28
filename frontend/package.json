@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && tsc -p tsconfig.electron.json && vite build",
     "start": "npm run build && electron .",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "dist": "electron-builder --linux AppImage --publish never"
   },
   "dependencies": {
     "react": "19.3.1",
@@ -22,10 +23,13 @@
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.3.0",
     "electron": "45.5.0",
+    "electron-builder": "26.18.0",
     "jsdom": "31.0.1",
     "typescript": "7.0.2",
     "vite": "8.4.0",
     "vitest": "5.1.2"
   },
-  "main": "dist/electron/main.cjs"
+  "main": "dist/electron/main.cjs",
+  "description": "Piano learning app for a MIDI keyboard",
+  "author": "Piano Player"
 }
