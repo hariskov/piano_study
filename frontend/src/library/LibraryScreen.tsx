@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useBackend } from "../app/backendContext";
 import { SheetMusic } from "../sheet/SheetMusic";
-import type { ImportParams, SongDetails, SongSummary } from "../api/protocol";
+import type { PastSession, ImportParams, SongDetails, SongSummary } from "../api/protocol";
 
 interface Props {
   chooseFile: () => Promise<string | undefined>;
@@ -164,6 +164,13 @@ function SongView({ song, onDelete, onPractise }: { song: SongDetails; onDelete:
   const client = useBackend();
   const [xml, setXml] = useState<string>();
   const [problem, setProblem] = useState<string>();
+  const [sessions, setSessions] = useState<PastSession[]>([]);
+  useEffect(() => {
+    void client.request("progress.history", { songId: song.id }).then(
+      (result) => setSessions(result.sessions),
+      () => setSessions([]),
+    );
+  }, [client, song.id]);
   const showSheet = () =>
     void client.request("library.musicXml", { id: song.id }).then(
       (result) => setXml(result.xml),
@@ -244,8 +251,47 @@ function SongView({ song, onDelete, onPractise }: { song: SongDetails; onDelete:
           Practise
         </button>
       </div>
+      {sessions.length > 0 && <SessionHistory sessions={sessions} measureCount={song.measureCount} />}
       {problem && <p className="problem">{problem}</p>}
       {xml !== undefined && <SheetMusic xml={xml} />}
     </div>
+  );
+}
+
+const SHOWN_SESSIONS = 10;
+const HANDS: Record<string, string> = { right: "Right hand", left: "Left hand", both: "Both hands" };
+
+function SessionHistory({ sessions, measureCount }: { sessions: readonly PastSession[]; measureCount: number }) {
+  const recent = sessions.slice(-SHOWN_SESSIONS).reverse();
+  return (
+    <table className="parts history">
+      <caption>Your sessions</caption>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Hands</th>
+          <th>Section</th>
+          <th>Tempo</th>
+          <th>Accuracy</th>
+        </tr>
+      </thead>
+      <tbody>
+        {recent.map((session) => (
+          <tr key={session.finishedAt}>
+            <td>{new Date(session.finishedAt).toLocaleDateString()}</td>
+            <td>{HANDS[session.hands] ?? session.hands}</td>
+            <td>
+              {session.fromBar === undefined || (session.fromBar === 1 && session.toBar === measureCount)
+                ? "Whole song"
+                : `Bars ${session.fromBar}–${session.toBar}`}
+            </td>
+            <td>{session.tempoPercent ?? 100}%</td>
+            <td>
+              <strong>{session.accuracyPercent}%</strong>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }

@@ -22,6 +22,7 @@ const SONATINA: SongSummary = { ...MELODY, id: "sonatina", title: "Sonatina", fi
 function backend(songs: SongSummary[] = [MELODY, SONATINA]): FakeBackend {
   return new FakeBackend()
     .answer("library.list", () => ({ songs }))
+    .answer("progress.history", () => ({ sessions: [] }))
     .answer("library.open", (params) => ({
       id: params.id!,
       title: "Simple Melody",
@@ -137,6 +138,27 @@ describe("LibraryScreen", () => {
     expect(await screen.findByLabelText("Sheet music")).toBeTruthy();
     expect(fake.callsOf("library.musicXml")).toEqual([{ id: "simple-melody" }]);
     await waitFor(() => expect(osmdInstances.at(-1)?.loaded).toBe("<score-partwise>melody</score-partwise>"));
+  });
+
+  it("lists your recent sessions of the opened song", async () => {
+    const fake = backend().answer("progress.history", () => ({
+      sessions: [
+        { finishedAt: "2026-11-27T18:00:00Z", exercise: "song", songId: "simple-melody", hands: "right", mode: "wait",
+          tempo: 70, tempoPercent: 75, fromBar: 1, toBar: 4, accuracyPercent: 81, timed: false, completedTargets: 20,
+          wrongKeys: 5, perfect: 0, good: 0, ok: 0, missed: 0, elapsedMs: 50000, passes: [], mistakesByBar: {} },
+        { finishedAt: "2026-11-28T09:00:00Z", exercise: "song", songId: "simple-melody", hands: "both", mode: "tempo",
+          tempo: 96, tempoPercent: 100, fromBar: 1, toBar: 8, accuracyPercent: 93, timed: true, completedTargets: 40,
+          wrongKeys: 1, perfect: 20, good: 10, ok: 5, missed: 3, elapsedMs: 60000, passes: [], mistakesByBar: {} },
+      ],
+    }));
+    show(fake);
+    fireEvent.click(await screen.findByText("Simple Melody"));
+
+    const rows = await screen.findAllByRole("row", { name: /%/ });
+    expect(rows[0].textContent).toContain("93%");
+    expect(rows[0].textContent).toContain("Both hands");
+    expect(rows[1].textContent).toContain("Bars 1–4");
+    expect(fake.callsOf("progress.history")).toEqual([{ songId: "simple-melody" }]);
   });
 
   it("practises the opened song", async () => {

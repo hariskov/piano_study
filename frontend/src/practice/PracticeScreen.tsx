@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useState } from "react";
 import { useBackend } from "../app/backendContext";
-import type { AdjustParams, ApiEvents, SessionStartParams } from "../api/protocol";
+import type { AdjustParams, ApiEvents, PastSession, SessionStartParams } from "../api/protocol";
 import { PianoKeyboard } from "../keyboard/PianoKeyboard";
 import { keyboardRange, type KeyRange } from "../keyboard/presets";
 import { pitchName } from "../music/pitch";
@@ -48,9 +48,22 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
   const [notices, setNotices] = useState<string[]>([]);
   const [section, setSection] = useState<{ start?: string; passLength?: string }>({});
   const [sheet, setSheet] = useState<string>();
+  const [history, setHistory] = useState<PastSession[]>([]);
   const [problem, setProblem] = useState<string>();
   const [range, setRange] = useState<KeyRange>(keyboardRange(undefined));
   const virtual = params.input === VIRTUAL_KEYBOARD;
+
+  useEffect(() => {
+    const listening = params.mode === "listen" || params.mode === "play-along";
+    if (!practice.summary || listening) {
+      return;
+    }
+    const key = params.exercise === "song" ? { songId: params.songId } : { exercise: params.exercise };
+    void client.request("progress.history", key).then(
+      (result) => setHistory(result.sessions),
+      () => setHistory([]),
+    );
+  }, [client, practice.summary, params.exercise, params.mode, params.songId]);
 
   useEffect(() => {
     if (params.exercise === "song" && params.songId) {
@@ -138,7 +151,7 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
     );
   }
   if (practice.summary) {
-    return <ResultsView summary={practice.summary} onAgain={() => setRun(run + 1)} onChangeSettings={onChangeSettings} />;
+    return <ResultsView summary={practice.summary} history={history} onAgain={() => setRun(run + 1)} onChangeSettings={onChangeSettings} />;
   }
 
   const adjust = (change: Partial<Setup> & AdjustParams) => {

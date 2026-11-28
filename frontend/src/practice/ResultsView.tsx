@@ -1,7 +1,9 @@
-import type { SummaryEvent } from "../api/protocol";
+import type { PastSession, SummaryEvent } from "../api/protocol";
+import { previousOf, troubleBars } from "../progress/history";
 
 interface Props {
   summary: SummaryEvent;
+  history?: readonly PastSession[];
   onAgain: () => void;
   onChangeSettings: () => void;
 }
@@ -11,7 +13,10 @@ export function formatTime(milliseconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-export function ResultsView({ summary, onAgain, onChangeSettings }: Props) {
+export function ResultsView({ summary, history = [], onAgain, onChangeSettings }: Props) {
+  const previous = previousOf(history);
+  const latest = history.at(-1);
+  const bars = latest ? troubleBars(latest) : [];
   const stats: [string, string | number][] = summary.timed
     ? [
         ["Perfect", summary.perfect],
@@ -43,6 +48,16 @@ export function ResultsView({ summary, onAgain, onChangeSettings }: Props) {
           ))}
         </dl>
       </div>
+      {(previous || bars.length > 0) && (
+        <div className="card progress-note">
+          {previous && (
+            <p>
+              Last time {previous.accuracyPercent}% · now {summary.accuracyPercent}%
+            </p>
+          )}
+          {bars.length > 0 && <p>Most mistakes in {bars.length === 1 ? "bar" : "bars"} {bars.join(", ")}</p>}
+        </div>
+      )}
       {summary.passes.length > 1 && (
         <ol className="card passes" aria-label="Passes">
           {summary.passes.map((accuracy, index) => (
