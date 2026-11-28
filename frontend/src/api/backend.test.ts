@@ -8,7 +8,12 @@ describe("connectToBackend", () => {
 
   it("fails requests once the backend exits", async () => {
     let exit: (code: number | null) => void = () => {};
-    const bridge: BackendBridge = { send: () => {}, onLine: () => {}, onExit: (listener) => (exit = listener) };
+    const bridge: BackendBridge = {
+      send: () => {},
+      onLine: () => {},
+      onExit: (listener) => (exit = listener),
+      chooseSongFile: async () => undefined,
+    };
     const client = connectToBackend(bridge)!;
 
     const pending = client.request("devices.list", {});

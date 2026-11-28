@@ -4,6 +4,7 @@ export interface BackendBridge {
   send(line: string): void;
   onLine(listener: (line: string) => void): void;
   onExit(listener: (code: number | null) => void): void;
+  chooseSongFile(): Promise<string | undefined>;
 }
 
 declare global {

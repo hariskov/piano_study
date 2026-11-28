@@ -2,17 +2,19 @@ import { useMemo, useState } from "react";
 import { connectToBackend } from "../api/backend";
 import type { SessionStartParams } from "../api/protocol";
 import { DevicesScreen } from "../devices/DevicesScreen";
+import { LibraryScreen } from "../library/LibraryScreen";
 import { PracticeScreen } from "../practice/PracticeScreen";
 import { SetupScreen } from "../practice/SetupScreen";
 import type { Setup } from "../practice/setupForm";
 import { BackendContext } from "./backendContext";
 import { HomeScreen } from "./HomeScreen";
 
-export type Screen = "home" | "devices" | "practice";
+export type Screen = "home" | "library" | "devices" | "practice";
 
 const NAVIGATION: readonly { screen: Screen; label: string }[] = [
   { screen: "home", label: "Home" },
   { screen: "practice", label: "Practice" },
+  { screen: "library", label: "Library" },
   { screen: "devices", label: "Devices" },
 ];
 
@@ -60,6 +62,9 @@ export function App() {
         <main>
           {screen === "home" && <HomeScreen onOpen={open} />}
           {screen === "devices" && <DevicesScreen />}
+          {screen === "library" && (
+            <LibraryScreen chooseFile={() => window.backend?.chooseSongFile() ?? Promise.resolve(undefined)} />
+          )}
           {screen === "practice" &&
             (started ? (
               <PracticeScreen

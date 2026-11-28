@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld("backend", {
   onLine: (listener: (line: string) => void) => {
     ipcRenderer.on("backend:line", (_event, line: string) => listener(line));
   },
+  chooseSongFile: (): Promise<string | undefined> => ipcRenderer.invoke("dialog:chooseSong"),
   onExit: (listener: (code: number | null) => void) => {
     ipcRenderer.on("backend:exit", (_event, code: number | null) => listener(code));
   },
