@@ -23,7 +23,7 @@ bin/ui
 
 The first start downloads the Electron binary (about 100 MB, once). The app starts the backend (`bin/pp api`) itself and stops it when the window closes.
 
-Build the AppImage (needs the JDK's jmods; on openSUSE `sudo zypper in java-25-openjdk-jmods`):
+Build the AppImage. It needs the JDK's jmods (on openSUSE `sudo zypper in java-25-openjdk-jmods`) and [appimagetool 1.9.1](https://github.com/AppImage/appimagetool/releases/tag/1.9.1), saved as `~/.cache/piano-player/appimagetool-1.9.1-x86_64.AppImage` and made executable:
 
 ```
 ./mvnw -Pappimage package -DskipTests
