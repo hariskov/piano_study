@@ -12,6 +12,7 @@ const PARAMS: SessionStartParams = { input: "virtual:keyboard", exercise: "rando
 function backend(): FakeBackend {
   return new FakeBackend()
     .answer("session.start", () => ({ seed: 42, tempo: 80, notices: [] }))
+    .answer("progress.history", () => ({ sessions: [] }))
     .answer("settings.get", () => ({ input: "virtual:keyboard", keyboards: {}, tempos: {}, latencyOffsetMs: 0 }));
 }
 
@@ -224,6 +225,21 @@ describe("PracticeScreen", () => {
 
     act(() => fake.emit("session.target", { start: "1/2", notes: [{ pitch: "E4", midi: 64, hand: "RIGHT" }] }));
     await waitFor(() => expect(osmd.cursor.position).toBe(0.25));
+  });
+
+  it("loads the exercise's history for the results", async () => {
+    const fake = backend();
+    show(fake);
+    await waitFor(() => expect(fake.callsOf("session.start")).toHaveLength(1));
+
+    act(() =>
+      fake.emit("session.summary", {
+        timed: false, completedTargets: 5, correctNotes: 5, wrongKeys: 0, perfect: 0, good: 0, ok: 0, missed: 0,
+        accuracyPercent: 100, elapsedMs: 1000, passes: [],
+      }),
+    );
+
+    await waitFor(() => expect(fake.callsOf("progress.history")).toEqual([{ exercise: "random" }]));
   });
 
   it("explains a failed start", async () => {

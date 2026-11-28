@@ -911,3 +911,17 @@ fieldset.card {
   margin-top: 1rem;
   max-height: 32rem;
 }
+
+.progress-note {
+  margin-top: 1rem;
+}
+
+.progress-note p {
+  margin: 0.2rem 0;
+}
+
+.history caption {
+  text-align: left;
+  color: var(--muted);
+  padding: 1rem 0 0.4rem;
+}
