@@ -24,7 +24,7 @@ Optional fields can be left out. Fields without a value are left out of events t
 No params. Result: `{"inputs":[{"id","name","description"}],"outputs":[…]}`.
 
 ### `devices.rescan`
-No params. Looks for devices straight away instead of waiting for the next automatic check (every second), and sends `devices.changed` if the list changed. A running session reacts as usual (pauses on a lost input, reconnects a returned one). Result: the device list, as in `devices.list`.
+No params. Looks for devices (there is no automatic background check) and sends `devices.changed` if the list changed. A running session reacts as usual (pauses on a lost input, reconnects a returned one). Result: the device list, as in `devices.list`.
 
 ### `devices.monitor`
 Params `{"input":"jdk:Piano [hw:3,0,0]"}`. Opens the input outside a session and sends an `input` event for every key and pedal, for the device screen's live keyboard (DEV-6). A second call switches to the new input. Starting a session stops monitoring. Result `null`; -32002 if the device is unavailable.
@@ -98,9 +98,9 @@ Params `{"bpm":80}`. Takes effect from the next beat (TMP-3) and is saved as the
 | `eval` | `{"result":"CORRECT" \| "WRONG" \| "TARGET_COMPLETED" \| "TIMED" \| "MISSED","pitch":"C4","grade":"PERFECT" \| "GOOD" \| "OK","offsetMs":-37}` | after each press (`TIMED` has grade and offset, negative = early), and when a target is complete or a note is missed |
 | `input` | `{"type":"NOTE_ON" \| "NOTE_OFF" \| "PEDAL","pitch":"C4","midi":60,"velocity":72,"down":true,"t":123456789}` | every key and pedal event, for the on-screen keyboard (`t` in backend nanoseconds) |
 | `beat` | `{"accent":true}` | every counted beat, from the count-in on; `accent` on the first beat of a bar |
-| `session.inputLost` | `{"input":"jdk:Piano [hw:3,0,0]"}` | the session's input device disappeared; the session is paused |
+| `session.inputLost` | `{"input":"jdk:Piano [hw:3,0,0]"}` | a rescan found the session's input gone; the session is paused |
 | `session.inputRestored` | `{"input":"jdk:Piano [hw:3,0,0]"}` | the input is back and reconnected; the session stays paused until `session.resume` |
-| `devices.changed` | same as the `devices.list` result | a device was plugged in or unplugged (checked every second) |
+| `devices.changed` | same as the `devices.list` result | a rescan found a device plugged in or unplugged |
 | `session.summary` | `{"timed":false,"completedTargets":50,"correctNotes":60,"wrongKeys":3,"perfect":0,"good":0,"ok":0,"missed":0,"accuracyPercent":95,"elapsedMs":83000}` | once, after the session finishes |
 
 ## Example

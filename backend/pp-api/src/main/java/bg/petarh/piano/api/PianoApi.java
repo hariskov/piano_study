@@ -6,7 +6,7 @@ import bg.petarh.piano.api.devices.DeviceMonitor;
 import bg.petarh.piano.api.devices.InputMessage;
 import bg.petarh.piano.api.keyboard.KeyboardMethods;
 import bg.petarh.piano.api.library.LibraryMethods;
-import bg.petarh.piano.api.devices.DeviceWatcher;
+import bg.petarh.piano.api.devices.DeviceScanner;
 import bg.petarh.piano.api.rpc.ApiEvent;
 import bg.petarh.piano.api.rpc.EventSink;
 import bg.petarh.piano.api.rpc.RpcServer;
@@ -21,7 +21,6 @@ import bg.petarh.piano.midi.input.TimestampSource;
 import bg.petarh.piano.midi.output.MidiOutputPort;
 import bg.petarh.piano.midi.virtual.input.VirtualKeyboard;
 
-import java.time.Duration;
 import java.util.List;
 
 public final class PianoApi implements AutoCloseable {
@@ -31,12 +30,10 @@ public final class PianoApi implements AutoCloseable {
             DeviceList.CHANGED);
 
     private final SessionMethods sessions;
-    private final DeviceWatcher watcher;
     private final DeviceMonitor monitor;
 
-    private PianoApi(SessionMethods sessions, DeviceWatcher watcher, DeviceMonitor monitor) {
+    private PianoApi(SessionMethods sessions, DeviceMonitor monitor) {
         this.sessions = sessions;
-        this.watcher = watcher;
         this.monitor = monitor;
     }
 
@@ -61,18 +58,13 @@ public final class PianoApi implements AutoCloseable {
         KeyboardMethods.register(server, keyboard);
         SettingsMethods.register(server, settings);
         SessionMethods sessions = SessionMethods.register(server, inputs, outputs, clock, events, settings, monitor);
-        DeviceWatcher watcher = new DeviceWatcher(inputs, outputs, events, sessions::inputsChanged);
-        server.register("devices.rescan", Void.class, DeviceList.class, ignored -> watcher.rescan());
-        return new PianoApi(sessions, watcher, monitor);
-    }
-
-    public void startWatchingDevices(Duration interval) {
-        watcher.start(interval);
+        DeviceScanner scanner = new DeviceScanner(inputs, outputs, events, sessions::inputsChanged);
+        server.register("devices.rescan", Void.class, DeviceList.class, ignored -> scanner.rescan());
+        return new PianoApi(sessions, monitor);
     }
 
     @Override
     public void close() {
-        watcher.close();
         monitor.close();
         sessions.close();
     }

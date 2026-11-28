@@ -12,7 +12,6 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -23,8 +22,6 @@ import java.util.concurrent.Callable;
         mixinStandardHelpOptions = true,
         description = "Serve the JSON-RPC API on standard input and output, one message per line (used by the UI).")
 final class ApiCommand implements Callable<Integer> {
-
-    private static final Duration DEVICE_CHECK_INTERVAL = Duration.ofSeconds(1);
 
     private final CliEnvironment environment;
 
@@ -50,7 +47,6 @@ final class ApiCommand implements Callable<Integer> {
                 transport.events(), new JsonSettingsFile(settingsFile.orElseGet(SettingsLocation::defaultSettingsFile)),
                 keyboard, new SongLibrary(library.orElseGet(SongLibrary::defaultFolder), Instant::now))) {
             transport.onEndOfInput(api::close);
-            api.startWatchingDevices(DEVICE_CHECK_INTERVAL);
             transport.run(environment.stdin(), environment.stdout());
         }
         return 0;
