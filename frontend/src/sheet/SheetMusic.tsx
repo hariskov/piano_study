@@ -36,6 +36,7 @@ export function SheetMusic({ xml, position }: Props) {
               drawTitle: false,
               drawPartNames: true,
               followCursor: true,
+              autoBeam: true,
             }),
           );
         }

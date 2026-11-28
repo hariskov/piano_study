@@ -177,19 +177,39 @@ public final class MusicXmlWriter {
                         .add(piece(note, start, end));
             }
         }
-        if (lanes.isEmpty()) {
-            xml.open("note").empty("rest", "measure", "yes").leaf("duration", inDivisions(end.minus(start), divisions))
-                    .leaf("voice", 1).close("note");
-            return;
-        }
+        boolean twoStaves = part.staffCount() == 2;
         boolean firstLane = true;
-        for (Map.Entry<Lane, List<Piece>> lane : lanes.entrySet()) {
-            if (!firstLane) {
-                xml.open("backup").leaf("duration", inDivisions(end.minus(start), divisions)).close("backup");
+        for (int staff = 1; staff <= part.staffCount(); staff++) {
+            int current = staff;
+            List<Map.Entry<Lane, List<Piece>>> onStaff = lanes.entrySet().stream()
+                    .filter(lane -> lane.getKey().staff() == current).toList();
+            if (onStaff.isEmpty() && (twoStaves || lanes.isEmpty())) {
+                firstLane = backUp(xml, firstLane, start, end, divisions);
+                measureRest(xml, staff, start, end, divisions, twoStaves);
             }
-            firstLane = false;
-            writeLane(xml, lane.getKey(), lane.getValue(), start, end, divisions, part.staffCount() == 2);
+            for (Map.Entry<Lane, List<Piece>> lane : onStaff) {
+                firstLane = backUp(xml, firstLane, start, end, divisions);
+                writeLane(xml, lane.getKey(), lane.getValue(), start, end, divisions, twoStaves);
+            }
         }
+    }
+
+    private static boolean backUp(XmlBuilder xml, boolean firstLane, Fraction start, Fraction end, long divisions) {
+        if (!firstLane) {
+            xml.open("backup").leaf("duration", inDivisions(end.minus(start), divisions)).close("backup");
+        }
+        return false;
+    }
+
+    // Voice 5 for the lower staff follows MuseScore, so a rest there never shares a voice with the upper staff.
+    private static void measureRest(XmlBuilder xml, int staff, Fraction start, Fraction end, long divisions,
+                                    boolean withStaff) {
+        xml.open("note").empty("rest", "measure", "yes").leaf("duration", inDivisions(end.minus(start), divisions))
+                .leaf("voice", staff == 1 ? 1 : 5);
+        if (withStaff) {
+            xml.leaf("staff", staff);
+        }
+        xml.close("note");
     }
 
     private void writeLane(XmlBuilder xml, Lane lane, List<Piece> pieces, Fraction start, Fraction end, long divisions,
