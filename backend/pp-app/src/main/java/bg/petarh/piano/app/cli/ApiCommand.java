@@ -7,11 +7,13 @@ import bg.petarh.piano.library.settings.JsonSettingsFile;
 import bg.petarh.piano.midi.input.MidiInputPort;
 import bg.petarh.piano.midi.virtual.input.VirtualKeyboard;
 import bg.petarh.piano.library.settings.SettingsLocation;
+import bg.petarh.piano.library.songs.SongLibrary;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -30,6 +32,10 @@ final class ApiCommand implements Callable<Integer> {
             description = "Settings file (default: ~/.config/piano-player/settings.json, or under $XDG_CONFIG_HOME).")
     private Optional<Path> settingsFile;
 
+    @Option(names = "--library", paramLabel = "DIR",
+            description = "Song library folder (default: ~/.local/share/piano-player/musicFiles).")
+    private Optional<Path> library;
+
     ApiCommand(CliEnvironment environment) {
         this.environment = environment;
     }
@@ -42,7 +48,7 @@ final class ApiCommand implements Callable<Integer> {
         MidiInputPort inputs = MidiInputPort.combining(List.of(environment.inputs(), keyboard.port()));
         try (PianoApi api = PianoApi.create(server, inputs, environment.outputs(), environment.clock(),
                 transport.events(), new JsonSettingsFile(settingsFile.orElseGet(SettingsLocation::defaultSettingsFile)),
-                keyboard)) {
+                keyboard, new SongLibrary(library.orElseGet(SongLibrary::defaultFolder), Instant::now))) {
             transport.onEndOfInput(api::close);
             api.startWatchingDevices(DEVICE_CHECK_INTERVAL);
             transport.run(environment.stdin(), environment.stdout());
