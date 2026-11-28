@@ -179,6 +179,8 @@ export interface SettingsUpdate {
   keyboards?: Record<string, string>;
   tempos?: Record<string, number>;
   latencyOffsetMs?: number;
+  instrument?: number;
+  keySound?: boolean;
 }
 
 export interface SettingsView {
@@ -187,6 +189,8 @@ export interface SettingsView {
   keyboards: Record<string, string>;
   tempos: Record<string, number>;
   latencyOffsetMs: number;
+  instrument: number;
+  keySound: boolean;
 }
 
 export interface SongDetails {

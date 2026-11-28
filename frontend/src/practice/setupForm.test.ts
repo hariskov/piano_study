@@ -3,17 +3,17 @@ import { defaultSetup, toStartParams } from "./setupForm";
 
 describe("setup form", () => {
   it("starts from the backend's defaults with the saved tempo", () => {
-    const setup = defaultSetup({ keyboards: {}, tempos: { wait: 72 }, latencyOffsetMs: 0 });
+    const setup = defaultSetup({ keyboards: {}, tempos: { wait: 72 }, latencyOffsetMs: 0, instrument: 0, keySound: false });
 
     expect(setup).toMatchObject({ exercise: "random", mode: "wait", tempo: 72, hands: "right", level: 1, key: "C" });
   });
 
   it("uses 90 BPM when nothing is saved", () => {
-    expect(defaultSetup({ keyboards: {}, tempos: {}, latencyOffsetMs: 0 }).tempo).toBe(90);
+    expect(defaultSetup({ keyboards: {}, tempos: {}, latencyOffsetMs: 0, instrument: 0, keySound: false }).tempo).toBe(90);
   });
 
   it("turns a random-notes setup into session.start params", () => {
-    const setup = { ...defaultSetup({ keyboards: {}, tempos: {}, latencyOffsetMs: 0 }), level: 4, accidentals: true };
+    const setup = { ...defaultSetup({ keyboards: {}, tempos: {}, latencyOffsetMs: 0, instrument: 0, keySound: false }), level: 4, accidentals: true };
 
     expect(toStartParams(setup, "jdk:Piano", "jdk:Gervill")).toEqual({
       input: "jdk:Piano",
@@ -35,7 +35,7 @@ describe("setup form", () => {
 
   it("sends chord settings only for chords and leaves out an empty range", () => {
     const setup = {
-      ...defaultSetup({ keyboards: {}, tempos: {}, latencyOffsetMs: 0 }),
+      ...defaultSetup({ keyboards: {}, tempos: {}, latencyOffsetMs: 0, instrument: 0, keySound: false }),
       exercise: "chords" as const,
       chordTypes: ["maj", "dom7"],
       inversions: [0, 1],
@@ -53,7 +53,7 @@ describe("setup form", () => {
   });
 
   it("passes a chosen range", () => {
-    const setup = { ...defaultSetup({ keyboards: {}, tempos: {}, latencyOffsetMs: 0 }), range: "C4-G5" };
+    const setup = { ...defaultSetup({ keyboards: {}, tempos: {}, latencyOffsetMs: 0, instrument: 0, keySound: false }), range: "C4-G5" };
 
     expect(toStartParams(setup, "x", undefined)).toMatchObject({ range: "C4-G5" });
   });

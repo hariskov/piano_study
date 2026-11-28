@@ -23,7 +23,7 @@ class JsonSettingsFileTest {
     void savesAndLoadsEverySetting() {
         Settings settings = Settings.defaults().withInput("jdk:Piano [hw:3,0,0]").withOutput("jdk:Gervill")
                 .withKeyboard("jdk:Piano [hw:3,0,0]", KeyboardRange.parse("F1-F7"))
-                .withTempo("wait", 72).withTempo("tempo", 100).withLatencyOffset(15);
+                .withTempo("wait", 72).withTempo("tempo", 100).withLatencyOffset(15).withInstrument(56).withKeySound(true);
 
         store().save(settings);
 
@@ -68,7 +68,7 @@ class JsonSettingsFileTest {
     void ignoresSettingsItDoesNotKnowAndValuesItCannotUse() throws Exception {
         Files.writeString(file(), """
                 {"input":"jdk:Piano","theme":"dark","keyboards":{"jdk:Piano":"nonsense","jdk:Other":"C2-C7"},
-                 "latencyOffsetMs":9999}""");
+                 "latencyOffsetMs":9999,"instrument":300}""");
 
         Settings settings = store().load();
 
@@ -76,6 +76,7 @@ class JsonSettingsFileTest {
         assertThat(settings.keyboardFor("jdk:Piano")).isEmpty();
         assertThat(settings.keyboardFor("jdk:Other")).contains(KeyboardRange.parse("C2-C7"));
         assertThat(settings.latencyOffsetMs()).isZero();
+        assertThat(settings.instrument()).isZero();
     }
 
     private JsonSettingsFile store() {

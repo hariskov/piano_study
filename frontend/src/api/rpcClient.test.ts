@@ -43,11 +43,11 @@ describe("RpcClient", () => {
     const firstId = transport.lastRequest().id;
     const second = client.request("settings.get", {});
     const secondId = transport.lastRequest().id;
-    transport.receive({ jsonrpc: "2.0", id: secondId, result: { keyboards: {}, tempos: {}, latencyOffsetMs: 0 } });
+    transport.receive({ jsonrpc: "2.0", id: secondId, result: { keyboards: {}, tempos: {}, latencyOffsetMs: 0, instrument: 0, keySound: false } });
     transport.receive({ jsonrpc: "2.0", id: firstId, result: { seed: 1, tempo: 90 } });
 
     await expect(first).resolves.toEqual({ seed: 1, tempo: 90 });
-    await expect(second).resolves.toMatchObject({ latencyOffsetMs: 0 });
+    await expect(second).resolves.toMatchObject({ latencyOffsetMs: 0, instrument: 0, keySound: false });
     expect(firstId).not.toBe(secondId);
   });
 

@@ -59,10 +59,10 @@ Params: `{"songId":"sonatina"}` or `{"exercise":"random"}` (or `"chords"`). Resu
 Params `{"id":"simple-melody"}`. Removes the song, its MusicXML and its MIDI file. Result `null`; -32004 if there is no such song.
 
 ### `settings.get`
-No params. Result: `{"input":"jdk:Piano","output":"jdk:Gervill","keyboards":{"jdk:Piano":"A0-C8"},"tempos":{"wait":72,"tempo":100},"latencyOffsetMs":0}`. Fields that were never set are left out.
+No params. Result: `{"input":"jdk:Piano","output":"jdk:Gervill","keyboards":{"jdk:Piano":"A0-C8"},"tempos":{"wait":72,"tempo":100},"latencyOffsetMs":0,"instrument":0,"keySound":false}`. `instrument` is the General MIDI program (0–127, 0 the grand piano) the keys you play sound with, and `keySound` whether they are played through the output (DEV-13/14). Fields that were never set are left out.
 
 ### `settings.update`
-Params: any of `input`, `output`, `keyboards` (device id → preset size or range), `tempos` (`"wait"`/`"tempo"` → BPM), `latencyOffsetMs` (−500…500). Only the given fields change, and the result is saved straight away. Result: the updated settings, as in `settings.get`. A value that can't be used gives -32602, and nothing is saved.
+Params: any of `input`, `output`, `keyboards` (device id → preset size or range), `tempos` (`"wait"`/`"tempo"` → BPM), `latencyOffsetMs` (−500…500), `instrument` (0–127), `keySound`. Only the given fields change, and the result is saved straight away. Result: the updated settings, as in `settings.get`. A value that can't be used gives -32602, and nothing is saved.
 
 ### `session.start`
 Starts a random-notes or chord session. Only one session runs at a time. Leaving out `tempo` uses the saved tempo for the mode, and leaving out `keyboard` uses the saved keyboard of the input device. A started session saves its input and its tempo for its mode (DEV-4, TMP-7). Key press times are moved earlier by the saved latency offset before scoring (DEV-9).
