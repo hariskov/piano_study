@@ -118,11 +118,11 @@ piano-player/                      root parent pom: shared coordinates, Maven ve
 │   ├── pp-api/                    JSON-RPC messages, dispatcher, stdio transport
 │   ├── pp-app/                    main(): wires everything together, CLI options
 │   └── pp-import-pdf/             (v2) Audiveris integration
-└── frontend/                      Electron + React + TypeScript; Maven runs npm via frontend-maven-plugin
+└── frontend/                      Electron + React + TypeScript; Maven runs npm
 
 ```
 
-`frontend/` is a Maven sub-project of the root POM (packaging `pom`). `frontend-maven-plugin` installs a pinned Node LTS (`node.version`) into `frontend/target/node`, runs `npm ci` in `initialize`, `npm run build` in `compile` (`tsc --noEmit` and `vite build` into `dist/renderer`) and `npm test` (Vitest with jsdom) in `test`. All npm versions are pinned exactly in `package.json` and locked in `package-lock.json`. Frontend code lives in feature folders under `src/` (for example `src/tempo/`), with each test file next to its code (`*.test.ts`).
+`frontend/` is a Maven sub-project of the root POM (packaging `pom`). `maven-antrun-plugin` runs the system `npm`: `npm ci` in `initialize` (after checking that `node` exists, with an install hint if not), `npm run build` in `compile` (`tsc --noEmit` and `vite build` into `dist/renderer`) and `npm test` (Vitest with happy-dom) in `test`, skipped with `-DskipTests`. `package.json` requires Node 24 or newer and `.npmrc` sets `engine-strict`, so an older Node fails `npm ci` with a clear message. Until 2026-11-28 `frontend-maven-plugin` downloaded its own Node (220 MB per machine, counting its cache); the system Node replaced it, and happy-dom replaced jsdom, to keep the build small. All npm versions are pinned exactly in `package.json` and locked in `package-lock.json`. Frontend code lives in feature folders under `src/` (for example `src/tempo/`), with each test file next to its code (`*.test.ts`).
 
 Allowed dependencies (arrows point to what a module may use):
 

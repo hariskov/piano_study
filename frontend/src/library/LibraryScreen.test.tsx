@@ -174,7 +174,8 @@ describe("LibraryScreen", () => {
 
   it("deletes a song after asking", async () => {
     const fake = backend();
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const confirm = vi.fn(() => true);
+    vi.stubGlobal("confirm", confirm);
     show(fake);
     fireEvent.click(await screen.findByText("Simple Melody"));
     await screen.findByText("G major");
@@ -183,6 +184,6 @@ describe("LibraryScreen", () => {
 
     await waitFor(() => expect(fake.callsOf("library.delete")).toEqual([{ id: "simple-melody" }]));
     expect(confirm).toHaveBeenCalled();
-    confirm.mockRestore();
+    vi.unstubAllGlobals();
   });
 });

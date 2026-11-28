@@ -6,13 +6,13 @@ See [`docs/`](docs) for the vision, specification, architecture and development 
 
 ## Build
 
-Requires JDK 25. Maven is provided by the wrapper.
+Requires JDK 25 and Node.js 24 or newer (on openSUSE: `sudo zypper in nodejs26 npm26`). Maven is provided by the wrapper.
 
 ```
 ./mvnw verify
 ```
 
-The frontend (`frontend/`, React + TypeScript + Vite) is built and tested by the same `./mvnw verify`; Maven downloads its own Node for it.
+The frontend (`frontend/`, React + TypeScript + Vite) is built and tested by the same `./mvnw verify`, using the system Node.
 
 Run the desktop app:
 
@@ -36,7 +36,7 @@ End-to-end smoke test (Playwright driving the real app; needs a display, for exa
 
 ```
 ./mvnw -q package -DskipTests
-cd frontend && PATH=$PWD/target/node:$PATH npm run e2e        # or: xvfb-run npm run e2e
+cd frontend && npm run e2e        # or: xvfb-run npm run e2e
 ```
 
 It plays a random-notes session and a chord session on the virtual keyboard, imports a song into the library, shows its sheet music and practises it twice in a row, and saves screenshots in `frontend/test-results/screens/`.

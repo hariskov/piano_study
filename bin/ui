@@ -1,9 +1,10 @@
 #!/bin/sh
 set -e
 root="$(cd "$(dirname "$0")/.." && pwd)"
-if [ ! -f "$root/frontend/dist/electron/main.cjs" ] || [ ! -x "$root/frontend/target/node/node" ]; then
+if [ ! -f "$root/frontend/dist/electron/main.cjs" ]; then
     echo "Build first: ./mvnw -q package -DskipTests" >&2
     exit 1
 fi
+command -v npx >/dev/null || { echo "Node.js is needed: sudo zypper in nodejs26 npm26" >&2; exit 1; }
 cd "$root/frontend"
-PATH="$root/frontend/target/node:$PATH" exec npx --no-install electron . "$@"
+exec npx --no-install electron . "$@"
