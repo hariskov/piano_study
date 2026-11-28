@@ -23,14 +23,14 @@ bin/ui
 
 The first start downloads the Electron binary (about 100 MB, once). The app starts the backend (`bin/pp api`) itself and stops it when the window closes.
 
-Build the AppImage. It needs the JDK's jmods (on openSUSE `sudo zypper in java-25-openjdk-jmods`) and [appimagetool 1.9.1](https://github.com/AppImage/appimagetool/releases/tag/1.9.1), saved as `~/.cache/piano-player/appimagetool-1.9.1-x86_64.AppImage` and made executable:
+Build the app as one executable file (about 130 MB). It needs the JDK's jmods (on openSUSE `sudo zypper in java-25-openjdk-jmods`):
 
 ```
-./mvnw -Pappimage package -DskipTests
-frontend/target/appimage/Piano-Player-0.1.0-x86_64.AppImage
+./mvnw -Pbundle package -DskipTests
+frontend/target/bundle/piano-player-0.1.0-x86_64.sh
 ```
 
-It contains its own Java runtime, so the target machine needs nothing else installed.
+It is a shell script with the app packed inside. The first start unpacks it (about 340 MB) into `~/.cache/piano-player/app/` and removes older unpacked builds; later starts run it from there. It contains its own Java runtime, so the target machine needs nothing else installed.
 
 End-to-end smoke test (Playwright driving the real app; needs a display, for example Xvfb on a headless machine):
 
