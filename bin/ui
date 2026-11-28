@@ -5,8 +5,4 @@ if [ ! -f "$root/frontend/dist/renderer/index.html" ]; then
     echo "Build first: ./mvnw -q package -DskipTests" >&2
     exit 1
 fi
-if ! command -v gjs >/dev/null || ! gjs -c 'imports.gi.versions.WebKit = "6.0"; imports.gi.WebKit' 2>/dev/null; then
-    echo "The window needs GJS and WebKitGTK 6.0: sudo zypper in gjs typelib-1_0-WebKit-6_0" >&2
-    exit 1
-fi
-exec gjs -m "$root/frontend/shell/piano-player.js" "$@"
+exec "$root/frontend/shell/piano-player" "$@"

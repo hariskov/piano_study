@@ -242,7 +242,7 @@ Level details:
 |---|---|
 | NF-1 | **Latency:** from a key press arriving in the backend to the feedback appearing in the UI should take under 20 ms in normal conditions. Scoring itself does not depend on UI delay (DEV-8). |
 | NF-2 | **Platform:** Linux x86-64 (any modern distribution with ALSA). |
-| NF-3 | **Packaging:** one self-contained executable file (a self-extracting shell script) that includes the Java runtime and the UI shell. No separate installs needed. |
+| NF-3 | **Packaging:** one self-contained executable file (a self-extracting shell script) that includes the Java runtime, the backend and the UI. The only system requirement is the desktop's web engine: GJS and WebKitGTK 6.0, which most current distributions ship (on openSUSE `gjs` and `typelib-1_0-WebKit-6_0`). |
 | NF-4 | **Offline and private:** works fully offline. The backend opens no network port; the UI talks to it only through the pipes of the child process it started. |
 | NF-5 | **Startup:** the main window appears within 3 s on a normal laptop. |
 | NF-6 | **Robustness:** a broken or unsupported file must never crash the app. It produces an error or import report instead. |

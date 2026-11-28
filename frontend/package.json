@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && tsc -p tsconfig.electron.json && vite build",
-    "start": "npm run build && electron .",
+    "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "e2e": "sh e2e/run.sh"
   },
@@ -22,13 +21,11 @@
     "@types/react": "19.3.3",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.3.0",
-    "electron": "45.5.0",
     "happy-dom": "21.0.4",
     "typescript": "7.0.2",
     "vite": "8.4.0",
     "vitest": "5.1.2"
   },
-  "main": "dist/electron/main.cjs",
   "description": "Piano learning app for a MIDI keyboard",
   "engines": {
     "node": ">=24"

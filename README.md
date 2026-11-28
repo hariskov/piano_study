@@ -6,7 +6,13 @@ See [`docs/`](docs) for the vision, specification, architecture and development 
 
 ## Build
 
-Requires JDK 25 and Node.js 24 or newer (on openSUSE: `sudo zypper in nodejs26 npm26`). Maven is provided by the wrapper.
+Requires:
+
+| For | Packages (openSUSE) |
+|---|---|
+| Building and testing | JDK 25, Node.js 24 or newer: `sudo zypper in java-25-openjdk-devel nodejs26 npm26`. Maven comes with the wrapper. |
+| Running the app (and the end-to-end test) | GJS and WebKitGTK 6.0: `sudo zypper in gjs typelib-1_0-WebKit-6_0` (Fedora: `gjs webkitgtk6.0`, Debian/Ubuntu: `gjs gir1.2-webkit-6.0`) |
+| Building the single-file app | the JDK's jmods: `sudo zypper in java-25-openjdk-jmods` |
 
 ```
 ./mvnw verify
@@ -23,14 +29,14 @@ bin/ui
 
 The window uses the system's WebKitGTK through GJS (on openSUSE `sudo zypper in gjs typelib-1_0-WebKit-6_0`). The app starts the backend (`bin/pp api`) itself and stops it when the window closes. `PP_DEVTOOLS=1 bin/ui` turns on the WebKit inspector.
 
-Build the app as one executable file (about 130 MB). It needs the JDK's jmods (on openSUSE `sudo zypper in java-25-openjdk-jmods`):
+Build the app as one executable file (about 37 MB). It needs the JDK's jmods (see the table above):
 
 ```
 ./mvnw -Pbundle package -DskipTests
 frontend/target/bundle/piano-player-0.1.0-x86_64.sh
 ```
 
-It is a shell script with the app packed inside. The first start unpacks it (about 340 MB) into `~/.cache/piano-player/app/` and removes older unpacked builds; later starts run it from there. It contains its own Java runtime, so the target machine needs nothing else installed.
+It is a shell script with the app packed inside. The first start unpacks it (about 64 MB) into `~/.cache/piano-player/app/` and removes older unpacked builds; later starts run it from there. It contains its own Java runtime; the target machine needs only GJS and WebKitGTK 6.0, which most desktops already have.
 
 End-to-end smoke test. It runs inside the real app window with the real backend and a fresh settings and library folder. It needs a display and the same GJS and WebKitGTK packages as `bin/ui`:
 
