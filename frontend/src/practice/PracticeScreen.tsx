@@ -1,17 +1,18 @@
 import { useEffect, useReducer, useState } from "react";
 import { useBackend } from "../app/backendContext";
-import type { AdjustParams, ApiEvents, PastSession, SessionStartParams } from "../api/protocol";
+import type { AdjustParams, ApiEvents, PastSession, SessionStartParams, TargetEvent } from "../api/protocol";
 import { PianoKeyboard } from "../keyboard/PianoKeyboard";
 import { keyboardRange, type KeyRange } from "../keyboard/presets";
 import { pitchName } from "../music/pitch";
 import { TempoControl } from "../tempo/TempoControl";
 import { midiForKey } from "./computerKeys";
-import { AccidentalsCheck, ChordLabelSelect, ChordTypeChecks, HandsSelect, LevelSelect, MixedCheck } from "./exerciseControls";
+import { AccidentalsCheck, ChordLabelSelect, ChordTypeChecks, DisplaySelect, HandsSelect, LevelSelect, MixedCheck } from "./exerciseControls";
 import { NoteLanes } from "./NoteLanes";
 import { SheetMusic } from "../sheet/SheetMusic";
 import { scorePosition } from "../sheet/scorePosition";
-import { targetLabel, type ChordLabels } from "./chordLabel";
-import { initialPractice, practiceReducer, type PracticeAction } from "./practiceState";
+import { staffMusicXml, type StaffItem } from "../sheet/staffMusicXml";
+import { targetLabel } from "./chordLabel";
+import { initialPractice, practiceReducer, type PlayedTarget, type PracticeAction } from "./practiceState";
 import { ResultsView } from "./ResultsView";
 import type { Setup } from "./setupForm";
 
@@ -33,6 +34,13 @@ const EVENTS: readonly (keyof ApiEvents)[] = [
   "session.inputLost",
   "session.inputRestored",
 ];
+
+const STAFF_HISTORY = 7;
+
+function staffItems(history: readonly PlayedTarget[], target: TargetEvent | undefined): StaffItem[] {
+  const played: StaffItem[] = history.slice(-STAFF_HISTORY).map((item) => ({ target: item.target, state: item.result }));
+  return target ? [...played, { target, state: "current" }] : played;
+}
 
 export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings }: Props) {
   const client = useBackend();
@@ -163,9 +171,9 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
     onSetupChange?.(next);
     void client.request("session.adjust", change).catch((error: Error) => setProblem(error.message));
   };
-  const showLabels = (chordLabels: ChordLabels) => {
+  const showDifferently = (change: Pick<Partial<Setup>, "chordLabels" | "display">) => {
     if (current !== undefined) {
-      const next = { ...current, chordLabels };
+      const next = { ...current, ...change };
       setCurrent(next);
       onSetupChange?.(next);
     }
@@ -177,6 +185,7 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
   const target = practice.target;
   const targets = new Set(target?.notes.map((note) => note.midi) ?? []);
   const nowPlaying = target ? targetLabel(target, current?.chordLabels ?? "both") : "";
+  const onStaff = params.exercise !== "song" && (current?.display ?? "staff") === "staff";
 
   return (
     <section className="screen practice">
@@ -226,7 +235,7 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
             </small>
           </div>
         )}
-        <NoteLanes history={practice.history} target={target} />
+        {onStaff ? <SheetMusic xml={staffMusicXml(staffItems(practice.history, target))} /> : <NoteLanes history={practice.history} target={target} />}
         {practice.state === "COUNT_IN" && <div className="overlay">Get ready…</div>}
         {practice.state === "PAUSED" && <div className="overlay">Paused</div>}
         {practice.inputLost && (
@@ -246,9 +255,10 @@ export function PracticeScreen({ params, setup, onSetupChange, onChangeSettings 
         ) : (
           <>
             <ChordTypeChecks value={current.chordTypes} onChange={(chordTypes) => adjust({ chordTypes })} />
-            <ChordLabelSelect value={current.chordLabels} onChange={(chordLabels) => showLabels(chordLabels)} />
+            <ChordLabelSelect value={current.chordLabels} onChange={(chordLabels) => showDifferently({ chordLabels })} />
           </>
         )}
+        <DisplaySelect value={current.display} onChange={(display) => showDifferently({ display })} />
         <p className="muted small">Changes apply from the next bar.</p>
       </aside>
       )}

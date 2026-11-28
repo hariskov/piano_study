@@ -20,6 +20,17 @@ describe("SheetMusic", () => {
     expect(screen.getByLabelText("Sheet music")).toBeTruthy();
   });
 
+  it("draws a changed score in the same display", async () => {
+    const { rerender } = render(<SheetMusic xml="<score-partwise>one</score-partwise>" />);
+    await waitFor(() => expect(osmdInstances.at(-1)?.loaded).toBe("<score-partwise>one</score-partwise>"));
+    const before = osmdInstances.length;
+
+    rerender(<SheetMusic xml="<score-partwise>two</score-partwise>" />);
+
+    await waitFor(() => expect(osmdInstances.at(-1)?.loaded).toBe("<score-partwise>two</score-partwise>"));
+    expect(osmdInstances).toHaveLength(before);
+  });
+
   it("hides the cursor without a position", async () => {
     render(<SheetMusic xml="<score-partwise/>" />);
 

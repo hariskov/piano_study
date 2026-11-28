@@ -75,6 +75,7 @@ test("plays a short random-notes session to the results", async () => {
   await click("button", "Practice");
   await choose("Count-in", "0");
   await choose("Number of notes", "3");
+  await choose("Display", "lanes");
   await screenshot("2-setup");
   await click("button", "Start");
 
@@ -100,8 +101,10 @@ test("plays a chord session with the computer keyboard", async () => {
   fireEvent.click(await screen.findByText("Chords", { exact: true }));
   await choose("Range", "C4-E5");
   await choose("Number of notes", "1");
+  await choose("Display", "staff");
   await click("button", "Start");
   await waitForTarget();
+  await expectSheetMusic();
   await screenshot("5-chord");
 
   playTargetsOnComputerKeys();

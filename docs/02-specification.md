@@ -227,7 +227,7 @@ Level details:
 ### 5.2 Note display
 
 - **v0.5 (proof of concept):** a simple display, with no proper staff notation. For example: notes as blocks on a timeline lane (piano-roll style) or labelled with note names, split into right-hand and left-hand lanes, with a "now" line and colour feedback. Simple drawing is fine.
-- **v1:** proper grand-staff notation (treble + bass, clefs, key and time signatures, bar lines, note heads, stems, rests, ledger lines, accidentals), drawn with HTML5 canvas/SVG. The current position is highlighted and the music scrolls or turns pages automatically. Done for songs (their MusicXML is drawn and followed); random notes and chords still use the lanes.
+- **v1:** proper grand-staff notation (treble + bass, clefs, key and time signatures, bar lines, note heads, stems, rests, ledger lines, accidentals), drawn with HTML5 canvas/SVG. The current position is highlighted and the music scrolls or turns pages automatically. Done for songs (their MusicXML is drawn and followed) and for random notes and chords (the last few targets and the current one on a grand staff, coloured by result). The user can switch random notes and chords between the staff (default) and the lanes, in the setup or while playing.
 
 ### 5.3 On-screen keyboard
 

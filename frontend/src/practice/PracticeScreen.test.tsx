@@ -6,6 +6,7 @@ import { FakeBackend } from "../testing/fakeBackend";
 import { osmdInstances } from "../testing/osmdMock";
 import type { SessionStartParams } from "../api/protocol";
 import { defaultSetup, type Setup } from "./setupForm";
+import { STAFF_COLOURS } from "../sheet/staffMusicXml";
 
 const PARAMS: SessionStartParams = { input: "virtual:keyboard", exercise: "random", mode: "wait", tempo: 80 };
 
@@ -80,6 +81,35 @@ describe("PracticeScreen", () => {
     expect(screen.getByLabelText("Now playing").textContent).toBe("C4 E4 G4");
     expect(fake.callsOf("session.adjust")).toEqual([]);
     expect(onSetupChange).toHaveBeenCalledWith(expect.objectContaining({ chordLabels: "notes" }));
+  });
+
+  it("shows the notes on a staff, coloured by how they were played", async () => {
+    const fake = backend();
+    show(fake);
+    await waitFor(() => expect(fake.callsOf("session.start")).toHaveLength(1));
+
+    act(() => fake.emit("session.target", { start: "0", notes: [{ pitch: "E4", midi: 64, hand: "RIGHT" }] }));
+    act(() => fake.emit("eval", { result: "CORRECT", pitch: "E4" }));
+    act(() => fake.emit("session.target", { start: "1/4", notes: [{ pitch: "G4", midi: 67, hand: "RIGHT" }] }));
+
+    expect(screen.getByLabelText("Sheet music")).toBeTruthy();
+    await waitFor(() => expect(osmdInstances.at(-1)?.loaded).toContain(`<step>G</step>`));
+    expect(osmdInstances.at(-1)?.loaded).toContain(`color="${STAFF_COLOURS.correct}"`);
+    expect(osmdInstances.at(-1)?.loaded).toContain(`color="${STAFF_COLOURS.current}"`);
+  });
+
+  it("switches to note lanes while playing, without telling the backend", async () => {
+    const fake = backend();
+    const { onSetupChange } = show(fake);
+    await waitFor(() => expect(fake.callsOf("session.start")).toHaveLength(1));
+    act(() => fake.emit("session.target", { start: "0", notes: [{ pitch: "E4", midi: 64, hand: "RIGHT" }] }));
+
+    fireEvent.change(screen.getByLabelText("Display"), { target: { value: "lanes" } });
+
+    expect(screen.queryByLabelText("Sheet music")).toBeNull();
+    expect(document.querySelector(".lanes")).not.toBeNull();
+    expect(onSetupChange).toHaveBeenCalledWith(expect.objectContaining({ display: "lanes" }));
+    expect(fake.callsOf("session.adjust")).toEqual([]);
   });
 
   it("pauses, resumes and stops", async () => {

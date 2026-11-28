@@ -1,5 +1,5 @@
 import type { ChordLabels } from "./chordLabel";
-import type { Hands } from "./setupForm";
+import type { Display, Hands } from "./setupForm";
 
 export const CHORD_TYPES = [
   ["maj", "Major"],
@@ -99,6 +99,18 @@ export function ChordLabelSelect({ value, onChange }: { value: ChordLabels; onCh
         <option value="both">Chord name and notes</option>
         <option value="name">Chord name only</option>
         <option value="notes">Notes only</option>
+      </select>
+    </label>
+  );
+}
+
+export function DisplaySelect({ value, onChange }: { value: Display; onChange: (display: Display) => void }) {
+  return (
+    <label className="field">
+      <span>Display</span>
+      <select aria-label="Display" value={value} onChange={(event) => onChange(event.target.value as Display)}>
+        <option value="staff">Notes on the staff</option>
+        <option value="lanes">Note lanes</option>
       </select>
     </label>
   );

@@ -19,30 +19,25 @@ function stepCursor(osmd: OpenSheetMusicDisplay): StepCursor {
 
 export function SheetMusic({ xml, position }: Props) {
   const container = useRef<HTMLDivElement>(null);
+  const [display, setDisplay] = useState<OpenSheetMusicDisplay>();
   const [osmd, setOsmd] = useState<OpenSheetMusicDisplay>();
   const [problem, setProblem] = useState<string>();
 
   useEffect(() => {
     let current = true;
-    setOsmd(undefined);
-    setProblem(undefined);
     void (async () => {
       try {
         const { OpenSheetMusicDisplay } = await import("opensheetmusicdisplay");
-        if (!current || !container.current) {
-          return;
-        }
-        const display = new OpenSheetMusicDisplay(container.current, {
-          backend: "svg",
-          autoResize: true,
-          drawTitle: false,
-          drawPartNames: true,
-          followCursor: true,
-        });
-        await display.load(xml);
-        if (current) {
-          display.render();
-          setOsmd(display);
+        if (current && container.current) {
+          setDisplay(
+            new OpenSheetMusicDisplay(container.current, {
+              backend: "svg",
+              autoResize: true,
+              drawTitle: false,
+              drawPartNames: true,
+              followCursor: true,
+            }),
+          );
         }
       } catch (error) {
         if (current) {
@@ -53,7 +48,33 @@ export function SheetMusic({ xml, position }: Props) {
     return () => {
       current = false;
     };
-  }, [xml]);
+  }, []);
+
+  // The same display is reused when the score changes, as it does after every note on the exercise staff.
+  useEffect(() => {
+    if (!display) {
+      return;
+    }
+    let current = true;
+    setOsmd(undefined);
+    setProblem(undefined);
+    display.load(xml).then(
+      () => {
+        if (current) {
+          display.render();
+          setOsmd(display);
+        }
+      },
+      (error: Error) => {
+        if (current) {
+          setProblem(`The sheet music couldn't be drawn: ${error.message}`);
+        }
+      },
+    );
+    return () => {
+      current = false;
+    };
+  }, [display, xml]);
 
   useEffect(() => {
     if (!osmd) {
