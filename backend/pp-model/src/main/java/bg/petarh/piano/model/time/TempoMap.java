@@ -31,6 +31,24 @@ public final class TempoMap {
         return new TempoMap(kept);
     }
 
+    public TempoMap scaledBy(double factor) {
+        TempoMap scaled = constant(scaled(segments.getFirst().tempo(), factor));
+        for (Segment segment : segments.subList(1, segments.size())) {
+            scaled = scaled.withChangeAt(segment.start(), scaled(segment.tempo(), factor));
+        }
+        return scaled;
+    }
+
+    public TempoMap withSegmentsFrom(Fraction position, TempoMap other) {
+        TempoMap combined = withChangeAt(position, other.tempoAt(position));
+        for (Segment segment : other.segments) {
+            if (segment.start().compareTo(position) > 0) {
+                combined = combined.withChangeAt(segment.start(), segment.tempo());
+            }
+        }
+        return combined;
+    }
+
     public long nanosAt(Fraction position) {
         Segment segment = segmentAt(position);
         return segment.startNanos() + segment.tempo().nanosFor(position.minus(segment.start()));
@@ -52,6 +70,21 @@ public final class TempoMap {
 
     public Tempo latestTempo() {
         return segments.getLast().tempo();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof TempoMap map && map.segments.equals(segments);
+    }
+
+    @Override
+    public int hashCode() {
+        return segments.hashCode();
+    }
+
+    private static Tempo scaled(Tempo tempo, double factor) {
+        long bpm = Math.round(tempo.bpm() * factor);
+        return Tempo.of(Math.clamp(bpm, Tempo.SLOWEST_BPM, Tempo.FASTEST_BPM), tempo.beatUnit());
     }
 
     private Segment segmentAt(Fraction position) {

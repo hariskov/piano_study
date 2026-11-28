@@ -21,13 +21,14 @@ public final class Session {
     private Optional<Target> current = Optional.empty();
     private long countInStartNanos;
     private TempoMap tempoMap;
+    private double scale = 1;
 
     public Session(TargetSource targets, SessionTiming timing, Clock clock) {
         this.targets = targets;
         this.timing = timing;
         this.clock = clock;
         this.stopwatch = new Stopwatch(clock);
-        this.tempoMap = TempoMap.constant(timing.tempo());
+        this.tempoMap = timing.tempoMap();
     }
 
     public SessionState state() {
@@ -58,13 +59,19 @@ public final class Session {
         return tempoMap.nanosAt(position);
     }
 
+    public int tempoPercent() {
+        return (int) Math.round(scale * 100);
+    }
+
     public void changeTempo(Tempo tempo) {
         if (state != SessionState.RUNNING && state != SessionState.PAUSED) {
             throw new IllegalStateException("Cannot change the tempo of a session that is " + state);
         }
+        scale = (double) tempo.bpm() / timing.tempo().bpm();
         Fraction beat = timing.meter().countedBeat();
         Fraction now = tempoMap.positionAt(stopwatch.elapsedNanos());
-        tempoMap = tempoMap.withChangeAt(beat.times(now.dividedBy(beat).ceil()), tempo);
+        Fraction nextBeat = beat.times(now.dividedBy(beat).ceil());
+        tempoMap = tempoMap.withSegmentsFrom(nextBeat, timing.tempoMap().scaledBy(scale));
     }
 
     public long runningNanosAt(long timestampNanos) {

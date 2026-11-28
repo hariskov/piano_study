@@ -8,6 +8,7 @@ import bg.petarh.piano.model.note.Target;
 import bg.petarh.piano.model.pitch.Pitch;
 import bg.petarh.piano.model.time.Fraction;
 import bg.petarh.piano.model.time.Tempo;
+import bg.petarh.piano.model.time.TempoMap;
 import bg.petarh.piano.model.time.TimeSignature;
 import org.junit.jupiter.api.Test;
 
@@ -133,6 +134,22 @@ class SessionTest {
         session.changeTempo(Tempo.of(60));
 
         assertThat(session.nanosAt(Fraction.of(1, 2))).isEqualTo(Duration.ofMillis(1500).toNanos());
+    }
+
+    @Test
+    void scalesASongsOwnTempoChangesWhenTheTempoChanges() {
+        TempoMap song = TempoMap.constant(Tempo.of(120)).withChangeAt(Fraction.whole(1), Tempo.of(60));
+        Session session = new Session(TargetSource.of(List.of(first, second, third)),
+                new SessionTiming(song, TimeSignature.COMMON_TIME, 0), clock);
+        session.start();
+        assertThat(session.nanosAt(Fraction.of(5, 4))).isEqualTo(Duration.ofMillis(3000).toNanos());
+
+        session.changeTempo(Tempo.of(60));
+
+        assertThat(session.tempoPercent()).isEqualTo(50);
+        assertThat(session.nanosAt(Fraction.of(1, 4))).isEqualTo(Duration.ofMillis(1000).toNanos());
+        assertThat(session.nanosAt(Fraction.whole(1))).isEqualTo(Duration.ofMillis(4000).toNanos());
+        assertThat(session.nanosAt(Fraction.of(5, 4))).isEqualTo(Duration.ofMillis(6000).toNanos());
     }
 
     @Test
