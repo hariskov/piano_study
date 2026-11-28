@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { PracticeScreen } from "./PracticeScreen";
 import { BackendContext } from "../app/backendContext";
 import { FakeBackend } from "../testing/fakeBackend";
+import { osmdInstances } from "../testing/osmdMock";
 import type { SessionStartParams } from "../api/protocol";
 import { defaultSetup, type Setup } from "./setupForm";
 
@@ -202,6 +203,26 @@ describe("PracticeScreen", () => {
     expect(await screen.findByText("70% of the song")).toBeTruthy();
     expect(screen.getByText("3 notes outside your keyboard were moved by an octave")).toBeTruthy();
     expect(screen.queryByLabelText("Adjust while playing")).toBeNull();
+  });
+
+  it("follows the song on its sheet music, through repeats of a section", async () => {
+    const fake = new FakeBackend()
+      .answer("session.start", () => ({ seed: 0, tempo: 120, songTempo: 120, notices: [], sectionStart: "1/4", passLength: "1/2" }))
+      .answer("library.musicXml", () => ({ xml: "<score-partwise>song</score-partwise>" }))
+      .answer("settings.get", () => ({ input: "virtual:keyboard", keyboards: {}, tempos: {}, latencyOffsetMs: 0 }));
+    render(
+      <BackendContext.Provider value={fake.client}>
+        <PracticeScreen params={{ input: "virtual:keyboard", exercise: "song", songId: "duet" }} onChangeSettings={vi.fn()} />
+      </BackendContext.Provider>,
+    );
+    await waitFor(() => expect(osmdInstances.at(-1)?.loaded).toBe("<score-partwise>song</score-partwise>"));
+    const osmd = osmdInstances.at(-1)!;
+
+    act(() => fake.emit("session.target", { start: "1/4", notes: [{ pitch: "G4", midi: 67, hand: "RIGHT" }] }));
+    await waitFor(() => expect(osmd.cursor.position).toBe(0.5));
+
+    act(() => fake.emit("session.target", { start: "1/2", notes: [{ pitch: "E4", midi: 64, hand: "RIGHT" }] }));
+    await waitFor(() => expect(osmd.cursor.position).toBe(0.25));
   });
 
   it("explains a failed start", async () => {

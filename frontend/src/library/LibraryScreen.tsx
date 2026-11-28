@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useBackend } from "../app/backendContext";
+import { SheetMusic } from "../sheet/SheetMusic";
 import type { ImportParams, SongDetails, SongSummary } from "../api/protocol";
 
 interface Props {
@@ -151,7 +152,7 @@ export function LibraryScreen({ chooseFile, onPractise }: Props) {
             </li>
           ))}
         </ul>
-        {details ? <SongView song={details} onDelete={() => void remove(details)} onPractise={() => onPractise(details)} /> : (
+        {details ? <SongView key={details.id} song={details} onDelete={() => void remove(details)} onPractise={() => onPractise(details)} /> : (
           <div className="card muted song-details">Choose a song to see its details.</div>
         )}
       </div>
@@ -160,6 +161,14 @@ export function LibraryScreen({ chooseFile, onPractise }: Props) {
 }
 
 function SongView({ song, onDelete, onPractise }: { song: SongDetails; onDelete: () => void; onPractise: () => void }) {
+  const client = useBackend();
+  const [xml, setXml] = useState<string>();
+  const [problem, setProblem] = useState<string>();
+  const showSheet = () =>
+    void client.request("library.musicXml", { id: song.id }).then(
+      (result) => setXml(result.xml),
+      (error: Error) => setProblem(error.message),
+    );
   return (
     <div className="card song-details">
       <h3>{song.title}</h3>
@@ -226,10 +235,17 @@ function SongView({ song, onDelete, onPractise }: { song: SongDetails; onDelete:
         <button type="button" onClick={onDelete}>
           Delete
         </button>
+        {xml === undefined && (
+          <button type="button" onClick={showSheet}>
+            Show sheet music
+          </button>
+        )}
         <button type="button" className="primary" onClick={onPractise}>
           Practise
         </button>
       </div>
+      {problem && <p className="problem">{problem}</p>}
+      {xml !== undefined && <SheetMusic xml={xml} />}
     </div>
   );
 }
