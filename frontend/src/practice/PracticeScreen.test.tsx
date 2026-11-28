@@ -193,6 +193,7 @@ describe("PracticeScreen", () => {
   it("shows a song's tempo as a share of the song and its notices, without adjusting", async () => {
     const fake = new FakeBackend()
       .answer("session.start", () => ({ seed: 0, tempo: 84, songTempo: 120, notices: ["3 notes outside your keyboard were moved by an octave"] }))
+      .answer("library.musicXml", () => ({ xml: "<score-partwise/>" }))
       .answer("settings.get", () => ({ input: "virtual:keyboard", keyboards: {}, tempos: {}, latencyOffsetMs: 0 }));
     render(
       <BackendContext.Provider value={fake.client}>
