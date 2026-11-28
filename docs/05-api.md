@@ -48,6 +48,10 @@ Params `{"id":"simple-melody"}`. Result: `{"id","title","composer","file","midiF
 
 Params: `{"id":"simple-melody"}`. Result: `{"xml":"<?xml …"}`, the song's saved MusicXML, for drawing the score. It is always plain text: a MusicXML import keeps the original score (unzipped from `.mxl`), and a MIDI import is written by `MusicXmlWriter`. -32004 if there is no such song, -32003 if the file can't be read.
 
+### `progress.history`
+
+Params: `{"songId":"sonatina"}` or `{"exercise":"random"}` (or `"chords"`). Result: `{"sessions":[…]}`, oldest first. Each session: `finishedAt` (ISO time), `exercise`, `songId`, `part`, `hands`, `mode`, `tempo`, `tempoPercent`, `fromBar`, `toBar`, `accuracyPercent`, `timed`, `completedTargets`, `wrongKeys`, `perfect`, `good`, `ok`, `missed`, `elapsedMs`, `passes` and `mistakesByBar` (bar number → wrong keys plus missed notes, songs only). A session is saved when it finishes in Wait or Tempo mode with at least one target done or missed; Listen and Play along are not saved. -32602 without a `songId` or `exercise`.
+
 ### `library.delete`
 Params `{"id":"simple-melody"}`. Removes the song, its MusicXML and its MIDI file. Result `null`; -32004 if there is no such song.
 

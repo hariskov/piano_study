@@ -1,7 +1,9 @@
 package bg.petarh.piano.api.session;
 
 import bg.petarh.piano.engine.evaluation.FollowMode;
+import bg.petarh.piano.engine.run.Summary;
 import bg.petarh.piano.engine.session.SessionTiming;
+import bg.petarh.piano.library.progress.SessionRecord;
 import bg.petarh.piano.engine.songs.OutOfRange;
 import bg.petarh.piano.engine.songs.SectionLoop;
 import bg.petarh.piano.engine.songs.SongSection;
@@ -31,6 +33,7 @@ import bg.petarh.piano.model.time.NoteValue;
 import bg.petarh.piano.model.time.Tempo;
 import bg.petarh.piano.model.time.TimeSignature;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -65,6 +68,9 @@ final class PracticePlan {
     private final List<NoteEvent> songNotes;
     private final SectionLoop loop;
     private final Fraction sectionStart;
+    private final Score song;
+    private final String partId;
+    private final SongSection section;
     private volatile SessionStartParams params;
 
     private PracticePlan(SessionStartParams params, Settings settings, SessionTiming timing, FollowMode mode,
@@ -85,10 +91,13 @@ final class PracticePlan {
         this.songNotes = List.of();
         this.loop = null;
         this.sectionStart = null;
+        this.song = null;
+        this.partId = null;
+        this.section = null;
     }
 
     private PracticePlan(SessionStartParams params, Settings settings, SessionTiming timing, FollowMode mode,
-                         Score song, SectionLoop loop, Fraction sectionStart, List<String> notices) {
+                         Score song, String partId, SongSection section, SectionLoop loop, List<String> notices) {
         this.params = params;
         this.settings = settings;
         this.timing = timing;
@@ -104,7 +113,10 @@ final class PracticePlan {
         whole.addAll(loop.accompaniment());
         this.songNotes = List.copyOf(whole);
         this.loop = loop;
-        this.sectionStart = sectionStart;
+        this.sectionStart = song.measureStarts().get(section.firstBar() - 1);
+        this.song = song;
+        this.partId = partId;
+        this.section = section;
     }
 
     static PracticePlan fromSong(SessionStartParams params, Settings settings, Score song) {
@@ -138,7 +150,7 @@ final class PracticePlan {
         if (selection.skipped() > 0) {
             notices.add(count(selection.skipped()) + " outside your keyboard " + was(selection.skipped()) + " skipped");
         }
-        return new PracticePlan(params, settings, timing, mode, song, loop, sectionStart, notices);
+        return new PracticePlan(params, settings, timing, mode, song, partId, section, loop, notices);
     }
 
     private static String count(int notes) {
@@ -147,6 +159,31 @@ final class PracticePlan {
 
     private static String was(int notes) {
         return notes == 1 ? "was" : "were";
+    }
+
+    boolean scored() {
+        return mode == FollowMode.WAIT || mode == FollowMode.TEMPO;
+    }
+
+    int barAt(Fraction position) {
+        if (song == null) {
+            return 0;
+        }
+        Fraction length = loop.passLength();
+        Fraction inPass = position.minus(length.times(position.dividedBy(length).floor()));
+        return song.measureIndexAt(sectionStart.plus(inPass)) + 1;
+    }
+
+    SessionRecord record(Instant finishedAt, Summary summary, long elapsedMs, List<Integer> passes,
+                         Map<Integer, Integer> mistakesByBar) {
+        SessionStartParams started = params;
+        boolean isSong = song != null;
+        return new SessionRecord(finishedAt, started.exercise(), isSong ? started.songId() : null, partId,
+                or(started.hands(), "right"), mode.name().toLowerCase(Locale.ROOT).replace('_', '-'),
+                timing.tempo().bpm(), isSong ? or(started.tempoPercent(), FULL_TEMPO_PERCENT) : null,
+                isSong ? section.firstBar() : null, isSong ? section.lastBar() : null, summary.accuracyPercent(),
+                summary.timed(), summary.completedTargets(), summary.wrongKeys(), summary.perfect(), summary.good(),
+                summary.ok(), summary.missed(), elapsedMs, passes, isSong ? mistakesByBar : Map.of());
     }
 
     Optional<Fraction> sectionStart() {
