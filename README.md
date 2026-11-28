@@ -21,7 +21,7 @@ Run the desktop app:
 bin/ui
 ```
 
-The first start downloads the Electron binary (about 100 MB, once). The app starts the backend (`bin/pp api`) itself and stops it when the window closes.
+The window uses the system's WebKitGTK through GJS (on openSUSE `sudo zypper in gjs typelib-1_0-WebKit-6_0`). The app starts the backend (`bin/pp api`) itself and stops it when the window closes. `PP_DEVTOOLS=1 bin/ui` turns on the WebKit inspector.
 
 Build the app as one executable file (about 130 MB). It needs the JDK's jmods (on openSUSE `sudo zypper in java-25-openjdk-jmods`):
 

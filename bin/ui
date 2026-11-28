@@ -1,10 +1,12 @@
 #!/bin/sh
 set -e
 root="$(cd "$(dirname "$0")/.." && pwd)"
-if [ ! -f "$root/frontend/dist/electron/main.cjs" ]; then
+if [ ! -f "$root/frontend/dist/renderer/index.html" ]; then
     echo "Build first: ./mvnw -q package -DskipTests" >&2
     exit 1
 fi
-command -v npx >/dev/null || { echo "Node.js is needed: sudo zypper in nodejs26 npm26" >&2; exit 1; }
-cd "$root/frontend"
-exec npx --no-install electron . "$@"
+if ! command -v gjs >/dev/null || ! gjs -c 'imports.gi.versions.WebKit = "6.0"; imports.gi.WebKit' 2>/dev/null; then
+    echo "The window needs GJS and WebKitGTK 6.0: sudo zypper in gjs typelib-1_0-WebKit-6_0" >&2
+    exit 1
+fi
+exec gjs -m "$root/frontend/shell/piano-player.js" "$@"

@@ -1,6 +1,6 @@
 # Piano Player
 
-Piano learning desktop app: Java 25 backend (Maven multi-module) and an Electron + React + TypeScript UI. Linux only.
+Piano learning desktop app: Java 25 backend (Maven multi-module) and a React + TypeScript UI in a WebKitGTK window (`frontend/shell/piano-player.js`, run with GJS). Linux only. The bundle and end-to-end test still use Electron until that switch is finished.
 
 Docs: `docs/01-vision.md`, `docs/02-specification.md`, `docs/03-architecture-plan.md`, `docs/04-phases.md`, `docs/05-api.md` (backend API reference).
 
