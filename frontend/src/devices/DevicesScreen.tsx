@@ -5,6 +5,7 @@ import { PianoKeyboard } from "../keyboard/PianoKeyboard";
 import { KEYBOARD_PRESETS, keyboardRange } from "../keyboard/presets";
 import { pitchName } from "../music/pitch";
 import { START_DETECTION, detectStep, type Detection } from "../keyboard/rangeDetection";
+import { LatencyOffsetField } from "./LatencyOffsetField";
 
 const VIRTUAL_KEYBOARD = "virtual:keyboard";
 const CUSTOM = "custom";
@@ -187,6 +188,7 @@ export function DevicesScreen() {
             {detection?.step === "lowest" && <span className="prompt">Press the lowest key on your piano.</span>}
             {detection?.step === "highest" && <span className="prompt">Now press the highest key.</span>}
           </div>
+          <LatencyOffsetField value={settings.latencyOffsetMs} onSave={(latencyOffsetMs) => void save({ latencyOffsetMs })} />
           {!isPreset && (
             <div className="field inline">
               <input

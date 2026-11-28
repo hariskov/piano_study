@@ -107,5 +107,27 @@ describe("DevicesScreen", () => {
 
     await waitFor(() => expect(fake.callsOf("settings.update")).toContainEqual({ keyboards: { "jdk:Piano": "E1-G7" } }));
   });
-});
+  it("saves the latency offset for Tempo mode", async () => {
+    const fake = backend();
+    show(fake);
+    const offset = (await screen.findByLabelText("Latency offset in ms")) as HTMLInputElement;
+    expect(offset.value).toBe("0");
 
+    fireEvent.change(offset, { target: { value: "35" } });
+    fireEvent.blur(offset);
+
+    await waitFor(() => expect(fake.callsOf("settings.update")).toContainEqual({ latencyOffsetMs: 35 }));
+  });
+
+  it("refuses a latency offset outside -500 to 500 ms", async () => {
+    const fake = backend();
+    show(fake);
+    const offset = await screen.findByLabelText("Latency offset in ms");
+
+    fireEvent.change(offset, { target: { value: "900" } });
+    fireEvent.blur(offset);
+
+    expect(screen.getByText("Use a whole number from -500 to 500")).toBeTruthy();
+    expect(fake.callsOf("settings.update").some((update) => "latencyOffsetMs" in (update as object))).toBe(false);
+  });
+});
