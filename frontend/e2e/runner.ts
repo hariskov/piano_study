@@ -42,6 +42,7 @@ export async function runAll(): Promise<void> {
       post({ type: "e2e.log", text: `  ✓ ${name}` });
     } catch (error) {
       post({ type: "e2e.log", text: `  ✗ ${name}\n    ${(error instanceof Error ? error.message : String(error)).split("\n")[0]}` });
+      await screenshot("failed");
       post({ type: "e2e.done", failed: true });
       return;
     }
