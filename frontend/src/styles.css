@@ -939,3 +939,13 @@ fieldset.card {
   align-items: center;
   gap: 1rem;
 }
+
+.banner {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+}
+
+.notice.banner {
+  background: var(--surface-2, #252a33);
+}

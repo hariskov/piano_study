@@ -28,7 +28,7 @@ Run the desktop app:
 bin/ui
 ```
 
-The window uses the system's WebKitGTK through GJS (on openSUSE `sudo zypper in gjs typelib-1_0-WebKit-6_0`). The app starts the backend (`bin/pp api`) itself and stops it when the window closes. `PP_DEVTOOLS=1 bin/ui` turns on the WebKit inspector.
+The window uses the system's WebKitGTK through GJS (on openSUSE `sudo zypper in gjs typelib-1_0-WebKit-6_0`). The app starts the backend (`bin/pp api`) itself and stops it when the window closes. `PP_DEVTOOLS=1 bin/ui` turns on the WebKit inspector. The backend's log is `~/.local/state/piano-player/backend.log`; if the backend stops, the window restarts it (up to three times a minute).
 
 Build the app as one executable file (about 37 MB). It needs the JDK's jmods (see the table above):
 
