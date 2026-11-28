@@ -61,4 +61,50 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>appimage</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>${antrun-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>link-runtime</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <available file="${java.home}/jmods/java.base.jmod" property="jmods.present"/>
+                                        <fail unless="jmods.present"
+                                              message="jlink needs the JDK's jmods, which ${java.home}/jmods lacks. On openSUSE: sudo zypper in java-25-openjdk-jmods (Fedora: java-25-openjdk-jmods, Debian/Ubuntu: openjdk-25-jmods)."/>
+                                        <delete dir="${project.build.directory}/runtime"/>
+                                        <exec executable="${java.home}/bin/jlink" failonerror="true">
+                                            <arg value="--module-path"/>
+                                            <arg value="${project.build.directory}/pp-app.jar:${project.build.directory}/lib"/>
+                                            <arg value="--add-modules"/>
+                                            <arg value="bg.petarh.piano.app"/>
+                                            <arg value="--launcher"/>
+                                            <arg value="pp=bg.petarh.piano.app/bg.petarh.piano.app.Main"/>
+                                            <arg value="--strip-java-debug-attributes"/>
+                                            <arg value="--no-header-files"/>
+                                            <arg value="--no-man-pages"/>
+                                            <arg value="--compress=zip-6"/>
+                                            <arg value="--output"/>
+                                            <arg value="${project.build.directory}/runtime"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

@@ -2,11 +2,17 @@ import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import path from "node:path";
 import { createInterface } from "node:readline";
+import { backendCommand } from "./backendCommand.cjs";
 
 let backend: ChildProcessWithoutNullStreams | undefined;
 
 function startBackend(window: BrowserWindow): ChildProcessWithoutNullStreams {
-  const command = process.env.PP_BACKEND ?? path.resolve(app.getAppPath(), "..", "bin", "pp");
+  const command = backendCommand({
+    env: process.env,
+    isPackaged: app.isPackaged,
+    resourcesPath: process.resourcesPath,
+    appPath: app.getAppPath(),
+  });
   const child = spawn(command, ["api"], { stdio: ["pipe", "pipe", "pipe"] });
   createInterface({ input: child.stdout }).on("line", (line) => window.webContents.send("backend:line", line));
   child.stderr.on("data", (chunk: Buffer) => process.stderr.write(chunk));

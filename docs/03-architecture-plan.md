@@ -60,6 +60,12 @@ The backend doesn't depend on the window shell, so switching later only affects 
 
 `jpackage` is a JDK tool that bundles a Java app and a Java runtime into a Linux package (.deb/.rpm/app image). Because Electron is the app here, we only need its building block, **`jlink`**, which produces a trimmed-down Java runtime (~40–60 MB). electron-builder then packages that runtime, the backend JAR and the UI into one AppImage/.deb. jpackage is still useful for a backend-only build (for example, a headless/CLI test build).
 
+As built (P4), with the opt-in Maven profile `appimage`:
+- `pp-app` runs `jlink` on `pp-app.jar` and its `lib/` modules. Every dependency is a named module, so the backend itself is linked in, with a `pp` launcher. The result is `backend/pp-app/target/runtime`, about 60 MB. It uses `--strip-java-debug-attributes` rather than `--strip-debug`, because the latter also strips native symbols and needs `objcopy`. The build stops with an install hint when the JDK has no `jmods` (on openSUSE: `java-25-openjdk-jmods`).
+- `frontend` runs `npm run dist`: electron-builder (`electron-builder.yml`) puts the runtime under `resources/backend` and writes the AppImage to `frontend/target/appimage` with the icon `build/icon.png` and a desktop entry (category Education).
+- The Electron main process picks the backend with `backendCommand`: `PP_BACKEND` if set, otherwise `resources/backend/bin/pp` when packaged, or the checkout's `bin/pp` when run from source.
+- Only an AppImage for now; it runs on any distribution without installing.
+
 ## 2A. Code principles
 
 The code follows **clean architecture** and the **SOLID** principles:

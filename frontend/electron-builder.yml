@@ -1,0 +1,22 @@
+appId: bg.petarh.piano
+productName: Piano Player
+artifactName: Piano-Player-${version}-${arch}.AppImage
+directories:
+  output: target/appimage
+  buildResources: build
+files:
+  - dist/**
+  - package.json
+extraResources:
+  - from: ../backend/pp-app/target/runtime
+    to: backend
+linux:
+  target: AppImage
+  category: Education
+  icon: build/icon.png
+  synopsis: Practise the piano with a MIDI keyboard
+  desktop:
+    entry:
+      Name: Piano Player
+      Comment: Practise the piano with a MIDI keyboard
+      Keywords: piano;midi;music;practice;
