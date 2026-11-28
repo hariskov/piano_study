@@ -29,7 +29,10 @@ export class FakeOsmd {
     },
   };
 
-  constructor() {
+  constructor(
+    readonly container?: HTMLElement,
+    readonly options: Record<string, unknown> = {},
+  ) {
     osmdInstances.push(this);
   }
 

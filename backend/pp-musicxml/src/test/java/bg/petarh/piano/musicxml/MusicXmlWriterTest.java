@@ -114,6 +114,20 @@ class MusicXmlWriterTest {
         assertSameScore(roundTrip(score), score);
     }
 
+    @Test
+    void givesAStaffWithNothingToPlayInAMeasureAWholeMeasureRest() {
+        Score score = Score.builder("Piano").length(Fraction.whole(1))
+                .part(new Part("P1", "Piano", 2, List.of(note("E5", Fraction.ZERO, Fraction.whole(1), 1, 1))))
+                .build();
+
+        String xml = write(score);
+
+        int rest = xml.indexOf("<rest measure=\"yes\"/>");
+        assertThat(rest).isPositive();
+        assertThat(xml.substring(rest, xml.indexOf("</note>", rest))).contains("<staff>2</staff>");
+        assertSameScore(roundTrip(score), score);
+    }
+
     private static Score melody() {
         return Score.builder("Test & Song").length(Fraction.whole(2))
                 .part(new Part("P1", "Melody", 1, List.of(

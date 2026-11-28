@@ -31,6 +31,13 @@ describe("SheetMusic", () => {
     expect(osmdInstances).toHaveLength(before);
   });
 
+  it("beams notes the file leaves unbeamed, as converted MIDI files are", async () => {
+    render(<SheetMusic xml="<score-partwise/>" />);
+
+    await waitFor(() => expect(osmdInstances.at(-1)?.rendered).toBe(true));
+    expect(osmdInstances.at(-1)?.options.autoBeam).toBe(true);
+  });
+
   it("hides the cursor without a position", async () => {
     render(<SheetMusic xml="<score-partwise/>" />);
 
