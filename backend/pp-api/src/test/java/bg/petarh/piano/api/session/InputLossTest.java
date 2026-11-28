@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Timeout;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -38,17 +37,18 @@ class InputLossTest {
     }
 
     @Test
-    void pausesWhenTheInputIsUnpluggedAndReconnectsWhenItReturns() {
-        api.startWatchingDevices(Duration.ofMillis(5));
+    void rescanPausesWhenTheInputIsUnpluggedAndReconnectsWhenItReturns() {
         call("session.start", "{\"input\":\"virtual:keyboard\",\"exercise\":\"random\",\"notes\":2,\"countIn\":0,"
                 + "\"seed\":5}");
         Pitch first = Pitch.parse(await("session.target", 1).at("/params/notes/0/pitch").asString());
 
         inputs.unplug();
+        call("devices.rescan", "{}");
         assertThat(await("session.inputLost", 1).at("/params/input").asString()).isEqualTo("virtual:keyboard");
         assertThat(await("session.state", 2).at("/params/state").asString()).isEqualTo("PAUSED");
 
         inputs.plugIn();
+        call("devices.rescan", "{}");
         await("session.inputRestored", 1);
         call("session.resume", "{}");
         await("session.state", 3);

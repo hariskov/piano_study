@@ -16,7 +16,7 @@ The keywords **MUST**, **SHOULD** and **MAY** mean: required, recommended, and o
 | DEV-2 | The user MUST be able to choose one input device (the piano) and, optionally, one output device. |
 | DEV-3 | Output choices MUST include the **built-in software synthesiser** and every hardware MIDI output (for example, the piano's own sound engine). |
 | DEV-4 | The chosen devices MUST be remembered between sessions and reconnected automatically when they are available. |
-| DEV-5 | The app MUST notice when a device is unplugged or plugged back in. It SHOULD reconnect without a restart. Devices are checked automatically every second, and the Devices screen has a **Rescan** button to check at once. If the piano is unplugged during a session, the session pauses; when the piano is back it is reconnected automatically, and the user resumes. |
+| DEV-5 | The app looks for devices when it starts and whenever the user presses **Rescan** (on the Devices screen); it doesn't poll in the background. A device plugged in or unplugged after start is found by a rescan, with no restart. If a rescan finds the session's piano gone, the session pauses; a later rescan that finds it again reconnects it, and the user resumes. |
 | DEV-6 | The app MUST show live input activity on the device screen (for example, a keyboard where pressed keys light up) so the user can check the connection. |
 | DEV-7 | The app MUST offer **virtual keyboard input** (computer keyboard or mouse on the on-screen keyboard) for testing without a piano. |
 | DEV-8 | Key presses MUST be timestamped by the backend when they arrive. All scoring uses the backend clock, so delays in the UI never affect scores. |
